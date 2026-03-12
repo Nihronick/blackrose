@@ -13,6 +13,10 @@ export function getInitData() {
 export async function apiFetch(endpoint) {
   const headers = {}
   const initData = getInitData()
+  
+  console.log('initData length:', initData?.length)
+  console.log('initData:', initData?.substring(0, 50))
+  
   if (initData) headers['X-Telegram-Init-Data'] = initData
 
   const res = await fetch(`${BASE}${endpoint}`, { headers })
