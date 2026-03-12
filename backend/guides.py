@@ -37,15 +37,15 @@ MAIN_CATEGORIES = {
     "cat_promoutes": {"title": "Промоуты", "icon": get_icon("promo_nox")},
     "info_general": {
         "title": "Общая информация",
-        "icon": "https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/images/icons/class_etc/sl_icon.png",
+        "icon": "https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/images/icons/class_etc/sl_icon.png",
     },
     "adv_adventures": {
         "title": "Приключения",
-        "icon": "https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/images/icons/class_etc/adventure.png",
+        "icon": "https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/images/icons/class_etc/adventure.png",
     },
     "guild_guild": {
         "title": "Гильдия",
-        "icon": "https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/images/icons/class_etc/118.png",
+        "icon": "https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/images/icons/class_etc/118.png",
     },
 }
 
@@ -135,12 +135,12 @@ SUBMENUS = {
         (
             "guild_wyvern",
             "Виверна",
-            "https://raw.githubusercontent.com/Nihronick/blackrose-bot/main/public/images/icons/guild_wyvern.png",
+            "https://raw.githubusercontent.com/Nihronick/blackrose/main/public/images/icons/guild_wyvern.png",
         ),
         (
             "guild_cooking",
             "Приготовление блюд",
-            "https://raw.githubusercontent.com/Nihronick/blackrose-bot/main/public/images/icons/guild_cooking.png",
+            "https://raw.githubusercontent.com/Nihronick/blackrose/main/public/images/icons/guild_cooking.png",
         ),
     ],
 }
@@ -566,7 +566,7 @@ CONTENT = {
 📌 Приоритет 4: Бери навыки РЕДКИЕ приоритет будет на картинке
 📌 Приоритет 5: Зеленые перья{{pero_berez}} и фиолетовые{{pero_viol}} - это только в том случае, когда редкие навыки уже заполнены.
 ❗️❗️❗️Не стоит менять на АЛМАЗЫ, только покупка по приоритету""",
-        "photo": ["https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/guides/event.jpg"],
+        "photo": ["https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/guides/event.jpg"],
         "video": None,
         "document": None,
     },
@@ -575,7 +575,7 @@ CONTENT = {
         "icon": get_icon("Rage"),
         "text": """Обучающее видео, смотрите на тайминги нажатия кнопок""",
         "photo": [],
-        "video": ["https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/guides/rage1.mp4","https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/guides/rage2.mp4"],  # 🔽 Добавьте URL видео
+        "video": ["https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/guides/rage1.mp4","https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/guides/rage2.mp4"],  # 🔽 Добавьте URL видео
         "document": None,
     },
     "info_ads": {
@@ -593,7 +593,7 @@ CONTENT = {
         "text": """**Прокачка спутников**
 Просто, качай по приоритету указаному тут, с звездой прям нужно качать. Души на твое усмотрение, какой меч хочешь получать.
 Инфо о спутниках...""",
-        "photo": ["https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/guides/companion.jpg"],
+        "photo": ["https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/guides/companion.jpg"],
         "video": None,
         "document": [],  # 🔽 Добавьте URL документов
     },
@@ -607,8 +607,8 @@ CONTENT = {
 Золотые блоки в начале и середине игры (I-образной формы) могут значительно увеличить ваш процент золота. Из-за этого может оказаться полезным сохранить 2 набора гравюр в начале игры: 1 для увеличения количества золотых монет (используется во время фермерства) и 1 для увеличения урона (используется во время толкания(стадии) или ежедневной работы по мере необходимости).,
 Поздняя игра: Оружие Дущи уровня 1500+ может отдавать предпочтение критическим блокам из-за худшего вычисления блоков Atk,
 как в начале игры: Если у вас уровень ниже Dragonos, крит может временно превышать ATK из-за вычисления.""",
-        "photo": ["https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/guides/soul_sword1.png",
-            "https://raw.githubusercontent.com/Nihronick/blackrose-miniapp/main/assets/guides/soul_sword2.png"],
+        "photo": ["https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/guides/soul_sword1.png",
+            "https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/guides/soul_sword2.png"],
         "video": None,
         "document": [],  # 🔽 Добавьте URL документов
     },
@@ -799,7 +799,7 @@ End Game
 Та же логика с Awaken 2
 {{spirit_ark}}Духи:
 Начало игры
-{{spirit_zappy}}{{spirit_sala}}{{spirit_loar}} 
+{{spirit_zappy}}{{spirit_sala}}{{spirit_loar}}
 
 Середина игры
 {{spirit_zappy}}{{spirit_mum}}{{spirit_noah}} 
