@@ -24,7 +24,6 @@ export function App() {
   const [showQN, setShowQN]       = useState(false)
 
   // Auth
-// СТАЛО:
 useEffect(() => {
     const tg = window.Telegram?.WebApp
     const doAuth = () => {
