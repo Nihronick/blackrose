@@ -1,32 +1,57 @@
-const tg = window.Telegram?.WebApp
-
-const BASE =
-  import.meta.env.VITE_API_URL ||
-  (['localhost', '127.0.0.1'].includes(window.location.hostname)
-    ? ''
-    : window.location.origin)
+// Add these functions to your existing api.js
 
 export function getInitData() {
-  return tg?.initData || ''
+  return window.Telegram?.WebApp?.initData ?? ''
+}
+
+const BASE = import.meta.env.VITE_API_URL ?? ''
+
+function getHeaders() {
+  const headers = { 'Content-Type': 'application/json' }
+  const initData = getInitData()
+  if (initData) headers['X-Telegram-Init-Data'] = initData
+  return headers
 }
 
 export async function apiFetch(endpoint) {
-  const headers = {}
-  const initData = getInitData()
-  
-  console.log('initData length:', initData?.length)
-  console.log('initData:', initData?.substring(0, 50))
-  
-  if (initData) headers['X-Telegram-Init-Data'] = initData
-
-  const res = await fetch(`${BASE}${endpoint}`, { headers })
-
+  const res = await fetch(`${BASE}${endpoint}`, { headers: getHeaders() })
   if (res.status === 403) {
     const data = await res.json().catch(() => ({}))
-    const err = new Error('ACCESS_DENIED')
+    const err  = new Error('ACCESS_DENIED')
     err.detail = data.detail
     throw err
   }
   if (!res.ok) throw new Error(`Ошибка ${res.status}`)
+  return res.json()
+}
+
+export async function apiPut(endpoint, body) {
+  const res = await fetch(`${BASE}${endpoint}`, {
+    method:  'PUT',
+    headers: getHeaders(),
+    body:    JSON.stringify(body),
+  })
+  if (res.status === 403) {
+    const data = await res.json().catch(() => ({}))
+    const err  = new Error('ACCESS_DENIED')
+    err.detail = data.detail
+    throw err
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail ?? `Ошибка ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function apiDelete(endpoint) {
+  const res = await fetch(`${BASE}${endpoint}`, {
+    method:  'DELETE',
+    headers: getHeaders(),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail ?? `Ошибка ${res.status}`)
+  }
   return res.json()
 }
