@@ -24,10 +24,20 @@ export function App() {
   const [showQN, setShowQN]       = useState(false)
 
   // Auth
-  useEffect(() => {
-    apiFetch('/api/auth').catch(e => {
-      if (e.message === 'ACCESS_DENIED') { setAccessMsg(e.detail); setView('access_denied') }
-    })
+// СТАЛО:
+useEffect(() => {
+    const tg = window.Telegram?.WebApp
+    const doAuth = () => {
+      apiFetch('/api/auth').catch(e => {
+        if (e.message === 'ACCESS_DENIED') { setAccessMsg(e.detail); setView('access_denied') }
+      })
+    }
+    if (tg?.initData) {
+      doAuth()
+    } else {
+      // Ждём пока Telegram WebApp инициализируется
+      setTimeout(doAuth, 500)
+    }
   }, [])
 
   // Back navigation
