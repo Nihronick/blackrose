@@ -203,3 +203,37 @@ body {
   .guide-content { font-size:16px; }
   .fab-btn { padding:12px 22px; font-size:15px; }
 }
+/* ═══ FAVORITE BUTTON ═══════════════════════════════ */
+.fav-btn {
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:none; cursor:pointer; flex-shrink:0;
+  color:var(--text-secondary); border-radius:50%;
+  transition:color .15s, transform .12s;
+  padding:0;
+}
+.fav-btn:active { transform:scale(.85); }
+.fav-btn-active { color:#f39c12; }
+
+/* ═══ FAV BAR (главный экран) ═══════════════════════ */
+.fav-bar { padding:0 16px 8px; }
+.fav-bar-btn {
+  display:flex; align-items:center; gap:8px; width:100%;
+  padding:11px 16px; background:var(--surface); border:1px solid var(--separator);
+  border-radius:var(--radius); cursor:pointer; color:var(--text);
+  font-size:15px; font-weight:600; transition:transform .12s;
+}
+.fav-bar-btn:active { transform:scale(.97); }
+.fav-bar-btn svg { color:#f39c12; flex-shrink:0; }
+.fav-bar-count {
+  margin-left:auto; background:var(--accent); color:var(--accent-text);
+  font-size:12px; font-weight:700; padding:2px 8px; border-radius:20px;
+}
+
+/* ═══ FAVORITES EMPTY ═══════════════════════════════ */
+.fav-empty {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:80px 24px; text-align:center; height:100%;
+}
+.fav-empty-icon { font-size:56px; margin-bottom:16px; }
+.fav-empty h3 { font-size:20px; font-weight:700; margin-bottom:8px; }
+.fav-empty p { color:var(--text-secondary); font-size:15px; line-height:1.6; }

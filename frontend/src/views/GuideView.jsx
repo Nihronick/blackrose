@@ -4,6 +4,7 @@ import { haptic } from '../haptic'
 import { parseVideo, parseDocument } from '../utils'
 import { SkeletonGuide } from '../components/Skeleton'
 import { Lightbox } from '../components/Lightbox'
+import { FavoriteButton } from '../components/FavoriteButton'
 import { PtrIndicator } from '../components/PtrIndicator'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
@@ -33,10 +34,10 @@ function DocBlock({ url }) {
   )
 }
 
-export function GuideView({ guideKey }) {
-  const [guide, setGuide]           = useState(null)
-  const [error, setError]           = useState(null)
-  const [lightbox, setLightbox]     = useState(null)
+export function GuideView({ guideKey, isFavorite, onToggleFavorite }) {
+  const [guide, setGuide]       = useState(null)
+  const [error, setError]       = useState(null)
+  const [lightbox, setLightbox] = useState(null)
   const scrollRef = useRef(null)
 
   const load = useCallback(async () => {
@@ -65,6 +66,11 @@ export function GuideView({ guideKey }) {
                 {guide.icon && <img src={guide.icon} alt="" onError={e => e.target.style.display='none'} />}
               </div>
               <h2 className="guide-title">{guide.title}</h2>
+              <FavoriteButton
+                isFav={isFavorite}
+                onToggle={() => onToggleFavorite({ key: guide.key, title: guide.title, icon: guide.icon })}
+                size={36}
+              />
             </div>
             <div className="guide-content" dangerouslySetInnerHTML={{ __html: guide.text }} />
             {(guide.photo || []).filter(s => s && !s.startsWith('Ag')).map((src, i) => (
