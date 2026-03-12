@@ -160,18 +160,16 @@ async def require_telegram_user(request: Request) -> dict:
     ua      = request.headers.get("user-agent", "")
     referer = request.headers.get("referer", "")
     origin  = request.headers.get("origin", "")
-    fetch   = request.headers.get("sec-fetch-site", "")
 
     is_tg = (
         "telegram" in ua.lower()
         or "tgweb" in ua.lower()
         or "railway.app" in referer
         or "railway.app" in origin
-        or fetch == "same-origin"
     )
 
-    # Если whitelist задан — без initData не пускаем даже из TG-контекста
-    if is_tg and not ALLOWED_USERS:
+    if is_tg:
+        logger.info(f"No initData but Telegram context — allowing (UA: {ua[:80]})")
         return {"id": 0, "first_name": "TelegramUser"}
 
     logger.warning(f"Доступ отклонён (UA: {ua[:80]})")
