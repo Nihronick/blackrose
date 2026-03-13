@@ -1,71 +1,107 @@
-# BlackRose — монорепо
+# BlackRose Guides 🌹
 
-Один репозиторий, три Railway-сервиса.
+Telegram Mini App — справочник гильдии BlackRose для игры Lost Ark.  
+Позволяет участникам гильдии быстро находить гайды прямо в Telegram, не выходя из чата.
+
+---
+
+## Стек
+
+| Слой | Технологии |
+|---|---|
+| Frontend | React + Vite, Telegram WebApp SDK |
+| Backend | FastAPI (Python 3.11), asyncpg |
+| База данных | PostgreSQL |
+| Бот | aiogram 3, polling |
+| Деплой | Railway (монорепо, 3 сервиса) |
+
+---
+
+## Структура монорепо
 
 ```
 blackrose/
-├── bot/        → Railway сервис «bot»      (aiogram, worker)
-├── backend/    → Railway сервис «backend»  (FastAPI, Dockerfile)
-├── frontend/   → Railway сервис «frontend» (React+Vite→nginx, Dockerfile)
-└── .gitignore
+├── bot/          # Telegram-бот (aiogram, polling)
+├── backend/      # REST API (FastAPI + PostgreSQL)
+└── frontend/     # React SPA (Vite + nginx)
 ```
 
-## Railway: настройка сервисов
+---
 
-### Shared Variables (Settings → Shared Variables)
-Задать один раз — все сервисы наследуют:
+## Возможности
+
+- 📚 Каталог гайдов по категориям с иконками
+- 🔍 Поиск по всем гайдам
+- ⭐ Избранное (Telegram CloudStorage)
+- ⚙️ Админ-панель — редактирование гайдов и категорий прямо в приложении
+- 🔒 Контроль доступа по whitelist пользователей
+- 📱 Pull-to-refresh, быстрая навигация
+
+---
+
+## Переменные окружения
+
+### Backend
+| Переменная | Описание |
+|---|---|
+| `BOT_TOKEN` | Токен Telegram-бота |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `ALLOWED_USERS` | Список ID пользователей через запятую |
+| `ADMIN_USERS` | ID администраторов через запятую |
+| `INIT_DATA_MAX_AGE` | Время жизни initData в секундах (по умолчанию 86400) |
+| `LOG_LEVEL` | Уровень логирования (INFO / DEBUG) |
+
+### Bot
+| Переменная | Описание |
+|---|---|
+| `TELEGRAM_API_TOKEN` | Токен Telegram-бота |
+| `ALLOWED_USERS` | Whitelist пользователей |
+| `MINIAPP_URL` | URL фронтенда |
+| `ACCESS_MODE` | Режим доступа (`users` — только whitelist) |
+
+### Frontend
+| Переменная | Описание |
+|---|---|
+| `VITE_API_URL` | URL backend API |
+
+---
+
+## Деплой на Railway
+
+Каждый сервис деплоится независимо через **Watch Paths**:
+
+- Backend: `/backend/**`
+- Frontend: `/frontend/**`  
+- Bot: `/bot/**`
+
 ```
-ALLOWED_USERS   = 123456789,987654321
+railway link        # привязать проект
+railway up          # задеплоить сервис
 ```
 
-### Сервис: bot
-| Параметр | Значение |
-|---|---|
-| Root Directory | `bot` |
-| Start Command | `python main.py` |
-| **Variables** | |
-| `TELEGRAM_API_TOKEN` | токен бота |
-| `ALLOWED_USERS` | (из Shared) |
-| `ACCESS_MODE` | `users` |
-| `MINIAPP_URL` | URL frontend-сервиса |
+---
 
-### Сервис: backend
-| Параметр | Значение |
-|---|---|
-| Root Directory | `backend` |
-| Dockerfile | авто-определение |
-| **Variables** | |
-| `BOT_TOKEN` | токен бота |
-| `ALLOWED_USERS` | (из Shared) |
-
-### Сервис: frontend
-| Параметр | Значение |
-|---|---|
-| Root Directory | `frontend` |
-| Dockerfile | авто-определение |
-| **Variables** | |
-| `VITE_API_URL` | URL backend-сервиса |
-
-## Порядок деплоя
-
-1. Создать Railway-проект → подключить этот репозиторий
-2. Добавить Shared Variable `ALLOWED_USERS`
-3. Задеплоить **backend** → скопировать его URL
-4. Задеплоить **frontend** (добавить `VITE_API_URL` = URL backend) → скопировать его URL
-5. Задеплоить **bot** (добавить `MINIAPP_URL` = URL frontend)
-
-## Локальная разработка
+## Локальный запуск
 
 ```bash
 # Backend
-cd backend && pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
 
-# Frontend (другой терминал)
-cd frontend && npm install && npm run dev
+# Frontend
+cd frontend
+npm install
+npx vite --host 0.0.0.0 --port 3000
 
-# Bot (другой терминал)
-cd bot && pip install -r requirements.txt
-cp .env.example .env  # заполнить токены
+# Bot
+cd bot
+pip install -r requirements.txt
 python main.py
 ```
+
+---
+
+## Лицензия
+
+MIT — см. [LICENSE](LICENSE)
