@@ -1,6 +1,6 @@
 # BlackRose Guides 🌹
 
-Telegram Mini App — справочник гильдии BlackRose для игры Lost Ark.  
+Telegram Mini App — справочник гильдии BlackRose для игры Legend Slayer.  
 Позволяет участникам гильдии быстро находить гайды прямо в Telegram, не выходя из чата.
 
 ---
