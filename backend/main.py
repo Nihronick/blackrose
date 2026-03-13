@@ -173,14 +173,21 @@ async def health():
 async def auth(user=Depends(require_telegram_user)):
     return {"ok": True, "user_id": user.get("id"), "name": user.get("first_name")}
 
+_categories_cache = None
+_categories_cache_time = 0
+CACHE_TTL = 60  # секунд
 
 @app.get("/api/categories")
 async def categories(user=Depends(require_telegram_user)):
+    global _categories_cache, _categories_cache_time
+    
+    now = time.time()
+    if _categories_cache and (now - _categories_cache_time) < CACHE_TTL:
+        return _categories_cache
+    
     pool = await get_pool()
     async with pool.acquire() as conn:
-        cats = await conn.fetch(
-            "SELECT * FROM categories ORDER BY sort_order, key"
-        )
+        cats = await conn.fetch("SELECT * FROM categories ORDER BY sort_order, key")
         guides = await conn.fetch(
             "SELECT key, category_key, title, icon_url FROM guides ORDER BY sort_order, key"
         )
@@ -191,15 +198,15 @@ async def categories(user=Depends(require_telegram_user)):
             "key": g["key"], "title": g["title"], "icon": g["icon_url"]
         })
     
-    return [
-        {
-            "key":    c["key"],
-            "title":  c["title"],
-            "icon":   c["icon_url"],
-            "guides": guides_by_cat.get(c["key"], []),
-        }
+    result = [
+        {"key": c["key"], "title": c["title"], "icon": c["icon_url"],
+         "guides": guides_by_cat.get(c["key"], [])}
         for c in cats
     ]
+    
+    _categories_cache = result
+    _categories_cache_time = now
+    return result
 
 
 @app.get("/api/guide/{key}")
