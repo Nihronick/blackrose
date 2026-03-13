@@ -19,7 +19,7 @@ from typing import Optional
 
 from icons import get_icon
 from database import (
-    init_db, close_pool,
+    init_db, close_pool, get_pool,
     get_categories, get_category, upsert_category, delete_category,
     get_guides_by_category, get_guide, upsert_guide, delete_guide,
 )
