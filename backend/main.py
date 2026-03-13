@@ -254,7 +254,13 @@ async def root():
 
 @app.get("/api/auth")
 async def check_auth(user: dict = Depends(require_telegram_user)):
-    return {"authorized": True, "user_id": user.get("id"), "first_name": user.get("first_name", "")}
+    uid = user.get("id", 0)
+    return {
+        "authorized": True,
+        "user_id": uid,
+        "first_name": user.get("first_name", ""),
+        "is_admin": uid in ADMIN_USERS,
+    }
 
 
 @app.get("/api/categories")
