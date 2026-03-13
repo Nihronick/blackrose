@@ -1,22 +1,30 @@
 """
-BlackRose Mini App API v2.1
+BlackRose Mini App API v3.0 — PostgreSQL edition
 """
-import hashlib
-import hmac
-import json
-import logging
 import os
 import re
-import sys
 import time
-from pathlib import Path
-from urllib.parse import parse_qs, unquote
+import hmac
+import hashlib
+import logging
+import json
+from contextlib import asynccontextmanager
+from urllib.parse import parse_qs
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from typing import Optional
 
-# ── Логирование ──────────────────────────────────────
+from icons import get_icon
+from database import (
+    init_db, close_pool,
+    get_categories, get_category, upsert_category, delete_category,
+    get_guides_by_category, get_guide, upsert_guide, delete_guide,
+)
+
+# ── Logging ───────────────────────────────────────────
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
@@ -25,339 +33,268 @@ logging.basicConfig(
 )
 logger = logging.getLogger("blackrose")
 
-if os.getenv("RAILWAY_ENVIRONMENT"):
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+# ── Config ────────────────────────────────────────────
+BOT_TOKEN        = os.getenv("BOT_TOKEN", "")
+INIT_DATA_MAX_AGE = int(os.getenv("INIT_DATA_MAX_AGE", 86400))
+LOG_LEVEL_STR    = os.getenv("LOG_LEVEL", "INFO")
 
-sys.path.append(str(Path(__file__).parent))
+ALLOWED_USERS_RAW = os.getenv("ALLOWED_USERS", "")
+ALLOWED_USERS: set[int] = set()
+for part in ALLOWED_USERS_RAW.replace(";", ",").split(","):
+    part = part.strip()
+    if part.lstrip("-").isdigit():
+        ALLOWED_USERS.add(int(part))
 
-from guides import CONTENT, MAIN_CATEGORIES, SUBMENUS
+ADMIN_USERS_RAW = os.getenv("ADMIN_USERS", "")
+ADMIN_USERS: set[int] = set()
+for part in ADMIN_USERS_RAW.replace(";", ",").split(","):
+    part = part.strip()
+    if part.lstrip("-").isdigit():
+        ADMIN_USERS.add(int(part))
 
-try:
-    from icons import ALL_ICONS, get_icon
-    ICONS_AVAILABLE = True
-    logger.info(f"Icons loaded: {len(ALL_ICONS)}")
-except ImportError:
-    ICONS_AVAILABLE = False
-    ALL_ICONS = {}
-    logger.warning("icons.py not found — icons disabled")
-
-
-# ── Конфигурация доступа ─────────────────────────────
-BOT_TOKEN         = os.getenv("BOT_TOKEN", "")
-INIT_DATA_MAX_AGE = int(os.getenv("INIT_DATA_MAX_AGE", "86400"))
-
-# ALLOWED_USERS — формат: "123456789,987654321"
-# Тот же список что в боте, задаётся через Railway Shared Variables
-_raw = os.getenv("ALLOWED_USERS", "")
-ALLOWED_USERS: set[int] = {
-    int(uid.strip())
-    for uid in _raw.split(",")
-    if uid.strip().isdigit()
-}
-
-if not BOT_TOKEN:
-    logger.warning("BOT_TOKEN не задан — проверка initData ОТКЛЮЧЕНА")
-if ALLOWED_USERS:
-    logger.info(f"Whitelist: {len(ALLOWED_USERS)} пользователей")
-else:
-    logger.warning("ALLOWED_USERS не задан — доступ открыт всем Telegram-пользователям")
+# If ADMIN_USERS not set — first user in ALLOWED_USERS is admin
+if not ADMIN_USERS and ALLOWED_USERS:
+    ADMIN_USERS = ALLOWED_USERS.copy()
 
 
-# ── Проверка Telegram initData ───────────────────────
+# ── Guide text formatter ──────────────────────────────
+def format_guide_text(text: str) -> str:
+    def replace_icon(match):
+        icon_name = match.group(1)
+        icon_url  = get_icon(icon_name)
+        return f'<img src="{icon_url}" alt="{icon_name}" width="20" height="20" style="vertical-align:middle;margin:0 4px;">'
+    result = re.sub(r"\{\{(\w+)\}\}", replace_icon, text)
+    result = result.replace("\n", "<br>")
+    result = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", result)
+    result = re.sub(r"\*(.+?)\*",   r"<em>\1</em>",           result)
+    return result
+
+
+# ── Telegram auth ─────────────────────────────────────
 def verify_telegram_init_data(init_data: str) -> dict | None:
-    """
-    Проверяет:
-    1. HMAC-подпись (данные точно от Telegram)
-    2. Свежесть auth_date
-    3. user_id входит в ALLOWED_USERS
-    """
-    if not BOT_TOKEN:
-        return {"id": 0, "first_name": "Guest"}
-    if not init_data:
-        return None
-
     try:
-        parsed = parse_qs(init_data, keep_blank_values=True)
-
-        # 1. HMAC
-        received_hash = parsed.get("hash", [None])[0]
-        if not received_hash:
+        parsed   = parse_qs(init_data, strict_parsing=True)
+        hash_val = parsed.pop("hash", [None])[0]
+        if not hash_val:
             return None
-
-        check_pairs = [
-            f"{k}={v[0]}"
-            for k, v in sorted(parsed.items())
-            if k != "hash"
-        ]
-        data_check_string = "\n".join(check_pairs)
-
-        secret_key = hmac.new(
-            b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256
-        ).digest()
-        calculated_hash = hmac.new(
-            secret_key, data_check_string.encode(), hashlib.sha256
-        ).hexdigest()
-
-        if not hmac.compare_digest(calculated_hash, received_hash):
-            logger.warning("initData: HMAC mismatch")
+        check_string = "\n".join(
+            f"{k}={v[0]}" for k, v in sorted(parsed.items())
+        )
+        secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
+        expected   = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, hash_val):
             return None
-
-        # 2. Свежесть
-        if INIT_DATA_MAX_AGE > 0:
-            auth_date = parsed.get("auth_date", [None])[0]
-            if auth_date:
-                age = time.time() - int(auth_date)
-                if age > INIT_DATA_MAX_AGE:
-                    logger.warning(f"initData: просрочен ({age:.0f}s)")
-                    return None
-
-        # 3. User
-        user_raw = parsed.get("user", [None])[0]
-        if not user_raw:
+        auth_date = int(parsed.get("auth_date", [0])[0])
+        if INIT_DATA_MAX_AGE > 0 and (time.time() - auth_date) > INIT_DATA_MAX_AGE:
             return None
-        user = json.loads(unquote(user_raw))
-        user_id = user.get("id")
-
-        # 4. Whitelist
-        if ALLOWED_USERS and user_id not in ALLOWED_USERS:
-            logger.warning(
-                f"Доступ запрещён: user_id={user_id} "
-                f"({user.get('first_name', '?')}) не в ALLOWED_USERS"
-            )
-            return None
-
-        logger.debug(f"initData OK: user_id={user_id} ({user.get('first_name', '?')})")
-        return user
-
-    except Exception as e:
-        logger.error(f"initData error: {e}")
+        user_str = parsed.get("user", [None])[0]
+        return json.loads(user_str) if user_str else None
+    except Exception:
         return None
 
 
 async def require_telegram_user(request: Request) -> dict:
-    """
-    Dependency для всех защищённых эндпоинтов.
-    403 если: невалидная подпись / user не в whitelist / не Telegram-контекст.
-    """
-    if not BOT_TOKEN:
-        return {"id": 0, "first_name": "Dev"}
-
-    init_data = (
-        request.headers.get("X-Telegram-Init-Data", "")
-        or request.query_params.get("initData", "")
-    )
-
+    init_data = request.headers.get("X-Telegram-Init-Data", "")
     if init_data:
         user = verify_telegram_init_data(init_data)
-        if user:
+        if user and (not ALLOWED_USERS or user["id"] in ALLOWED_USERS):
             return user
-        raise HTTPException(
-            status_code=403,
-            detail="Доступ запрещён. Обратитесь к администратору гильдии.",
-        )
+        if user and user["id"] not in ALLOWED_USERS:
+            logger.warning(f"User {user.get('id')} not in whitelist")
+            raise HTTPException(status_code=403, detail="Откройте приложение через Telegram бота @blackrosesl1_bot")
 
-    # Нет initData — проверяем контекст
     ua      = request.headers.get("user-agent", "")
     referer = request.headers.get("referer", "")
     origin  = request.headers.get("origin", "")
-
-    is_tg = (
+    is_tg   = (
         "telegram" in ua.lower()
         or "tgweb" in ua.lower()
         or "railway.app" in referer
         or "railway.app" in origin
     )
-
     if is_tg:
         logger.info(f"No initData but Telegram context — allowing (UA: {ua[:80]})")
         return {"id": 0, "first_name": "TelegramUser"}
 
     logger.warning(f"Доступ отклонён (UA: {ua[:80]})")
-    raise HTTPException(
-        status_code=403,
-        detail="Откройте приложение через Telegram бота @blackrosesl1_bot",
-    )
+    raise HTTPException(status_code=403, detail="Откройте приложение через Telegram бота @blackrosesl1_bot")
 
 
-# ── App ──────────────────────────────────────────────
-app = FastAPI(title="BlackRose Mini App API", version="2.1.0")
+async def require_admin(request: Request) -> dict:
+    user = await require_telegram_user(request)
+    uid  = user.get("id", 0)
+    if uid != 0 and uid not in ADMIN_USERS:
+        logger.warning(f"Admin access denied for user {uid}")
+        raise HTTPException(status_code=403, detail="Нет прав администратора")
+    return user
+
+
+# ── App lifecycle ─────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    logger.info("=" * 50)
+    logger.info("BlackRose Mini App API v3.0")
+    logger.info(f"  Auth:      on")
+    logger.info(f"  Whitelist: {len(ALLOWED_USERS)} users")
+    logger.info(f"  Admins:    {len(ADMIN_USERS)} users")
+    logger.info("=" * 50)
+    yield
+    await close_pool()
+
+
+app = FastAPI(title="BlackRose API", version="3.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*", "X-Telegram-Init-Data"],
+    allow_headers=["*"],
 )
-
-guide_stats: dict[str, int] = {}
 
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    start = time.time()
-    response = await call_next(request)
-    ms = (time.time() - start) * 1000
-    if request.url.path != "/":
-        logger.info(f"{request.method} {request.url.path} → {response.status_code} ({ms:.1f}ms)")
-    return response
+    t0  = time.time()
+    res = await call_next(request)
+    ms  = (time.time() - t0) * 1000
+    logger.info(f"{request.method} {request.url.path} → {res.status_code} ({ms:.1f}ms)")
+    return res
 
 
-# ── Helpers ──────────────────────────────────────────
-def resolve_icon(icon_raw: str | None) -> str | None:
-    if not icon_raw or not ICONS_AVAILABLE:
-        return None
-    if icon_raw.startswith("http"):
-        return icon_raw
-    return get_icon(icon_raw) if icon_raw in ALL_ICONS else None
-
-
-def format_guide_text(text: str) -> str:
-    if not text:
-        return ""
-    html = text
-    if ICONS_AVAILABLE:
-        def replace_icon(m):
-            url = get_icon(m.group(1).strip())
-            if url:
-                return f'<img src="{url}" alt="{m.group(1)}" class="inline-icon" onerror="this.style.display=\'none\'">'
-            return ""
-        html = re.sub(r"\{\{(\w+(?:\s+\w+)*)\}\}", replace_icon, html)
-    else:
-        html = re.sub(r"\{\{(\w+(?:\s+\w+)*)\}\}", "", html)
-    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
-    html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
-    html = html.replace("\n", "<br>")
-    html = re.sub(r"(<br>\s*){3,}", "<br><br>", html)
-    return html
-
-
-def extract_media(media) -> list[str]:
-    if not media:
-        return []
-    if isinstance(media, list):
-        return [i for i in media if i and isinstance(i, str) and i not in ("None", "")]
-    if isinstance(media, str) and media not in ("None", ""):
-        return [media]
-    return []
-
-
-# ── Routes ───────────────────────────────────────────
-@app.get("/")
-async def root():
-    return {
-        "status": "ok",
-        "version": "2.1.0",
-        "auth": bool(BOT_TOKEN),
-        "whitelist": len(ALLOWED_USERS),
-    }
+# ── Public endpoints ──────────────────────────────────
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "version": "3.0.0"}
 
 
 @app.get("/api/auth")
-async def check_auth(user: dict = Depends(require_telegram_user)):
-    uid = user.get("id", 0)
-    return {
-        "authorized": True,
-        "user_id": uid,
-        "first_name": user.get("first_name", ""),
-        "is_admin": uid in ADMIN_USERS,
-    }
+async def auth(user=Depends(require_telegram_user)):
+    return {"ok": True, "user_id": user.get("id"), "name": user.get("first_name")}
 
 
 @app.get("/api/categories")
-def get_categories(user: dict = Depends(require_telegram_user)):
+async def categories(user=Depends(require_telegram_user)):
+    cats = await get_categories()
     result = []
-    for key, data in MAIN_CATEGORIES.items():
-        title    = data["title"] if isinstance(data, dict) else data
-        icon_raw = data.get("icon") if isinstance(data, dict) else None
+    for cat in cats:
+        guides = await get_guides_by_category(cat["key"])
         result.append({
-            "key":   key,
-            "title": title,
-            "icon":  resolve_icon(icon_raw),
-            "count": len(SUBMENUS.get(key, [])),
+            "key":    cat["key"],
+            "title":  cat["title"],
+            "icon":   cat["icon_url"],
+            "guides": [
+                {"key": g["key"], "title": g["title"], "icon": g["icon_url"]}
+                for g in guides
+            ],
         })
-    return {"categories": result}
+    return result
 
 
-@app.get("/api/category/{category_key}")
-async def get_category(category_key: str, user: dict = Depends(require_telegram_user)):
-    if category_key not in SUBMENUS:
-        raise HTTPException(404, detail="Category not found")
-
-    items = []
-    for item in SUBMENUS[category_key]:
-        key, title = item[0], item[1]
-        icon_raw   = item[2] if len(item) >= 3 else None
-        guide      = CONTENT.get(key, {})
-        preview    = re.sub(r"\{\{.*?\}\}", "", guide.get("text", "")[:150]).strip()
-        preview    = re.sub(r"\*\*(.+?)\*\*", r"\1", preview)
-        items.append({
-            "key":          key,
-            "title":        title,
-            "icon":         resolve_icon(icon_raw),
-            "preview":      (preview + "...") if preview else "",
-            "has_photo":    bool(guide.get("photo")),
-            "has_video":    bool(guide.get("video")),
-            "has_document": bool(guide.get("document")),
-        })
-
-    cat   = MAIN_CATEGORIES.get(category_key, {})
-    title = cat["title"] if isinstance(cat, dict) else cat
-    return {"category": {"key": category_key, "title": title}, "items": items}
-
-
-@app.get("/api/guide/{guide_key}")
-async def get_guide(guide_key: str, user: dict = Depends(require_telegram_user)):
-    guide = CONTENT.get(guide_key)
-    if not guide:
-        raise HTTPException(404, detail="Guide not found")
-    guide_stats[guide_key] = guide_stats.get(guide_key, 0) + 1
+@app.get("/api/guide/{key}")
+async def guide(key: str, user=Depends(require_telegram_user)):
+    g = await get_guide(key)
+    if not g:
+        raise HTTPException(status_code=404, detail="Гайд не найден")
     return {
-        "key":      guide_key,
-        "title":    guide.get("title", guide_key),
-        "icon":     resolve_icon(guide.get("icon")),
-        "text":     format_guide_text(guide.get("text", "")),
-        "photo":    extract_media(guide.get("photo")),
-        "video":    extract_media(guide.get("video")),
-        "document": extract_media(guide.get("document")),
-        "views":    guide_stats[guide_key],
+        "key":      g["key"],
+        "title":    g["title"],
+        "icon":     g["icon_url"],
+        "text":     format_guide_text(g["text"] or ""),
+        "photo":    g["photo"] or [],
+        "video":    g["video"] or [],
+        "document": g["document"] or [],
     }
 
 
-@app.get("/api/search")
-async def search_guides(q: str = Query(min_length=2), user: dict = Depends(require_telegram_user)):
-    query   = q.lower().strip()
-    results = []
-    for key, guide in CONTENT.items():
-        title = guide.get("title", key)
-        if query in key.lower() or query in title.lower() or query in guide.get("text", "").lower():
-            preview = re.sub(r"\{\{.*?\}\}", "", guide.get("text", "")[:150]).strip()
-            results.append({"key": key, "title": title, "icon": resolve_icon(guide.get("icon")), "preview": preview + "..."})
-    return {"results": results[:10]}
+# ── Admin endpoints ───────────────────────────────────
+
+class CategoryIn(BaseModel):
+    title:      str
+    icon_url:   Optional[str] = None
+    sort_order: int = 0
 
 
-@app.get("/api/stats")
-async def get_stats():
-    return {"total_guides": len(CONTENT), "total_categories": len(MAIN_CATEGORIES), "total_views": sum(guide_stats.values())}
+class GuideIn(BaseModel):
+    category_key: str
+    title:        str
+    icon_url:     Optional[str] = None
+    text:         str = ""
+    photo:        list[str] = []
+    video:        list[str] = []
+    document:     list[str] = []
+    sort_order:   int = 0
 
 
-# ── Startup ──────────────────────────────────────────
-@app.on_event("startup")
-async def startup():
-    logger.info("=" * 50)
-    logger.info("BlackRose Mini App API v2.1.0")
-    logger.info(f"  Guides:     {len(CONTENT)}")
-    logger.info(f"  Icons:      {len(ALL_ICONS) if ICONS_AVAILABLE else 'disabled'}")
-    logger.info(f"  Auth:       {'on' if BOT_TOKEN else 'OFF'}")
-    logger.info(f"  Whitelist:  {len(ALLOWED_USERS)} users" if ALLOWED_USERS else "  Whitelist:  OFF")
-    logger.info("=" * 50)
+@app.get("/api/admin/categories")
+async def admin_categories(user=Depends(require_admin)):
+    return await get_categories()
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "main:app",
-        host=os.getenv("HOST", "0.0.0.0"),
-        port=int(os.getenv("PORT", 8000)),
-        reload=not os.getenv("RAILWAY_ENVIRONMENT"),
-        log_level="info",
+@app.put("/api/admin/category/{key}")
+async def admin_upsert_category(key: str, body: CategoryIn, user=Depends(require_admin)):
+    await upsert_category(key, body.title, body.icon_url, body.sort_order)
+    return {"ok": True}
+
+
+@app.delete("/api/admin/category/{key}")
+async def admin_delete_category(key: str, user=Depends(require_admin)):
+    cat = await get_category(key)
+    if not cat:
+        raise HTTPException(status_code=404, detail="Категория не найдена")
+    await delete_category(key)
+    return {"ok": True}
+
+
+@app.get("/api/admin/guides")
+async def admin_guides(category_key: str = None, user=Depends(require_admin)):
+    if category_key:
+        return await get_guides_by_category(category_key)
+    cats = await get_categories()
+    all_guides = []
+    for cat in cats:
+        guides = await get_guides_by_category(cat["key"])
+        all_guides.extend(guides)
+    return all_guides
+
+
+@app.get("/api/admin/guide/{key}")
+async def admin_guide(key: str, user=Depends(require_admin)):
+    g = await get_guide(key)
+    if not g:
+        raise HTTPException(status_code=404, detail="Гайд не найден")
+    # Return raw text (not formatted) for editing
+    return {**g, "photo": g["photo"] or [], "video": g["video"] or [], "document": g["document"] or []}
+
+
+@app.put("/api/admin/guide/{key}")
+async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin)):
+    await upsert_guide(
+        key=key,
+        category_key=body.category_key,
+        title=body.title,
+        icon_url=body.icon_url,
+        text=body.text,
+        photo=body.photo,
+        video=body.video,
+        document=body.document,
+        sort_order=body.sort_order,
     )
+    return {"ok": True}
+
+
+@app.delete("/api/admin/guide/{key}")
+async def admin_delete_guide(key: str, user=Depends(require_admin)):
+    g = await get_guide(key)
+    if not g:
+        raise HTTPException(status_code=404, detail="Гайд не найден")
+    await delete_guide(key)
+    return {"ok": True}
+
+
+@app.get("/api/admin/icons")
+async def admin_icons(user=Depends(require_admin)):
+    """Return list of available icon keys for the editor."""
+    from icons import ICONS
+    return [{"key": k, "url": v} for k, v in ICONS.items()]
