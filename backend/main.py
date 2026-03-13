@@ -52,10 +52,6 @@ for part in ADMIN_USERS_RAW.replace(";", ",").split(","):
     if part.lstrip("-").isdigit():
         ADMIN_USERS.add(int(part))
 
-# If ADMIN_USERS not set — first user in ALLOWED_USERS is admin
-if not ADMIN_USERS and ALLOWED_USERS:
-    ADMIN_USERS = ALLOWED_USERS.copy()
-
 
 # ── Guide text formatter ──────────────────────────────
 def format_guide_text(text: str) -> str:
@@ -171,7 +167,13 @@ async def health():
 
 @app.get("/api/auth")
 async def auth(user=Depends(require_telegram_user)):
-    return {"ok": True, "user_id": user.get("id"), "name": user.get("first_name")}
+    uid = user.get("id", 0)
+    return {
+        "authorized": True,
+        "user_id": uid,
+        "first_name": user.get("first_name", ""),
+        "is_admin": uid in ADMIN_USERS,
+    }
 
 _categories_cache = None
 _categories_cache_time = 0
@@ -212,6 +214,23 @@ async def categories(user=Depends(require_telegram_user)):
     _categories_cache_time = now
     return result
 
+@app.get("/api/category/{key}")
+async def category(key: str, user=Depends(require_telegram_user)):
+    guides = await get_guides_by_category(key)
+    if guides is None:
+        raise HTTPException(status_code=404, detail="Категория не найдена")
+    cat = await get_category(key)
+    return {
+        "category": {"key": key, "title": cat["title"] if cat else key},
+        "items": [
+            {
+                "key":   g["key"],
+                "title": g["title"],
+                "icon":  g["icon_url"],
+            }
+            for g in guides
+        ]
+    }
 
 @app.get("/api/guide/{key}")
 async def guide(key: str, user=Depends(require_telegram_user)):
