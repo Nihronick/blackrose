@@ -176,20 +176,30 @@ async def auth(user=Depends(require_telegram_user)):
 
 @app.get("/api/categories")
 async def categories(user=Depends(require_telegram_user)):
-    cats = await get_categories()
-    result = []
-    for cat in cats:
-        guides = await get_guides_by_category(cat["key"])
-        result.append({
-            "key":    cat["key"],
-            "title":  cat["title"],
-            "icon":   cat["icon_url"],
-            "guides": [
-                {"key": g["key"], "title": g["title"], "icon": g["icon_url"]}
-                for g in guides
-            ],
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        cats = await conn.fetch(
+            "SELECT * FROM categories ORDER BY sort_order, key"
+        )
+        guides = await conn.fetch(
+            "SELECT key, category_key, title, icon_url FROM guides ORDER BY sort_order, key"
+        )
+    
+    guides_by_cat = {}
+    for g in guides:
+        guides_by_cat.setdefault(g["category_key"], []).append({
+            "key": g["key"], "title": g["title"], "icon": g["icon_url"]
         })
-    return result
+    
+    return [
+        {
+            "key":    c["key"],
+            "title":  c["title"],
+            "icon":   c["icon_url"],
+            "guides": guides_by_cat.get(c["key"], []),
+        }
+        for c in cats
+    ]
 
 
 @app.get("/api/guide/{key}")
