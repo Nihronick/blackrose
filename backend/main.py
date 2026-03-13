@@ -180,30 +180,34 @@ CACHE_TTL = 60  # секунд
 @app.get("/api/categories")
 async def categories(user=Depends(require_telegram_user)):
     global _categories_cache, _categories_cache_time
-    
+
     now = time.time()
     if _categories_cache and (now - _categories_cache_time) < CACHE_TTL:
         return _categories_cache
-    
+
     pool = await get_pool()
     async with pool.acquire() as conn:
         cats = await conn.fetch("SELECT * FROM categories ORDER BY sort_order, key")
         guides = await conn.fetch(
             "SELECT key, category_key, title, icon_url FROM guides ORDER BY sort_order, key"
         )
-    
-    guides_by_cat = {}
+
+    count_by_cat = {}
     for g in guides:
-        guides_by_cat.setdefault(g["category_key"], []).append({
-            "key": g["key"], "title": g["title"], "icon": g["icon_url"]
-        })
-    
-    result = [
-        {"key": c["key"], "title": c["title"], "icon": c["icon_url"],
-         "guides": guides_by_cat.get(c["key"], [])}
-        for c in cats
-    ]
-    
+        count_by_cat[g["category_key"]] = count_by_cat.get(g["category_key"], 0) + 1
+
+    result = {
+        "categories": [
+            {
+                "key":   c["key"],
+                "title": c["title"],
+                "icon":  c["icon_url"],
+                "count": count_by_cat.get(c["key"], 0),
+            }
+            for c in cats
+        ]
+    }
+
     _categories_cache = result
     _categories_cache_time = now
     return result
