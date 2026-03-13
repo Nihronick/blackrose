@@ -69,23 +69,26 @@ def format_guide_text(text: str) -> str:
 # ── Telegram auth ─────────────────────────────────────
 def verify_telegram_init_data(init_data: str) -> dict | None:
     try:
-        parsed   = parse_qs(init_data, strict_parsing=True)
-        hash_val = parsed.pop("hash", [None])[0]
+        parsed   = parse_qs(init_data, keep_blank_values=True)
+        hash_val = parsed.get("hash", [None])[0]
         if not hash_val:
             return None
         check_string = "\n".join(
-            f"{k}={v[0]}" for k, v in sorted(parsed.items())
+            f"{k}={v[0]}" for k, v in sorted(parsed.items()) if k != "hash"
         )
         secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
         expected   = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected, hash_val):
+            logger.warning("HMAC mismatch")
             return None
-        auth_date = int(parsed.get("auth_date", [0])[0])
+        auth_date = int(parsed.get("auth_date", ["0"])[0])
         if INIT_DATA_MAX_AGE > 0 and (time.time() - auth_date) > INIT_DATA_MAX_AGE:
+            logger.warning("initData expired")
             return None
         user_str = parsed.get("user", [None])[0]
         return json.loads(user_str) if user_str else None
-    except Exception:
+    except Exception as e:
+        logger.error(f"verify_telegram_init_data error: {e}")
         return None
 
 
