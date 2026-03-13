@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiFetch, apiPut, apiDelete } from '../api'
 import { haptic } from '../haptic'
+import { IconLibrary } from '../components/IconLibrary'
 
 // ── API helpers ───────────────────────────────────────
 const adminFetch  = (path)       => apiFetch(path)
@@ -381,11 +382,13 @@ export function AdminView({ onClose }) {
       <div className="admin-tabs">
         <button className={tab==='guides'     ? 'active':''} onClick={()=>setTab('guides')}>Гайды</button>
         <button className={tab==='categories' ? 'active':''} onClick={()=>setTab('categories')}>Категории</button>
+        <button className={tab==='icons'      ? 'active':''} onClick={()=>setTab('icons')}>🎨 Иконки</button>
       </div>
 
       <div className="admin-content">
         {tab === 'guides'     && <GuidesTab categories={categories} />}
         {tab === 'categories' && <CategoriesTab categories={categories} onReload={loadCategories} />}
+        {tab === 'icons'      && <IconLibrary />}
       </div>
     </div>
   )

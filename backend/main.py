@@ -347,9 +347,32 @@ async def admin_delete_guide(key: str, user=Depends(require_admin)):
 
 @app.get("/api/admin/icons")
 async def admin_icons(user=Depends(require_admin)):
-    """Return list of available icon keys for the editor."""
-    from icons import ICONS
-    return [{"key": k, "url": v} for k, v in ICONS.items()]
+    """Flat list of all icons for the icon picker."""
+    from icons import ALL_ICONS
+    return [{"key": k, "url": v} for k, v in ALL_ICONS.items()]
+
+
+@app.get("/api/admin/icons/grouped")
+async def admin_icons_grouped(user=Depends(require_admin)):
+    """Icons grouped by category for the icon library."""
+    from icons import CLASS_ETC, PROMOTION, SKILLS, SPIRIT, INFO_CATEGORIES, ADVENTURES, GUILD
+    groups = [
+        {"id": "class_etc",       "label": "⚔️ Классы, мечи, статы",  "icons": CLASS_ETC},
+        {"id": "promotion",       "label": "🏆 Промоуты",              "icons": PROMOTION},
+        {"id": "skills",          "label": "✨ Навыки",                "icons": SKILLS},
+        {"id": "spirit",          "label": "👻 Духи и фамильяры",      "icons": SPIRIT},
+        {"id": "adventures",      "label": "🗺️ Приключения",           "icons": ADVENTURES},
+        {"id": "info_categories", "label": "📋 Категории информации",  "icons": INFO_CATEGORIES},
+        {"id": "guild",           "label": "🛡️ Гильдия",              "icons": GUILD},
+    ]
+    return [
+        {
+            "id":    g["id"],
+            "label": g["label"],
+            "icons": [{"key": k, "url": v} for k, v in g["icons"].items()],
+        }
+        for g in groups
+    ]
 
 
 # ── Search endpoint ───────────────────────────────────

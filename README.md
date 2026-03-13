@@ -1,6 +1,6 @@
 # BlackRose Guides 🌹
 
-Telegram Mini App — справочник гильдии BlackRose для игры Legend Slayer.  
+Telegram Mini App — справочник гильдии BlackRose для игры Slayer Legend.  
 Позволяет участникам гильдии быстро находить гайды прямо в Telegram, не выходя из чата.
 
 ---
@@ -115,20 +115,6 @@ cd bot
 pip install -r requirements.txt
 python main.py
 ```
-
----
-
-## Миграция данных в PostgreSQL
-
-Если база данных пустая, запустите скрипт один раз:
-
-```bash
-cd backend
-DATABASE_URL=postgresql://... python migrate_content.py
-```
-
-После успешной миграции файлы `guides_original.py`, `guides.py` и `migrate_content.py`
-можно удалить — они больше не используются.
 
 ---
 

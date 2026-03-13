@@ -60,3 +60,7 @@ export async function apiSearch(query) {
   const q = encodeURIComponent(query.trim())
   return apiFetch(`/api/search?q=${q}`)
 }
+
+export async function apiIconsGrouped() {
+  return apiFetch('/api/admin/icons/grouped')
+}
