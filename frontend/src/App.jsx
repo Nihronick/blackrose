@@ -41,19 +41,18 @@ useEffect(() => {
   const tg = window.Telegram?.WebApp
   const doAuth = () => {
     apiFetch('/api/auth')
-      .then(data => setIsAdmin(data.is_admin === true))
+      .then(data => {
+        if (data.is_admin === true) setIsAdmin(true)
+      })
       .catch(e => {
         if (e.message === 'ACCESS_DENIED') { setAccessMsg(e.detail); setView('access_denied') }
       })
   }
-  if (tg?.initData) { doAuth() } else { setTimeout(doAuth, 500) }
+  // Всегда ждём немного чтобы Telegram успел инициализировать WebApp
+  const delay = tg?.initData ? 0 : 300
+  setTimeout(doAuth, delay)
 }, [])
-  //временные логи
-  useEffect(() => {
-  console.log('=== TELEGRAM DEBUG ===')
-  console.log('initData:', window.Telegram?.WebApp?.initData)
-  console.log('user:', window.Telegram?.WebApp?.initDataUnsafe?.user)
-}, [])
+
   // Back navigation
   const goBack = useCallback(() => {
     haptic.light()
@@ -162,7 +161,5 @@ useEffect(() => {
         />
       )}
     </div>
-    // Временные логи 
-    
   )
 }

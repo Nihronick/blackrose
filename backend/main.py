@@ -122,7 +122,7 @@ async def require_telegram_user(request: Request) -> dict:
 async def require_admin(request: Request) -> dict:
     user = await require_telegram_user(request)
     uid  = user.get("id", 0)
-    if uid != 0 and uid not in ADMIN_USERS:
+    if uid not in ADMIN_USERS:
         logger.warning(f"Admin access denied for user {uid}")
         raise HTTPException(status_code=403, detail="Нет прав администратора")
     return user
@@ -181,6 +181,11 @@ async def auth(user=Depends(require_telegram_user)):
 _categories_cache = None
 _categories_cache_time = 0
 CACHE_TTL = 60  # секунд
+
+def invalidate_categories_cache():
+    global _categories_cache, _categories_cache_time
+    _categories_cache = None
+    _categories_cache_time = 0
 
 @app.get("/api/categories")
 async def categories(user=Depends(require_telegram_user)):
@@ -278,6 +283,7 @@ async def admin_categories(user=Depends(require_admin)):
 @app.put("/api/admin/category/{key}")
 async def admin_upsert_category(key: str, body: CategoryIn, user=Depends(require_admin)):
     await upsert_category(key, body.title, body.icon_url, body.sort_order)
+    invalidate_categories_cache()
     return {"ok": True}
 
 
@@ -287,6 +293,7 @@ async def admin_delete_category(key: str, user=Depends(require_admin)):
     if not cat:
         raise HTTPException(status_code=404, detail="Категория не найдена")
     await delete_category(key)
+    invalidate_categories_cache()
     return {"ok": True}
 
 
@@ -324,6 +331,7 @@ async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin
         document=body.document,
         sort_order=body.sort_order,
     )
+    invalidate_categories_cache()
     return {"ok": True}
 
 
@@ -333,6 +341,7 @@ async def admin_delete_guide(key: str, user=Depends(require_admin)):
     if not g:
         raise HTTPException(status_code=404, detail="Гайд не найден")
     await delete_guide(key)
+    invalidate_categories_cache()
     return {"ok": True}
 
 
@@ -341,3 +350,23 @@ async def admin_icons(user=Depends(require_admin)):
     """Return list of available icon keys for the editor."""
     from icons import ICONS
     return [{"key": k, "url": v} for k, v in ICONS.items()]
+
+
+# ── Search endpoint ───────────────────────────────────
+@app.get("/api/search")
+async def search(q: str = "", user=Depends(require_telegram_user)):
+    if not q or len(q.strip()) < 2:
+        return {"results": []}
+    from database import search_guides
+    guides = await search_guides(q.strip())
+    return {
+        "results": [
+            {
+                "key":   g["key"],
+                "title": g["title"],
+                "icon":  g["icon_url"],
+                "category_key": g["category_key"],
+            }
+            for g in guides
+        ]
+    }

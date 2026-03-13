@@ -55,3 +55,8 @@ export async function apiDelete(endpoint) {
   }
   return res.json()
 }
+
+export async function apiSearch(query) {
+  const q = encodeURIComponent(query.trim())
+  return apiFetch(`/api/search?q=${q}`)
+}

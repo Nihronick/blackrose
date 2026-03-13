@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { apiFetch } from '../api'
+import { apiFetch, apiSearch } from '../api'
 import { haptic } from '../haptic'
 import { pluralize } from '../utils'
 import { SkeletonList } from '../components/Skeleton'
@@ -12,6 +12,7 @@ export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLo
   const [error, setError]           = useState(null)
   const [search, setSearch]         = useState('')
   const [searchResults, setResults] = useState(null)
+  const [searching, setSearching]   = useState(false)
   const scrollRef  = useRef(null)
   const searchTimer = useRef(null)
 
@@ -30,12 +31,13 @@ export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLo
 
   useEffect(() => {
     clearTimeout(searchTimer.current)
-    if (search.trim().length < 2) { setResults(null); return }
+    if (search.trim().length < 2) { setResults(null); setSearching(false); return }
+    setSearching(true)
     searchTimer.current = setTimeout(async () => {
       try {
-        const res = await apiFetch(`/api/search?q=${encodeURIComponent(search.trim())}`)
+        const res = await apiSearch(search)
         setResults(res.results)
-      } catch {}
+      } catch {} finally { setSearching(false) }
     }, 300)
     return () => clearTimeout(searchTimer.current)
   }, [search])
@@ -43,6 +45,9 @@ export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLo
   const { pullY, refreshing } = usePullToRefresh(scrollRef, loadCategories, !search)
   const isSearch = searchResults !== null
   const list     = isSearch ? searchResults : categories
+
+  // Найти название категории по ключу
+  const getCatTitle = (key) => categories?.find(c => c.key === key)?.title ?? key
 
   return (
     <div className="view-scroll" ref={scrollRef}>
@@ -70,8 +75,8 @@ export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLo
       <PtrIndicator pullY={pullY} refreshing={refreshing} />
 
       {error && <div className="list"><div className="state-error">{error}</div></div>}
-      {!error && !list && <SkeletonList count={7} />}
-      {!error && list && (
+      {!error && ((!list && !isSearch) || searching) && <SkeletonList count={7} />}
+      {!error && !searching && list && (
         <div className="list">
           {list.length === 0
             ? <div className="state-empty">Ничего не найдено</div>
@@ -85,7 +90,9 @@ export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLo
                       {!isSearch && item.count !== undefined && (
                         <span className="count-pill">{item.count} {pluralize(item.count,'гайд','гайда','гайдов')}</span>
                       )}
-                      {isSearch && item.preview && <span className="card-subtitle">{item.preview}</span>}
+                      {isSearch && (
+                        <span className="card-subtitle">📂 {getCatTitle(item.category_key)}</span>
+                      )}
                     </div>
                   </div>
                   <span className="card-arrow">›</span>
