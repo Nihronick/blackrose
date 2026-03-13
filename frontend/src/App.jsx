@@ -36,23 +36,18 @@ export function App() {
   const tgUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
   const [isAdmin, setIsAdmin] = useState(false)
 
-  // В useEffect с auth:
-  apiFetch('/api/auth')
-  .then(data => setIsAdmin(data.is_admin === true))
-  .catch(e => {
-    if (e.message === 'ACCESS_DENIED') { setAccessMsg(e.detail); setView('access_denied') }
-  })
-
-  // Auth
-  useEffect(() => {
-    const tg = window.Telegram?.WebApp
-    const doAuth = () => {
-      apiFetch('/api/auth').catch(e => {
+// Auth
+useEffect(() => {
+  const tg = window.Telegram?.WebApp
+  const doAuth = () => {
+    apiFetch('/api/auth')
+      .then(data => setIsAdmin(data.is_admin === true))
+      .catch(e => {
         if (e.message === 'ACCESS_DENIED') { setAccessMsg(e.detail); setView('access_denied') }
       })
-    }
-    if (tg?.initData) { doAuth() } else { setTimeout(doAuth, 500) }
-  }, [])
+  }
+  if (tg?.initData) { doAuth() } else { setTimeout(doAuth, 500) }
+}, [])
 
   // Back navigation
   const goBack = useCallback(() => {
