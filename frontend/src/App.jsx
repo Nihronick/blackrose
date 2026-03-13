@@ -10,6 +10,7 @@ import { CategoriesView } from './views/CategoriesView'
 import { GuidesView } from './views/GuidesView'
 import { GuideView } from './views/GuideView'
 import { FavoritesView } from './views/FavoritesView'
+import { AdminView } from './views/AdminView'
 
 const BACK_ICON = (
   <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -32,6 +33,15 @@ export function App() {
   const [showQN, setShowQN]     = useState(false)
 
   const { favorites, loaded: favsLoaded, toggle: toggleFav, isFavorite } = useFavorites()
+  const tgUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // В useEffect с auth:
+  apiFetch('/api/auth')
+  .then(data => setIsAdmin(data.is_admin === true))
+  .catch(e => {
+    if (e.message === 'ACCESS_DENIED') { setAccessMsg(e.detail); setView('access_denied') }
+  })
 
   // Auth
   useEffect(() => {
@@ -100,6 +110,14 @@ export function App() {
           </button>
         </div>
       )}
+      {view === 'categories' && isAdmin && (
+        <div style={{padding:'0 16px 8px'}}>
+          <button className="fav-bar-btn" onClick={() => { haptic.light(); setView('admin') }}
+            style={{color:'var(--text-secondary)'}}>
+            ⚙️ <span>Администрирование</span>
+          </button>
+        </div>
+      )}
 
       {/* Views */}
       {view === 'access_denied' && <AccessDeniedView message={accessMsg} />}
@@ -126,6 +144,9 @@ export function App() {
           onSelectGuide={openGuide}
           onToggle={toggleFav}
         />
+      )}
+      {view === 'admin' && (
+        <AdminView onClose={() => setView('categories')} />
       )}
 
       {/* FAB */}
