@@ -75,7 +75,7 @@ CLASS_ETC = {
     "ds": _url("class_etc/DEATH_STRIKE.png"),
     "atk": _url("class_etc/ATK.png"),
     "crit": _url("class_etc/CRIT_DMG.png"),
-    "crit%": _url("class_etc/CRIT%.png"),
+    "crit2": _url("class_etc/CRIT2.png"),
     "hp": _url("class_etc/HP.png"),
     "hpr": _url("class_etc/HP_RECOVERY.png"),
     "diamond": _url("class_etc/diamond.png"),
@@ -102,6 +102,30 @@ CLASS_ETC = {
     "raid": _url("class_etc/raid.png"),
     "relic": _url("class_etc/relic.png"),
     "woman": _url("class_etc/woman.png"),
+    "skillbook": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1290965217345540188.webp?size=44",
+    "BlackOrb": "https://cdn.discordapp.com/emojis/1209708648952107028.webp?size=44",
+    "cube": _url("class_etc/cube.png"),
+    "diary": _url("class_etc/diary.png"),
+    "drevo": _url("class_etc/drevo.png"),
+    "fam_altar": _url("class_etc/fam_altar.png"),
+    "fam_gem": _url("class_etc/fam_gem.png"),
+    "guild_cooking": _url("class_etc/guild_cooking.png"),
+    "hp_reg_stone": _url("class_etc/hp_reg_stone.png"),
+    "hp_stone": _url("class_etc/hp_reg_stone.png"),
+    "mithic_skill": _url("class_etc/mithic_skill.png"),
+    "quest": _url("class_etc/quest.png"),
+    "random_legendary_spirit": _url("class_etc/random_legendary_spirit.png"),
+    "random_spirit": _url("class_etc/random_spirit.png"),
+    "red_soul": _url("class_etc/red_soul.png"),
+    "sin_soul": _url("class_etc/sin_soul.png"),
+    "skill_master": _url("class_etc/skill_master.png"),
+    "summon_class": _url("class_etc/summon_class.png"),
+    "summon_sword": _url("class_etc/summon_sword.png"),
+    "chest": _url("class_etc/chest.png"),
+    "seruigem": _url("class_etc/seruigem.png"),
+    "shard": _url("class_etc/shard.png"),
+    "shop": _url("class_etc/shop.png"),
+    "shrine": _url("class_etc/shrine.png"),
 }
 
 # ═══════════════════════════════════════════════════════
@@ -122,6 +146,18 @@ PROMOTION = {
     "promo_ancient": _url("promotion/Ancient_Canine.png"),
     "promo_gigalor": _url("promotion/Gigarock.png"),
     "cat_promoutes": _url("promotion/Warfrost.png"),
+    "promo_adamant": _url("promotion/Adamant.png"),
+    "promo_arcanite": _url("promotion/Acranite.png"),
+    "promo_stone": _url("promotion/Stone.png"),
+    "promo_silver": _url("promotion/Silver.png"),
+    "promo_orichalcum": _url("promotion/Orichalcum.png"),
+    "promo_gold": _url("promotion/Gold.png"),
+    "promo_iron": _url("promotion/Iron.png"),
+    "promo_bronze": _url("promotion/Bronze.png"),
+    "promo_diadust": _url("promotion/Diadust.png"),
+    "promo_eisenhart": _url("promotion/Eisenhart.png"),
+    "promo_Eldenwood": _url("promotion/Eldenwood.png"),
+    "promo_mithrill": _url("promotion/Mithrill.png"),
 }
 
 # ═══════════════════════════════════════════════════════
@@ -218,8 +254,6 @@ SPIRIT = {
     # Звёзды
     "star": _url("class_etc/star.png"),
     "starv2": _url("class_etc/star_v2.png"),
-    "awaken_e": _url("spirit/awaken_e.png"),
-    "awaken_a": _url("spirit/awaken_a.png"),
 }
 
 # ═══════════════════════════════════════════════════════
@@ -227,14 +261,8 @@ SPIRIT = {
 # ═══════════════════════════════════════════════════════
 INFO_CATEGORIES = {
     "info_general": _url("class_etc/sl_icon.png"),
-    "info_event": _url("info_event.png"),
     "info_rage": _url("skills/Rage.png"),
     "info_ads": _url("class_etc/rek_scroll.png"),
-    "info_pets": _url("info_pets.png"),
-    "info_sword": _url("info_sword.png"),
-    "info_farm": _url("info_farm.png"),
-    "info_spirit": _url("info_spirit.png"),
-    "info_build": _url("info_build.png"),
 }
 
 # ═══════════════════════════════════════════════════════
@@ -253,9 +281,7 @@ ADVENTURES = {
 # ГИЛЬДИЯ
 # ═══════════════════════════════════════════════════════
 GUILD = {
-    "guild_guild": _url("118.png"),
-    "guild_wyvern": _url("guild_wyvern.png"),
-    "guild_cooking": _url("guild_cooking.png"),
+
 }
 
 # ═══════════════════════════════════════════════════════
