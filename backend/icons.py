@@ -126,6 +126,7 @@ CLASS_ETC = {
     "shard": _url("class_etc/shard.png"),
     "shop": _url("class_etc/shop.png"),
     "shrine": _url("class_etc/shrine.png"),
+    "191": _url("class_etc/191.png"),
 }
 
 # ═══════════════════════════════════════════════════════
