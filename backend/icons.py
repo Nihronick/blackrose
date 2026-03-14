@@ -32,6 +32,7 @@ CLASS_ETC = {
     "class_c17": _url("class_etc/c17.png"),
     "class_c18": _url("class_etc/c18.png"),
     "class_c19": _url("class_etc/c19.png"),
+    "class19": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1055586742952018001.webp?size=44",
     "class_c20": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1055586744231272498.webp?size=44",
     "class_terra": _url("class_etc/Tera.png"),
     "class_nova": _url("class_etc/Nova.png"),
@@ -90,12 +91,24 @@ CLASS_ETC = {
     "legendary_spirit": _url("class_etc/legendary_spirir.png"),
     "random_epic_spirit": _url("class_etc/random_epic_spirit.png"),
     "legendary_skill": _url("class_etc/legendary_skill.png"),
+    "light_shard": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1400147911526056067.webp?size=44",
+    "stage": _url("class_etc/stage.png"),
+    "Constellation": _url("class_etc/Constellation.png"),
+    "boss": _url("class_etc/boss.png"),
+    "BR": _url("class_etc/BR.png"),
+    "cock": _url("class_etc/cock.png"),
+    "cum": _url("class_etc/cum.png"),
+    "dig": _url("class_etc/dig.png"),
+    "raid": _url("class_etc/raid.png"),
+    "relic": _url("class_etc/relic.png"),
+    "woman": _url("class_etc/woman.png"),
 }
 
 # ═══════════════════════════════════════════════════════
 # PROMOTION (Промоуты)
 # ═══════════════════════════════════════════════════════
 PROMOTION = {
+    "adamant": "https://cdn.discordapp.com/emojis/1054852905020170390.webp?size=44",
     "promo_ether": _url("promotion/Ether.png"),
     "promo_black_mithril": _url("promotion/Black_Mythril.png"),
     "promo_demonite": _url("promotion/Demon_Metal.png"),
