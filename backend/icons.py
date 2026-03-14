@@ -8,14 +8,20 @@ from urllib.parse import quote
 # БАЗОВЫЙ URL ДЛЯ ИЗОБРАЖЕНИЙ
 # ═══════════════════════════════════════════════════════
 BASE_URL = "https://raw.githubusercontent.com/Nihronick/blackrose/main/assets/images/icons"
+WSRV     = "https://wsrv.nl/?url="
+WSRV_OPT = "&output=webp&n=-1"
 
 
 def _url(path: str) -> str:
-    """Безопасное формирование URL — кодирует пробелы и спецсимволы"""
-    # Разбиваем путь на части и кодируем каждую
-    parts = path.split("/")
+    """Формирует URL иконки через wsrv.nl — отдаёт WebP на лету, кешируется навсегда."""
+    parts         = path.split("/")
     encoded_parts = [quote(part, safe="") for part in parts]
-    return f"{BASE_URL}/{'/'.join(encoded_parts)}"
+    raw           = f"{BASE_URL}/{'/'.join(encoded_parts)}"
+    # GIF оставляем как есть — wsrv.nl конвертирует их в статичный WebP,
+    # что ломает анимацию. Если анимация важна — убери проверку.
+    if path.endswith(".gif"):
+        return raw
+    return f"{WSRV}{raw}{WSRV_OPT}"
 
 
 # ═══════════════════════════════════════════════════════
