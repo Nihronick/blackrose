@@ -103,7 +103,7 @@ CLASS_ETC = {
     "relic": _url("class_etc/relic.png"),
     "woman": _url("class_etc/woman.png"),
     "skillbook": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1290965217345540188.webp?size=44",
-    "BlackOrb": "https://cdn.discordapp.com/emojis/1209708648952107028.webp?size=44",
+    "BlackOrb": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1209708648952107028.webp?size=44",
     "cube": _url("class_etc/cube.png"),
     "diary": _url("class_etc/diary.png"),
     "drevo": _url("class_etc/drevo.png"),
@@ -127,6 +127,8 @@ CLASS_ETC = {
     "shop": _url("class_etc/shop.png"),
     "shrine": _url("class_etc/shrine.png"),
     "191": _url("class_etc/191.png"),
+    "Melon2": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1134338854657208412.webp?size=44",
+    "star": "https://discord.com/assets/6dcab1360be157d5.svg",
 }
 
 # ═══════════════════════════════════════════════════════
