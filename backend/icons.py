@@ -239,9 +239,19 @@ ALL_ICONS = {
 # ═══════════════════════════════════════════════════════
 
 
+# Кеш для регистронезависимого поиска: lower(key) -> original_url
+_ICONS_LOWER: dict = {}
+
+def _build_lower_cache():
+    global _ICONS_LOWER
+    _ICONS_LOWER = {k.lower(): v for k, v in ALL_ICONS.items()}
+
+_build_lower_cache()
+
+
 def get_icon(name: str, default: str = None) -> str:
-    """Получить URL иконки по имени. Возвращает None если не найдена."""
-    return ALL_ICONS.get(name, default)
+    """Получить URL иконки по имени. Поиск регистронезависимый."""
+    return ALL_ICONS.get(name) or _ICONS_LOWER.get(name.lower(), default)
 
 
 def get_category_icons(category: str) -> dict:

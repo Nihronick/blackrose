@@ -54,6 +54,38 @@ for part in ADMIN_USERS_RAW.replace(";", ",").split(","):
 
 
 # ── Guide text formatter ──────────────────────────────
+def normalize_icon_syntax(text: str) -> str:
+    """
+    Конвертирует :key: → {{key}} и исправляет регистр ключа.
+    Примеры:
+      :pilloffire:  → {{PillarOfFire}}  (регистр исправляется по ALL_ICONS)
+      :Fam_HI:      → {{fam_hi}}        (нормализуется до реального ключа)
+      {{pillaroffire}} → {{PillarOfFire}} (тоже исправляется)
+    """
+    from icons import ALL_ICONS, _ICONS_LOWER
+
+    def resolve_key(raw: str) -> str:
+        """Найти правильный ключ (с правильным регистром) или вернуть как есть."""
+        if raw in ALL_ICONS:
+            return raw
+        return _ICONS_LOWER.get(raw.lower(), raw)
+
+    # :key: → {{key}} с исправлением регистра
+    def replace_colon(match):
+        key = resolve_key(match.group(1))
+        return f"{{{{{key}}}}}"
+
+    result = re.sub(r":(\w+):", replace_colon, text)
+
+    # {{key}} — исправить регистр если ключ известен
+    def fix_curly(match):
+        key = resolve_key(match.group(1))
+        return f"{{{{{key}}}}}"
+
+    result = re.sub(r"\{\{(\w+)\}\}", fix_curly, result)
+    return result
+
+
 def format_guide_text(text: str) -> str:
     def replace_icon(match):
         icon_name = match.group(1)
@@ -325,7 +357,7 @@ async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin
         category_key=body.category_key,
         title=body.title,
         icon_url=body.icon_url,
-        text=body.text,
+        text=normalize_icon_syntax(body.text),
         photo=body.photo,
         video=body.video,
         document=body.document,

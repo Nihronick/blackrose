@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { apiFetch, apiPut, apiDelete } from '../api'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { apiFetch, apiPut, apiDelete, apiIconsGrouped } from '../api'
 import { haptic } from '../haptic'
 import { IconLibrary } from '../components/IconLibrary'
 
@@ -15,7 +15,7 @@ function IconPreview({ url }) {
     onError={e => { e.target.style.display='none' }} />
 }
 
-// ── Icon picker ───────────────────────────────────────
+// ── Icon picker (для поля icon_url) ──────────────────
 function IconPicker({ value, onChange }) {
   const [icons, setIcons]   = useState([])
   const [open, setOpen]     = useState(false)
@@ -59,6 +59,174 @@ function IconPicker({ value, onChange }) {
             {filtered.length === 0 && <span className="icon-picker-empty">Не найдено</span>}
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+// ── Icon Insert Sheet (bottom sheet для вставки в текст) ──
+function IconInsertSheet({ onInsert, onClose }) {
+  const [groups, setGroups]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter]   = useState('')
+  const [openGroups, setOpenGroups] = useState({})
+
+  useEffect(() => {
+    apiIconsGrouped()
+      .then(data => {
+        setGroups(data)
+        // открыть первую группу по умолчанию
+        if (data[0]) setOpenGroups({ [data[0].id]: true })
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const q = filter.trim().toLowerCase()
+  const filtered = q
+    ? groups.map(g => ({ ...g, icons: g.icons.filter(i => i.key.toLowerCase().includes(q)) }))
+            .filter(g => g.icons.length > 0)
+    : groups
+
+  const toggle = (id) => setOpenGroups(p => ({ ...p, [id]: !p[id] }))
+
+  return (
+    <div className="insert-sheet-overlay" onClick={onClose}>
+      <div className="insert-sheet" onClick={e => e.stopPropagation()}>
+        <div className="insert-sheet-header">
+          <span>🎨 Выбери иконку — вставится в текст</span>
+          <button className="insert-sheet-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="insert-sheet-search">
+          <div className="search-box">
+            <span className="search-icon">
+              <svg viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" width="14" height="14">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            </span>
+            <input
+              className="search-input"
+              placeholder="Поиск..."
+              value={filter}
+              onChange={e => setFilter(e.target.value)}
+              autoFocus
+            />
+            {filter && <button className="search-clear" onClick={() => setFilter('')}>✕</button>}
+          </div>
+        </div>
+
+        <div className="insert-sheet-body">
+          {loading && <div className="admin-loading">⏳ Загрузка...</div>}
+          {filtered.map(group => (
+            <div key={group.id} className="icon-lib-group">
+              <button className="icon-lib-group-header" onClick={() => toggle(group.id)}>
+                <span>{group.label}</span>
+                <span className="icon-lib-group-count">{group.icons.length}</span>
+                <span className="icon-lib-group-arrow">
+                  {(q || openGroups[group.id]) ? '▾' : '▸'}
+                </span>
+              </button>
+              {(q || openGroups[group.id]) && (
+                <div className="insert-sheet-grid">
+                  {group.icons.map(icon => (
+                    <button
+                      key={icon.key}
+                      className="insert-sheet-item"
+                      title={`Вставить {{${icon.key}}}`}
+                      onClick={() => { onInsert(icon.key); haptic.success?.() }}
+                    >
+                      <img src={icon.url} alt={icon.key} width={30} height={30}
+                        loading="lazy" onError={e => { e.target.style.opacity='0.2' }} />
+                      <span className="insert-sheet-key">{icon.key}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          {!loading && filtered.length === 0 && (
+            <div className="state-empty">Ничего не найдено</div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Live нормализация синтаксиса иконок ──────────────
+// Конвертирует :key: → {{key}} прямо при вводе
+// Реальный регистр исправляется на бэкенде при сохранении,
+// здесь только визуальная конвертация формата
+function normalizeIconSyntax(text) {
+  // :key: → {{key}}
+  return text.replace(/:(\w+):/g, (_, key) => `{{${key}}}`)
+}
+
+// ── Textarea с вставкой иконок ────────────────────────
+function TextareaWithIcons({ value, onChange, rows = 12, placeholder }) {
+  const [showSheet, setShowSheet] = useState(false)
+  const textareaRef = useRef(null)
+
+  const handleInsert = (key) => {
+    const tag = `{{${key}}}`
+    const el  = textareaRef.current
+    if (!el) { onChange(value + tag); setShowSheet(false); return }
+
+    const start = el.selectionStart
+    const end   = el.selectionEnd
+    const next  = value.slice(0, start) + tag + value.slice(end)
+    onChange(next)
+
+    // Восстановить позицию курсора после вставки
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(start + tag.length, start + tag.length)
+    })
+    setShowSheet(false)
+  }
+
+  return (
+    <div className="textarea-with-icons">
+      <div className="textarea-toolbar">
+        <span className="textarea-toolbar-hint">
+          Используй <code>{'{{key}}'}</code> для иконок, <code>**жирный**</code>, <code>*курсив*</code>
+        </span>
+        <button
+          type="button"
+          className="btn-insert-icon"
+          onClick={() => setShowSheet(true)}
+          title="Выбрать иконку для вставки"
+        >
+          🎨 Иконки
+        </button>
+      </div>
+      <textarea
+        ref={textareaRef}
+        rows={rows}
+        value={value}
+        onChange={e => {
+          const raw = e.target.value
+          const normalized = normalizeIconSyntax(raw)
+          // Если нормализация что-то изменила — восстановить позицию курсора
+          if (normalized !== raw) {
+            const pos = e.target.selectionStart + (normalized.length - raw.length)
+            onChange(normalized)
+            requestAnimationFrame(() => {
+              if (textareaRef.current) {
+                textareaRef.current.setSelectionRange(pos, pos)
+              }
+            })
+          } else {
+            onChange(raw)
+          }
+        }}
+        placeholder={placeholder}
+      />
+      {showSheet && (
+        <IconInsertSheet
+          onInsert={handleInsert}
+          onClose={() => setShowSheet(false)}
+        />
       )}
     </div>
   )
@@ -124,8 +292,13 @@ function GuideEditor({ guide, categories, onSave, onCancel }) {
         <label>Иконка</label>
         <IconPicker value={form.icon_url} onChange={val => setForm(f=>({...f, icon_url: val}))} />
 
-        <label>Текст <span className="label-hint">— {`{{icon_name}}`} для иконок, **жирный**, *курсив*</span></label>
-        <textarea rows={12} value={form.text} onChange={set('text')} placeholder="Текст гайда..." />
+        <label>Текст</label>
+        <TextareaWithIcons
+          value={form.text}
+          onChange={val => setForm(f => ({...f, text: val}))}
+          rows={12}
+          placeholder="Текст гайда..."
+        />
 
         <label>Фото <span className="label-hint">(по одному URL на строку)</span></label>
         <textarea rows={3} value={form.photo} onChange={set('photo')} placeholder="https://..." />
@@ -217,12 +390,8 @@ function GuidesTab({ categories }) {
             </div>
             <div className="admin-item-btns">
               <button onClick={() => handleEdit(g)} title="Редактировать">✏️</button>
-              <button
-                onClick={() => handleDelete(g)}
-                disabled={deleting === g.key}
-                className="btn-danger"
-                title="Удалить"
-              >
+              <button onClick={() => handleDelete(g)} disabled={deleting === g.key}
+                className="btn-danger" title="Удалить">
                 {deleting === g.key ? '⏳' : '🗑️'}
               </button>
             </div>
@@ -320,12 +489,8 @@ function CategoriesTab({ categories, onReload }) {
             </div>
             <div className="admin-item-btns">
               <button onClick={() => openEdit(cat)} title="Редактировать">✏️</button>
-              <button
-                onClick={() => handleDelete(cat)}
-                disabled={deleting === cat.key}
-                className="btn-danger"
-                title="Удалить категорию и все её гайды"
-              >
+              <button onClick={() => handleDelete(cat)} disabled={deleting === cat.key}
+                className="btn-danger" title="Удалить">
                 {deleting === cat.key ? '⏳' : '🗑️'}
               </button>
             </div>
@@ -365,8 +530,7 @@ export function AdminView({ onClose }) {
       <div style={{padding:'24px'}}>
         <div className="admin-error">⚠️ {error}</div>
         <p style={{color:'var(--text-secondary)', fontSize:'14px', marginTop:'12px'}}>
-          Для доступа к панели администратора используйте команду <b>/admin</b> в боте
-          и открывайте приложение через inline-кнопку которую пришлёт бот.
+          Для доступа используйте команду <b>/admin</b> в боте и открывайте через inline-кнопку.
         </p>
       </div>
     </div>
