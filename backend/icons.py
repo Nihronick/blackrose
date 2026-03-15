@@ -209,6 +209,9 @@ SKILLS = {
     "WaterSlash": _url("skills/WaterSlash.png"),
     "WindSword": _url("skills/WindSword.png"),
     "WrathOfGods": _url("skills/WrathOfGods.png"),
+    "FireSlash": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1054837281246163054.webp?size=44",
+    "IceStone": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1054837289466986589.webp?size=44",
+    "LightningSlash": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1054837295062188053.webp?size=44",
 }
 
 # ═══════════════════════════════════════════════════════
@@ -221,7 +224,7 @@ SPIRIT = {
     "spirit_sala": _url("spirits/Sala.png"),
     "spirit_mum": _url("spirits/Mum.png"),
     "spirit_bo": _url("spirits/Bo.png"),
-    "spirit_radon": "https://cdn.discordapp.com/emojis/1129588019763089488.webp?size=44",
+    "spirit_radon": "https://wsrv.nl/?url=cdn.discordapp.com/emojis/1129588019763089488.webp?size=44",
     "spirit_zappy": _url("spirits/Zappy.png"),
     "spirit_kart": _url("spirits/Kart.png"),
     "spirit_herh": _url("spirits/Herh.png"),
