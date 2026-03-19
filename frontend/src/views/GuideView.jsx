@@ -34,11 +34,70 @@ function DocBlock({ url }) {
   )
 }
 
-export function GuideView({ guideKey, isFavorite, onToggleFavorite }) {
+// ── Cyberlink Preview Popup ────────────────────────────
+function CyberlinkPopup({ guideKey, title, icon, onOpen, onClose }) {
+  const [loading, setLoading] = useState(false)
+  const [preview, setPreview] = useState(null)
+
+  useEffect(() => {
+    setLoading(true)
+    apiFetch(`/api/guide/${guideKey}`)
+      .then(res => setPreview(res))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [guideKey])
+
+  return (
+    <div className="cyberlink-popup-overlay" onClick={onClose}>
+      <div className="cyberlink-popup" onClick={e => e.stopPropagation()}>
+        <div className="cyberlink-popup-header">
+          {icon && <img src={icon} alt="" width={28} height={28} className="cyberlink-popup-icon"
+            onError={e => e.target.style.display='none'}/>}
+          <span className="cyberlink-popup-title">{title}</span>
+          <button className="cyberlink-popup-close" onClick={onClose}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="16" height="16">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="cyberlink-popup-body">
+          {loading && (
+            <div className="cyberlink-popup-loading">
+              <div className="cyberlink-spinner"/>
+            </div>
+          )}
+          {!loading && preview && (
+            <div
+              className="cyberlink-popup-text guide-content"
+              dangerouslySetInnerHTML={{ __html: preview.text }}
+            />
+          )}
+          {!loading && !preview && (
+            <div className="cyberlink-popup-error">Не удалось загрузить гайд</div>
+          )}
+        </div>
+
+        <div className="cyberlink-popup-footer">
+          <button className="cyberlink-open-btn" onClick={() => { onOpen(guideKey); onClose() }}>
+            Открыть гайд
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function GuideView({ guideKey, isFavorite, onToggleFavorite, onOpenGuide }) {
   const [guide, setGuide]       = useState(null)
   const [error, setError]       = useState(null)
   const [lightbox, setLightbox] = useState(null)
-  const scrollRef = useRef(null)
+  const [cyberlink, setCyberlink] = useState(null) // { key, title, icon }
+  const scrollRef  = useRef(null)
+  const contentRef = useRef(null)
 
   const load = useCallback(async () => {
     try {
@@ -50,6 +109,27 @@ export function GuideView({ guideKey, isFavorite, onToggleFavorite }) {
   }, [guideKey])
 
   useEffect(() => { load() }, [load])
+
+  // ── Cyberlink click handler ──────────────────────────
+  // Перехватываем клики по data-guide-key элементам через делегирование
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+
+    const handleClick = (e) => {
+      const link = e.target.closest('a[data-guide-key]')
+      if (!link) return
+      e.preventDefault()
+      haptic.light()
+      const key   = link.dataset.guideKey
+      const title = link.dataset.guideTitle || key
+      const icon  = link.dataset.guideIcon  || ''
+      setCyberlink({ key, title, icon })
+    }
+
+    el.addEventListener('click', handleClick)
+    return () => el.removeEventListener('click', handleClick)
+  }, [guide])
 
   const { pullY, refreshing } = usePullToRefresh(scrollRef, load)
 
@@ -72,7 +152,13 @@ export function GuideView({ guideKey, isFavorite, onToggleFavorite }) {
                 size={36}
               />
             </div>
-            <div className="guide-content" dangerouslySetInnerHTML={{ __html: guide.text }} />
+
+            <div
+              ref={contentRef}
+              className="guide-content"
+              dangerouslySetInnerHTML={{ __html: guide.text }}
+            />
+
             {(guide.photo || []).filter(s => s && !s.startsWith('Ag')).map((src, i) => (
               <img key={i} src={src} className="guide-photo" loading="lazy" alt=""
                 onError={e => e.target.style.display='none'}
@@ -83,7 +169,18 @@ export function GuideView({ guideKey, isFavorite, onToggleFavorite }) {
           </div>
         )}
       </div>
+
       {lightbox && <Lightbox src={lightbox} onClose={() => setLightbox(null)} />}
+
+      {cyberlink && (
+        <CyberlinkPopup
+          guideKey={cyberlink.key}
+          title={cyberlink.title}
+          icon={cyberlink.icon}
+          onOpen={onOpenGuide}
+          onClose={() => setCyberlink(null)}
+        />
+      )}
     </>
   )
 }
