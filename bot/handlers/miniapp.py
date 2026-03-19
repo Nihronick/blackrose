@@ -1,10 +1,7 @@
 """
-Bot handlers v2.1
-Ключевое изменение:
-  Reply-кнопка с WebAppInfo НЕ передаёт initData — это ограничение Telegram.
-  Поэтому для всех пользователей (не только админов) используем INLINE-кнопку.
-  Reply-клавиатура оставлена только как визуальный якорь без web_app,
-  а реальный вход — всегда через inline-кнопку в сообщении.
+Bot handlers v2.2
+Вход — только через inline-кнопку в одном сообщении.
+Reply-клавиатура полностью убрана (не передаёт initData, визуальный мусор).
 """
 import urllib.parse
 import aiohttp
@@ -14,7 +11,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import (
     InlineKeyboardButton, InlineKeyboardMarkup,
     InlineQueryResultArticle, InputTextMessageContent,
-    KeyboardButton, Message, ReplyKeyboardMarkup,
+    Message, ReplyKeyboardRemove,
     WebAppInfo, InlineQuery,
 )
 from config import ADMIN_USERS, MINIAPP_URL, API_URL
@@ -25,21 +22,8 @@ miniapp_router = Router()
 
 # ── Keyboards ─────────────────────────────────────────
 
-def get_persistent_keyboard() -> ReplyKeyboardMarkup:
-    """
-    Постоянная reply-клавиатура БЕЗ web_app.
-    Служит подсказкой — при нажатии бот отправит inline-кнопку через /guides.
-    Reply + WebAppInfo не передаёт initData, поэтому не используем.
-    """
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📖 Открыть гайды")]],
-        resize_keyboard=True,
-        is_persistent=True,
-    )
-
-
 def get_open_keyboard(url: str | None = None) -> InlineKeyboardMarkup:
-    """Inline-кнопка входа для обычных пользователей — передаёт initData корректно."""
+    """Inline-кнопка входа — единственный способ передать initData корректно."""
     return InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(
             text="📖 Открыть гайды",
@@ -93,12 +77,12 @@ async def cmd_start(message: Message):
     if args.startswith("guide_"):
         guide_key = args[6:]
         await message.answer(
-            f"👋 <b>{user.first_name}</b>!\n\n🗡 Нажмите кнопку, чтобы открыть гайд:",
+            f"👋 <b>{user.first_name}</b>, открываю гайд:",
             parse_mode="HTML",
-            reply_markup=get_persistent_keyboard(),
+            reply_markup=ReplyKeyboardRemove(),
         )
         await message.answer(
-            "⬇️ Откройте гайд:",
+            "⬇️",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                 InlineKeyboardButton(
                     text="📖 Открыть гайд",
@@ -108,42 +92,17 @@ async def cmd_start(message: Message):
         )
         return
 
-    # Обычный /start — всем показываем inline-кнопку
-    await message.answer(
+    # Одно сообщение + одна кнопка — для всех
+    keyboard = get_admin_keyboard() if is_admin else get_open_keyboard()
+    text = (
         f"👋 Привет, <b>{user.first_name}</b>!\n\n"
-        f"🗡 Добро пожаловать в <b>BlackRose</b>.\n\n"
-        f"Нажмите кнопку ниже, чтобы открыть справочник гильдии.\n\n"
-        f"<i>Кнопка «📖 Открыть гайды» внизу экрана тоже работает — "
-        f"нажмите её и бот пришлёт актуальную ссылку.</i>",
-        parse_mode="HTML",
-        reply_markup=get_persistent_keyboard(),
+        f"🗡 Добро пожаловать в <b>BlackRose</b> — справочник гильдии."
     )
-    await message.answer(
-        "⬇️ Нажмите здесь для входа:",
-        reply_markup=get_open_keyboard(),
-    )
-
     if is_admin:
-        await message.answer(
-            "🔑 <b>Вы администратор.</b>\n\n"
-            "Для доступа к панели управления используйте кнопку ниже "
-            "или команду /admin.",
-            parse_mode="HTML",
-            reply_markup=get_admin_keyboard(),
-        )
+        text += "\n\n🔑 <i>Вы вошли как администратор.</i>"
 
-
-# ── Reply-кнопка «📖 Открыть гайды» ──────────────────
-# Пользователь нажал reply-кнопку → бот присылает inline-кнопку с initData
-
-@miniapp_router.message(lambda m: m.text == "📖 Открыть гайды")
-async def reply_open_guides(message: Message):
-    user = message.from_user
-    logger.info(f"📖 reply-кнопка uid={user.id}")
-    await message.answer(
-        "⬇️ Нажмите кнопку ниже для входа:",
-        reply_markup=get_open_keyboard(),
-    )
+    await message.answer(text, parse_mode="HTML", reply_markup=ReplyKeyboardRemove())
+    await message.answer("⬇️", reply_markup=keyboard)
 
 
 # ── /guides ───────────────────────────────────────────
@@ -153,7 +112,7 @@ async def cmd_guides(message: Message):
     user = message.from_user
     logger.info(f"📖 /guides uid={user.id}")
     await message.answer(
-        "🗡 <b>BlackRose Guides</b>\n\nНажмите кнопку ниже для входа:",
+        "🗡 <b>BlackRose Guides</b> — справочник гильдии",
         parse_mode="HTML",
         reply_markup=get_open_keyboard(),
     )
@@ -170,9 +129,7 @@ async def cmd_admin(message: Message):
         return
     logger.info(f"⚙️ /admin uid={user.id}")
     await message.answer(
-        "⚙️ <b>Панель администратора</b>\n\n"
-        "Нажмите кнопку ниже для входа.\n"
-        "<i>Только эта кнопка передаёт корректные данные авторизации.</i>",
+        "⚙️ <b>Панель администратора</b>",
         parse_mode="HTML",
         reply_markup=get_admin_keyboard(),
     )
@@ -228,10 +185,8 @@ async def cmd_help(message: Message):
         "/search &lt;запрос&gt; — Найти гайд\n"
         f"{admin_text}"
         "/help — Эта справка\n\n"
-        "💡 Нажмите кнопку <b>«📖 Открыть гайды»</b> внизу — бот пришлёт актуальную ссылку.\n\n"
         "🔎 Inline-поиск: введите <code>@blackrosesl1_bot запрос</code> в любом чате.",
         parse_mode="HTML",
-        reply_markup=get_persistent_keyboard(),
     )
 
 
