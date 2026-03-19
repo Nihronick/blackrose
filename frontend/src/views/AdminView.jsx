@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { ExportImport } from '../components/ExportImport'
+import { ReorderList } from '../components/ReorderList'
+import { apiReorderGuides, apiReorderCategories } from '../api'
 import { apiFetch, apiPut, apiDelete, apiIconsGrouped } from '../api'
 import { haptic } from '../haptic'
 import { IconLibrary } from '../components/IconLibrary'
@@ -485,9 +488,14 @@ function GuidesTab({ categories }) {
 
       {loading && <div className="adm2-state-loading"><div className="adm2-spinner"/></div>}
 
-      <div className="adm2-list">
-        {visible.map(g => (
-          <div key={g.key} className="adm2-item">
+      <ReorderList
+        items={visible}
+        onReorder={async (newOrder) => {
+          const order = newOrder.map((g, i) => ({ key: g.key, sort_order: i * 10 }))
+          await apiReorderGuides(order).catch(() => {})
+        }}
+        renderItem={(g) => (
+          <div className="adm2-item" style={{background:'var(--surface)',border:'1px solid var(--separator)',borderRadius:'var(--radius)',padding:'11px 12px',display:'flex',alignItems:'center',gap:'12px'}}>
             <IconPreview url={g.icon_url}/>
             <div className="adm2-item-info">
               <div className="adm2-item-title">{g.title}</div>
@@ -504,8 +512,9 @@ function GuidesTab({ categories }) {
               </button>
             </div>
           </div>
-        ))}
-        {!loading && !visible.length && (
+        )}
+      />
+      {!loading && !visible.length && (
           <div className="adm2-state-empty">{search ? 'Ничего не найдено' : 'Нет гайдов. Создайте первый!'}</div>
         )}
       </div>
@@ -659,7 +668,7 @@ export function AdminView({ onClose }) {
         <button className="adm2-close-btn" onClick={onClose}>{IC.close}</button>
       </div>
       <div className="adm2-tabs">
-        {[['guides','Гайды'],['categories','Категории'],['icons','🎨 Иконки']].map(([id, lbl]) => (
+        {[['guides','Гайды'],['categories','Категории'],['icons','🎨 Иконки'],['export','Экспорт']].map(([id, lbl]) => (
           <button key={id} className={`adm2-tab${tab===id?' active':''}`} onClick={() => setTab(id)}>{lbl}</button>
         ))}
       </div>
@@ -667,6 +676,7 @@ export function AdminView({ onClose }) {
         {tab === 'guides'     && <GuidesTab categories={categories}/>}
         {tab === 'categories' && <CategoriesTab categories={categories} onReload={load}/>}
         {tab === 'icons'      && <IconLibrary/>}
+        {tab === 'export'     && <ExportImport/>}
       </div>
     </div>
   )

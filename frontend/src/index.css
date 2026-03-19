@@ -884,3 +884,15 @@ a.guide-cyberlink:active { transform:scale(.95); }
   font-size:.9em; font-weight:600; vertical-align:middle;
 }
 .adm2-prev-cyber::before { content:'⛓ '; font-size:10px; opacity:.7; }
+
+/* ═══ QUICK BAR (main screen — favorites + history) ═════ */
+.quick-bar { display:flex; flex-direction:column; gap:6px; padding:0 16px 8px; }
+
+/* ═══ HISTORY VIEW ══════════════════════════════════════ */
+.history-empty {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:80px 24px; text-align:center; height:100%;
+}
+.history-empty-icon { font-size:56px; margin-bottom:16px; }
+.history-empty h3 { font-size:20px; font-weight:700; margin-bottom:8px; }
+.history-empty p { color:var(--text-secondary); font-size:15px; line-height:1.6; }

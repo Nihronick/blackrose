@@ -1,29 +1,41 @@
-fix: security hardening, admin UI, FAB hold, cyberlinks
+feat: FTS search, audit log, history, reorder, export/import, inline bot
 
-Security:
-- Remove User-Agent bypass in auth (critical vulnerability)
-- Replace CORS wildcard with FRONTEND_URL env variable
-- Add bleach HTML sanitization to prevent XSS in guide text
-- Add slowapi rate limiting (200/min global, 30/min search)
-- Add URL validation for photo/video/document fields in GuideIn
+backend:
+- database.py: tsvector + GIN index для полнотекстового поиска (Russian),
+  fallback на ILIKE; auto-trigger на INSERT/UPDATE; backfill существующих строк
+- database.py: таблица guide_history — аудит create/update/delete/import
+  с snapshot и user id
+- database.py: preview (первые 80 символов без HTML) + has_photo/video/document
+  в get_guides_by_category
+- database.py: reorder_guides / reorder_categories — drag-and-drop сортировка
+- database.py: export_all / import_guides — JSON backup/restore
+- main.py: новые эндпоинты /api/admin/reorder/guides|categories
+- main.py: /api/admin/guide/{key}/history — лог изменений гайда
+- main.py: /api/admin/export, /api/admin/import
+- main.py: /api/category/{key} теперь возвращает preview + has_photo/video/document
+- main.py: changed_by (user_id) пишется в audit log при save/delete через admin
 
-Backend:
-- Fix N+1 query in admin_guides - single SQL instead of per-category loop
-- Add get_all_guides() to database.py
-- Add bleach==6.1.0, slowapi==0.1.9 to requirements.txt
+bot:
+- handlers/miniapp.py: reply-кнопка «📖 Открыть гайды» теперь НЕ открывает
+  WebApp напрямую (reply + WebAppInfo не передаёт initData — ограничение Telegram);
+  вместо этого бот присылает inline-кнопку в ответ — так initData передаётся корректно
+- handlers/miniapp.py: /start — inline-кнопка для всех пользователей, не только админов
+- handlers/miniapp.py: inline-режим — поиск гайдов из любого чата (@bot запрос)
+- handlers/miniapp.py: /search <запрос> — поиск без открытия приложения
+- handlers/miniapp.py: deep links — /start guide_<key> открывает конкретный гайд
+- config.py: добавлена переменная API_URL (нужна боту для поиска)
+- requirements.txt: добавлен aiohttp
 
-Frontend:
-- FabButton: reduce hold time 2500ms to 700ms, add mid-haptic at 50%
-- FabButton: replace spinning ring with SVG progress arc animation
-- AdminView: full rewrite, tabbed editor (Main/Text/Media), rich toolbar
-- GuideView: cyberlink click handler, bottom-sheet popup with preview
-- index.css: styles for progress arc FAB, cyberlinks, popup, admin UI
-
-Cyberlinks:
-- Syntax [[key]] and [[key|Custom text]] already supported by backend
-- Frontend now handles clicks and shows preview popup
-
-Cleanup:
-- Remove *.bak files from tracking
-- Fix .gitignore (add __pycache__, *.bak, .env)
-- Add FRONTEND_URL to .env.example
+frontend:
+- App.jsx: исправлен баг — onOpenGuide не передавался в GuideView,
+  из-за чего «Открыть гайд» в cyberlink popup не работал
+- App.jsx: поддержка deep link ?guide=key при загрузке
+- hooks/useHistory.js: история просмотров в Telegram CloudStorage (последние 20)
+- views/HistoryView.jsx: экран «Недавние»
+- views/GuideView.jsx: callback onGuideLoaded — уведомляет App о загруженном гайде
+  для корректного добавления в историю с title + icon
+- components/ReorderList.jsx: drag-and-drop сортировка через HTML5 Drag API
+- components/ExportImport.jsx: скачать/загрузить JSON прямо из вкладки «Экспорт»
+- views/AdminView.jsx: новая вкладка «Экспорт», drag-and-drop в списке гайдов
+- api.js: apiPost, apiReorderGuides, apiReorderCategories, apiExport, apiImport,
+  apiGuideHistory

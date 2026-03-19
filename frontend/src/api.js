@@ -64,3 +64,38 @@ export async function apiSearch(query) {
 export async function apiIconsGrouped() {
   return apiFetch('/api/admin/icons/grouped')
 }
+
+export async function apiPost(endpoint, body) {
+  const res = await fetch(`${BASE}${endpoint}`, {
+    method:  'POST',
+    headers: getHeaders(),
+    body:    JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail ?? `Ошибка ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function apiReorderGuides(order) {
+  return apiPost('/api/admin/reorder/guides', { order })
+}
+
+export async function apiReorderCategories(order) {
+  return apiPost('/api/admin/reorder/categories', { order })
+}
+
+export async function apiExport() {
+  const res = await fetch(`${BASE}/api/admin/export`, { headers: getHeaders() })
+  if (!res.ok) throw new Error(`Ошибка ${res.status}`)
+  return res.json()
+}
+
+export async function apiImport(data) {
+  return apiPost('/api/admin/import', data)
+}
+
+export async function apiGuideHistory(key) {
+  return apiFetch(`/api/admin/guide/${key}/history`)
+}
