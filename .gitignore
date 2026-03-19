@@ -1,24 +1,34 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-.venv/
-venv/
-.ruff_cache/
-logs/
-
-# Node
-node_modules/
-frontend/dist/
+*.pyd
+*.bak
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
 
 # Env
 .env
-.env.local
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
+# Logs
+*.log

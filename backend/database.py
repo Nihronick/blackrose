@@ -149,6 +149,16 @@ async def delete_guide(key: str):
         await conn.execute("DELETE FROM guides WHERE key=$1", key)
 
 
+async def get_all_guides() -> list[dict]:
+    """Все гайды одним запросом — для admin panel."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM guides ORDER BY category_key, sort_order, key"
+        )
+    return [dict(r) for r in rows]
+
+
 async def search_guides(query: str) -> list[dict]:
     pool = await get_pool()
     q = f"%{query.lower()}%"

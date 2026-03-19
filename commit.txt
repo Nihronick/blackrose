@@ -1,0 +1,29 @@
+fix: security hardening, admin UI, FAB hold, cyberlinks
+
+Security:
+- Remove User-Agent bypass in auth (critical vulnerability)
+- Replace CORS wildcard with FRONTEND_URL env variable
+- Add bleach HTML sanitization to prevent XSS in guide text
+- Add slowapi rate limiting (200/min global, 30/min search)
+- Add URL validation for photo/video/document fields in GuideIn
+
+Backend:
+- Fix N+1 query in admin_guides - single SQL instead of per-category loop
+- Add get_all_guides() to database.py
+- Add bleach==6.1.0, slowapi==0.1.9 to requirements.txt
+
+Frontend:
+- FabButton: reduce hold time 2500ms to 700ms, add mid-haptic at 50%
+- FabButton: replace spinning ring with SVG progress arc animation
+- AdminView: full rewrite, tabbed editor (Main/Text/Media), rich toolbar
+- GuideView: cyberlink click handler, bottom-sheet popup with preview
+- index.css: styles for progress arc FAB, cyberlinks, popup, admin UI
+
+Cyberlinks:
+- Syntax [[key]] and [[key|Custom text]] already supported by backend
+- Frontend now handles clicks and shows preview popup
+
+Cleanup:
+- Remove *.bak files from tracking
+- Fix .gitignore (add __pycache__, *.bak, .env)
+- Add FRONTEND_URL to .env.example

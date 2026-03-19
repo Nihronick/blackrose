@@ -8,20 +8,24 @@ import hmac
 import hashlib
 import logging
 import json
+import bleach
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs
 
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from icons import get_icon
 from database import (
     init_db, close_pool, get_pool,
     get_categories, get_category, upsert_category, delete_category,
-    get_guides_by_category, get_guide, upsert_guide, delete_guide,
+    get_guides_by_category, get_all_guides, get_guide, upsert_guide, delete_guide,
 )
 
 # ── Logging ───────────────────────────────────────────
@@ -52,6 +56,24 @@ for part in ADMIN_USERS_RAW.replace(";", ",").split(","):
     if part.lstrip("-").isdigit():
         ADMIN_USERS.add(int(part))
 
+
+# ── Bleach — разрешённые HTML-теги и атрибуты ────────
+_ALLOWED_TAGS = [
+    "strong", "em", "s", "u", "code", "h2", "h3",
+    "blockquote", "li", "a", "img", "br", "hr",
+    "span", "svg", "path", "line",
+]
+_ALLOWED_ATTRS = {
+    "a":    ["href", "target", "rel", "class",
+             "data-guide-key", "data-guide-title", "data-guide-icon"],
+    "img":  ["src", "alt", "width", "height", "class", "style",
+             "loading", "onerror"],
+    "svg":  ["viewBox", "width", "height", "fill", "stroke",
+             "stroke-width", "stroke-linecap", "class", "style"],
+    "path": ["d", "fill", "stroke", "stroke-width", "stroke-linecap"],
+    "line": ["x1", "y1", "x2", "x2", "stroke", "stroke-width"],
+    "*":    ["class", "style"],
+}
 
 # ── Guide text formatter ──────────────────────────────
 def normalize_icon_syntax(text: str) -> str:
@@ -86,15 +108,137 @@ def normalize_icon_syntax(text: str) -> str:
     return result
 
 
-def format_guide_text(text: str) -> str:
+async def resolve_guide_link(key: str) -> dict | None:
+    """Получить заголовок и иконку гайда для кибер-ссылки."""
+    try:
+        g = await get_guide(key)
+        if g:
+            return {"title": g["title"], "icon": g["icon_url"] or ""}
+    except Exception:
+        pass
+    return None
+
+
+def format_guide_text(text: str, guide_links: dict | None = None) -> str:
+    """
+    Форматирует текст гайда в HTML.
+
+    Поддерживаемый синтаксис:
+      {{icon_key}}          — иконка
+      [[guide_key]]         — кибер-ссылка на другой гайд (заголовок авто)
+      [[guide_key|Текст]]   — кибер-ссылка с произвольным текстом
+      **текст**             — жирный
+      *текст*               — курсив
+      ~~текст~~             — зачёркнутый
+      ||текст||             — спойлер
+      <u>текст</u>          — подчёркнутый
+      `текст`               — моноширинный код
+      ## Заголовок          — h2
+      ### Заголовок         — h3
+      > цитата              — blockquote
+      - элемент             — маркированный список
+      1. элемент            — нумерованный список
+      [текст](url)          — внешняя ссылка
+    """
+    # guide_links: { key -> { title, icon } } — предзагруженные данные
+    if guide_links is None:
+        guide_links = {}
+
+    # 1. Иконки {{key}}
     def replace_icon(match):
         icon_name = match.group(1)
         icon_url  = get_icon(icon_name)
-        return f'<img src="{icon_url}" alt="{icon_name}" width="20" height="20" style="vertical-align:middle;margin:0 4px;">'
+        return f'<img src="{icon_url}" alt="{icon_name}" class="inline-icon" width="20" height="20" style="vertical-align:middle;margin:0 4px;">'
     result = re.sub(r"\{\{(\w+)\}\}", replace_icon, text)
+
+    # 2. Кибер-ссылки [[key]] и [[key|Текст]]
+    def replace_guide_link(match):
+        key_part  = match.group(1)
+        label_part = match.group(2)  # None если без |Текст
+
+        if "|" in key_part:
+            key, label = key_part.split("|", 1)
+        else:
+            key   = key_part
+            label = label_part  # None
+
+        key = key.strip()
+        info = guide_links.get(key, {})
+        title = info.get("title", key)
+        icon  = info.get("icon", "")
+
+        display = label.strip() if label else title
+
+        icon_html = ""
+        if icon:
+            icon_html = f'<img src="{icon}" width="16" height="16" style="vertical-align:middle;margin-right:4px;border-radius:3px;">'
+
+        return (
+            f'<a class="guide-cyberlink" '
+            f'data-guide-key="{key}" '
+            f'data-guide-title="{title}" '
+            f'data-guide-icon="{icon}" '
+            f'href="#">'
+            f'{icon_html}{display}'
+            f'<svg class="guide-cyberlink-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-left:4px;vertical-align:middle"><path d="M3 8h10M9 4l4 4-4 4"/></svg>'
+            f'</a>'
+        )
+
+    # Поддерживаем [[key]] и [[key|Текст]]
+    result = re.sub(r"\[\[([^\]|]+)(?:\|([^\]]*))?\]\]", replace_guide_link, result)
+
+    # 3. Блочные элементы (обрабатываем построчно)
+    lines = result.split("\n")
+    out = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        # Заголовки
+        if line.startswith("### "):
+            out.append(f'<h3 class="guide-h3">{line[4:]}</h3>')
+        elif line.startswith("## "):
+            out.append(f'<h2 class="guide-h2">{line[3:]}</h2>')
+        # Цитата
+        elif line.startswith("> "):
+            out.append(f'<blockquote class="guide-quote">{line[2:]}</blockquote>')
+        # Маркированный список
+        elif line.startswith("- "):
+            out.append(f'<li class="guide-li guide-ul">{line[2:]}</li>')
+        # Нумерованный список
+        elif re.match(r"^\d+\. ", line):
+            content = re.sub(r"^\d+\. ", "", line)
+            out.append(f'<li class="guide-li guide-ol">{content}</li>')
+        # Разделитель
+        elif line.strip() == "---":
+            out.append('<hr class="guide-hr">')
+        # Обычная строка
+        else:
+            out.append(line)
+
+        i += 1
+
+    result = "\n".join(out)
+
+    # 4. Инлайн-форматирование
+    result = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", result, flags=re.DOTALL)
+    result = re.sub(r"\*(.+?)\*",     r"<em>\1</em>",          result, flags=re.DOTALL)
+    result = re.sub(r"~~(.+?)~~",     r"<s>\1</s>",            result, flags=re.DOTALL)
+    result = re.sub(r"\|\|(.+?)\|\|", r'<span class="guide-spoiler">\1</span>', result, flags=re.DOTALL)
+    result = re.sub(r"`(.+?)`",       r'<code class="guide-code">\1</code>', result, flags=re.DOTALL)
+    result = re.sub(r"\[(.+?)\]\((https?://[^\)]+)\)", r'<a href="\2" target="_blank" rel="noreferrer" class="guide-extlink">\1</a>', result)
+
+    # 5. Переносы строк (только для обычных строк, не блочных элементов)
     result = result.replace("\n", "<br>")
-    result = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", result)
-    result = re.sub(r"\*(.+?)\*",   r"<em>\1</em>",           result)
+
+    # 6. Санитизация — убрать любые теги, не входящие в whitelist
+    result = bleach.clean(
+        result,
+        tags=_ALLOWED_TAGS,
+        attributes=_ALLOWED_ATTRS,
+        strip=True,
+    )
+
     return result
 
 
@@ -126,29 +270,21 @@ def verify_telegram_init_data(init_data: str) -> dict | None:
 
 async def require_telegram_user(request: Request) -> dict:
     init_data = request.headers.get("X-Telegram-Init-Data", "")
-    if init_data:
-        user = verify_telegram_init_data(init_data)
-        if user and (not ALLOWED_USERS or user["id"] in ALLOWED_USERS):
-            return user
-        if user and user["id"] not in ALLOWED_USERS:
-            logger.warning(f"User {user.get('id')} not in whitelist")
-            raise HTTPException(status_code=403, detail="Откройте приложение через Telegram бота @blackrosesl1_bot")
 
-    ua      = request.headers.get("user-agent", "")
-    referer = request.headers.get("referer", "")
-    origin  = request.headers.get("origin", "")
-    is_tg   = (
-        "telegram" in ua.lower()
-        or "tgweb" in ua.lower()
-        or "railway.app" in referer
-        or "railway.app" in origin
-    )
-    if is_tg:
-        logger.info(f"No initData but Telegram context — allowing (UA: {ua[:80]})")
-        return {"id": 0, "first_name": "TelegramUser"}
+    if not init_data:
+        logger.warning(f"Запрос без initData: {request.url.path}")
+        raise HTTPException(status_code=403, detail="Откройте приложение через Telegram бота")
 
-    logger.warning(f"Доступ отклонён (UA: {ua[:80]})")
-    raise HTTPException(status_code=403, detail="Откройте приложение через Telegram бота @blackrosesl1_bot")
+    user = verify_telegram_init_data(init_data)
+    if not user:
+        logger.warning(f"Неверные initData для {request.url.path}")
+        raise HTTPException(status_code=403, detail="Неверные данные авторизации Telegram")
+
+    if ALLOWED_USERS and user["id"] not in ALLOWED_USERS:
+        logger.warning(f"User {user.get('id')} не в whitelist")
+        raise HTTPException(status_code=403, detail="Откройте приложение через Telegram бота @blackrosesl1_bot")
+
+    return user
 
 
 async def require_admin(request: Request) -> dict:
@@ -176,12 +312,27 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="BlackRose API", version="3.0.0", lifespan=lifespan)
 
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+_FRONTEND_URL = os.getenv("FRONTEND_URL", "")
+_CORS_ORIGINS = [o.strip() for o in _FRONTEND_URL.split(",") if o.strip()]
+# Всегда разрешаем Telegram Web и локальную разработку
+_CORS_ORIGINS += [
+    "https://web.telegram.org",
+    "https://webk.telegram.org",
+    "https://webz.telegram.org",
+    "http://localhost:5173",
+    "http://localhost:4173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Telegram-Init-Data"],
 )
 
 
@@ -274,14 +425,28 @@ async def category(key: str, user=Depends(require_telegram_user)):
 
 @app.get("/api/guide/{key}")
 async def guide(key: str, user=Depends(require_telegram_user)):
+    import asyncio
     g = await get_guide(key)
     if not g:
         raise HTTPException(status_code=404, detail="Гайд не найден")
+
+    raw_text = g["text"] or ""
+
+    # Предзагрузка данных для кибер-ссылок [[guide_key]] и [[guide_key|Текст]]
+    link_keys = list(set(k.strip() for k in re.findall(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]", raw_text)))
+
+    async def load_link(k):
+        info = await resolve_guide_link(k)
+        return k, info or {}
+
+    results = await asyncio.gather(*[load_link(k) for k in link_keys])
+    guide_links = dict(results)
+
     return {
         "key":      g["key"],
         "title":    g["title"],
         "icon":     g["icon_url"],
-        "text":     format_guide_text(g["text"] or ""),
+        "text":     format_guide_text(raw_text, guide_links=guide_links),
         "photo":    g["photo"] or [],
         "video":    g["video"] or [],
         "document": g["document"] or [],
@@ -305,6 +470,23 @@ class GuideIn(BaseModel):
     video:        list[str] = []
     document:     list[str] = []
     sort_order:   int = 0
+
+    @field_validator("photo", "video", "document", mode="before")
+    @classmethod
+    def validate_urls(cls, v):
+        if not isinstance(v, list):
+            return v
+        for url in v:
+            if url and not url.startswith(("https://", "http://")):
+                raise ValueError(f"Только http/https URL допустимы: {url!r}")
+        return v
+
+    @field_validator("icon_url", mode="before")
+    @classmethod
+    def validate_icon_url(cls, v):
+        if v and not v.startswith(("https://", "http://")):
+            raise ValueError("icon_url должен быть http/https URL")
+        return v
 
 
 @app.get("/api/admin/categories")
@@ -333,12 +515,7 @@ async def admin_delete_category(key: str, user=Depends(require_admin)):
 async def admin_guides(category_key: str = None, user=Depends(require_admin)):
     if category_key:
         return await get_guides_by_category(category_key)
-    cats = await get_categories()
-    all_guides = []
-    for cat in cats:
-        guides = await get_guides_by_category(cat["key"])
-        all_guides.extend(guides)
-    return all_guides
+    return await get_all_guides()
 
 
 @app.get("/api/admin/guide/{key}")
@@ -409,7 +586,8 @@ async def admin_icons_grouped(user=Depends(require_admin)):
 
 # ── Search endpoint ───────────────────────────────────
 @app.get("/api/search")
-async def search(q: str = "", user=Depends(require_telegram_user)):
+@limiter.limit("30/minute")
+async def search(request: Request, q: str = "", user=Depends(require_telegram_user)):
     if not q or len(q.strip()) < 2:
         return {"results": []}
     from database import search_guides
