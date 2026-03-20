@@ -190,6 +190,69 @@ async def cmd_help(message: Message):
     )
 
 
+# ── Уведомления подписчикам ───────────────────────────
+
+async def notify_subscribers(
+    bot,
+    guide_key: str,
+    guide_title: str,
+    category_key: str,
+) -> int:
+    """Fetch subscriber list from backend and push Telegram notifications.
+    Returns number of successfully sent messages."""
+    if not API_URL or not MINIAPP_URL:
+        return 0
+    try:
+        from config import API_TOKEN as _token
+        payload = {
+            "guide_key":    guide_key,
+            "guide_title":  guide_title,
+            "category_key": category_key,
+            "bot_token":    _token,
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{API_URL}/api/internal/notify",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=5),
+            ) as r:
+                if r.status != 200:
+                    logger.warning(f"notify endpoint status: {r.status}")
+                    return 0
+                data = await r.json()
+
+        user_ids = data.get("user_ids", [])
+        if not user_ids:
+            return 0
+
+        url = f"{MINIAPP_URL}?guide={guide_key}"
+        text = (
+            f"🆕 Новый гайд в <b>BlackRose</b>!\n\n"
+            f"📖 <b>{guide_title}</b>\n"
+            f"Категория: {category_key}"
+        )
+        kb = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text="📖 Открыть гайд",
+                web_app=WebAppInfo(url=url),
+            )
+        ]])
+
+        sent = 0
+        for uid in user_ids:
+            try:
+                await bot.send_message(uid, text, parse_mode="HTML", reply_markup=kb)
+                sent += 1
+            except Exception as e:
+                logger.debug(f"notify skip uid={uid}: {e}")
+
+        logger.info(f"Notifications sent: {sent}/{len(user_ids)} for guide={guide_key}")
+        return sent
+    except Exception as e:
+        logger.warning(f"notify_subscribers error: {e}")
+        return 0
+
+
 # ── Inline-режим ──────────────────────────────────────
 
 @miniapp_router.inline_query()

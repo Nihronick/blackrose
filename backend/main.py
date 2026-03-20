@@ -37,6 +37,10 @@ from database import (
     get_guides_by_category, get_all_guides, get_guide, upsert_guide, delete_guide,
     reorder_guides, get_guide_history,
     export_all, import_guides,
+    get_guide_tags, set_guide_tags, get_all_tags, get_guides_by_tag,
+    increment_views, get_top_guides,
+    get_comments, add_comment, delete_comment,
+    subscribe, unsubscribe, get_user_subscriptions, get_subscribers,
 )
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -686,13 +690,6 @@ async def admin_icons_grouped(user=Depends(require_admin)):
 # ════════════════════════════════════════════════════════════════
 # TAGS
 # ════════════════════════════════════════════════════════════════
-
-from database import (
-    get_guide_tags, set_guide_tags, get_all_tags, get_guides_by_tag,
-    increment_views, get_top_guides,
-    get_comments, add_comment, delete_comment,
-    subscribe, unsubscribe, get_user_subscriptions, get_subscribers,
-)
 
 @app.get("/api/tags")
 async def tags_list(user=Depends(require_telegram_user)):
