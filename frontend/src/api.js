@@ -99,3 +99,55 @@ export async function apiImport(data) {
 export async function apiGuideHistory(key) {
   return apiFetch(`/api/admin/guide/${key}/history`)
 }
+
+// ── Views ────────────────────────────────────────────────────
+export async function apiRecordView(key) {
+  const res = await fetch(`${BASE}/api/guide/${key}/view`, { method: 'POST', headers: getHeaders() })
+  if (!res.ok) return
+  return res.json()
+}
+
+export async function apiTopGuides() {
+  return apiFetch('/api/top')
+}
+
+// ── Tags ─────────────────────────────────────────────────────
+export async function apiTags() {
+  return apiFetch('/api/tags')
+}
+
+export async function apiGuidesByTag(tag) {
+  return apiFetch(`/api/tag/${encodeURIComponent(tag)}`)
+}
+
+export async function apiSetGuideTags(key, tags) {
+  return apiPut(`/api/admin/guide/${key}/tags`, { tags })
+}
+
+// ── Comments ─────────────────────────────────────────────────
+export async function apiGetComments(key) {
+  return apiFetch(`/api/guide/${key}/comments`)
+}
+
+export async function apiAddComment(key, text) {
+  return apiPost(`/api/guide/${key}/comments`, { text })
+}
+
+export async function apiDeleteComment(guideKey, commentId) {
+  return apiDelete(`/api/guide/${guideKey}/comments/${commentId}`)
+}
+
+// ── Subscriptions ─────────────────────────────────────────────
+export async function apiGetSubscriptions() {
+  return apiFetch('/api/subscriptions')
+}
+
+export async function apiSubscribe(categoryKey) {
+  const res = await fetch(`${BASE}/api/subscriptions/${categoryKey}`, { method: 'POST', headers: getHeaders() })
+  if (!res.ok) throw new Error(`Ошибка ${res.status}`)
+  return res.json()
+}
+
+export async function apiUnsubscribe(categoryKey) {
+  return apiDelete(`/api/subscriptions/${categoryKey}`)
+}

@@ -896,3 +896,144 @@ a.guide-cyberlink:active { transform:scale(.95); }
 .history-empty-icon { font-size:56px; margin-bottom:16px; }
 .history-empty h3 { font-size:20px; font-weight:700; margin-bottom:8px; }
 .history-empty p { color:var(--text-secondary); font-size:15px; line-height:1.6; }
+
+/* ═══ TAGS ══════════════════════════════════════════════════════ */
+.tags-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+.card-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+
+.tag-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  background:rgba(51,144,236,.1); color:var(--accent);
+  border:1px solid rgba(51,144,236,.25);
+  padding:2px 8px; border-radius:20px;
+  font-size:12px; font-weight:600; line-height:1.4;
+  transition:background .14s;
+}
+.tag-badge.clickable { cursor:pointer; }
+.tag-badge.clickable:active { background:rgba(51,144,236,.22); }
+.tag-badge.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+.tag-remove {
+  background:none; border:none; cursor:pointer;
+  color:inherit; opacity:.6; font-size:14px; line-height:1;
+  padding:0 0 0 2px; display:flex; align-items:center;
+}
+.tag-remove:hover { opacity:1; }
+
+.tag-editor { display:flex; flex-direction:column; gap:8px; }
+.tag-input-row { display:flex; gap:8px; }
+.tag-hint { font-size:11px; color:var(--text-secondary); }
+
+.adm2-btn-sm {
+  padding:6px 14px; font-size:13px; font-weight:600;
+  background:var(--accent); color:#fff; border:none;
+  border-radius:var(--radius); cursor:pointer; transition:opacity .14s;
+  white-space:nowrap;
+}
+.adm2-btn-sm:active { opacity:.8; }
+.adm2-btn-sm:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ═══ VIEWS COUNTER ════════════════════════════════════════════ */
+.guide-views {
+  display:inline-flex; align-items:center; gap:4px;
+  color:var(--text-secondary); font-size:12px; font-weight:500;
+}
+.views-pill {
+  display:inline-flex; align-items:center; gap:3px;
+  background:var(--surface2); color:var(--text-secondary);
+  font-size:11px; padding:2px 7px; border-radius:20px;
+}
+
+/* ═══ GUIDE HEADER UPDATES ═════════════════════════════════════ */
+.guide-header { display:flex; align-items:flex-start; gap:14px; padding:12px 0 16px; border-bottom:1px solid var(--separator); margin-bottom:20px; }
+.guide-header-info { flex:1; min-width:0; }
+.guide-header-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px; }
+.guide-header-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+
+.guide-share-btn {
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  background:var(--surface2); border:none; border-radius:50%;
+  cursor:pointer; color:var(--text-secondary); transition:color .14s, background .14s;
+}
+.guide-share-btn:active { color:var(--accent); background:rgba(51,144,236,.12); }
+
+/* ═══ SUBSCRIPTION ═════════════════════════════════════════════ */
+.guides-sub-bar { padding:8px 16px 0; }
+.sub-btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:8px 14px; border-radius:20px; border:1.5px solid var(--separator);
+  background:var(--surface); color:var(--text-secondary);
+  font-size:13px; font-weight:600; cursor:pointer; transition:all .16s;
+}
+.sub-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(51,144,236,.08); }
+.sub-btn:active { transform:scale(.96); }
+
+/* ═══ COMMENTS ═════════════════════════════════════════════════ */
+.comments-section { margin-top:24px; border-top:1px solid var(--separator); }
+
+.comments-toggle {
+  width:100%; display:flex; align-items:center; gap:8px;
+  padding:14px 0; background:none; border:none; cursor:pointer;
+  color:var(--text-secondary); font-size:14px; font-weight:600;
+  transition:color .14s;
+}
+.comments-toggle:active { color:var(--text); }
+.comments-count {
+  background:var(--accent); color:#fff;
+  font-size:11px; padding:1px 7px; border-radius:20px; font-weight:700;
+}
+
+.comments-body { padding-bottom:16px; }
+.comments-loading { display:flex; justify-content:center; padding:20px; }
+.comments-empty { text-align:center; padding:20px 0; color:var(--text-secondary); font-size:13px; }
+
+.comment-item {
+  padding:10px 0; border-bottom:1px solid var(--separator);
+}
+.comment-item:last-of-type { border-bottom:none; }
+.comment-item.own .comment-name { color:var(--accent); }
+
+.comment-meta { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.comment-name { font-size:13px; font-weight:600; }
+.comment-time { font-size:11px; color:var(--text-secondary); }
+.comment-delete {
+  margin-left:auto; background:none; border:none; cursor:pointer;
+  color:var(--text-secondary); opacity:.5; display:flex; align-items:center;
+  transition:opacity .14s;
+}
+.comment-delete:hover { opacity:1; color:#e74c3c; }
+.comment-text { font-size:14px; line-height:1.5; word-break:break-word; }
+
+.comments-input-row { display:flex; gap:8px; margin-top:12px; align-items:center; }
+.comments-input {
+  flex:1; padding:10px 12px; font-size:14px; border:1px solid var(--separator);
+  border-radius:var(--radius); background:var(--surface); color:var(--text);
+  font-family:inherit; transition:border-color .2s;
+}
+.comments-input:focus { outline:none; border-color:var(--accent); }
+.comments-send {
+  width:42px; height:42px; flex-shrink:0;
+  background:var(--accent); color:#fff; border:none;
+  border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:opacity .14s;
+}
+.comments-send:disabled { opacity:.4; cursor:not-allowed; }
+.comments-send:active:not(:disabled) { opacity:.8; }
+
+/* ═══ STATES (existing + new) ══════════════════════════════════ */
+.state-error { padding:32px 16px; text-align:center; color:#e74c3c; font-size:14px; }
+.state-empty  { padding:48px 16px; text-align:center; color:var(--text-secondary); font-size:14px; }
+
+/* ═══ FAV BAR BTN (ensure consistent) ════════════════════════ */
+.fav-bar-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; background:var(--surface);
+  border:1px solid var(--separator); border-radius:var(--radius);
+  cursor:pointer; color:var(--text); font-size:14px; font-weight:500;
+  transition:transform .12s; width:100%;
+}
+.fav-bar-btn:active { transform:scale(.97); }
+.fav-bar-count {
+  margin-left:auto; background:var(--accent); color:#fff;
+  font-size:12px; font-weight:700; padding:1px 8px; border-radius:20px;
+}

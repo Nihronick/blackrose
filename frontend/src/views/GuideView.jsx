@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { apiFetch } from '../api'
+import { apiFetch, apiRecordView } from '../api'
 import { haptic } from '../haptic'
 import { parseVideo, parseDocument } from '../utils'
 import { SkeletonGuide } from '../components/Skeleton'
 import { Lightbox } from '../components/Lightbox'
 import { FavoriteButton } from '../components/FavoriteButton'
 import { PtrIndicator } from '../components/PtrIndicator'
+import { CommentsSection } from '../components/CommentsSection'
+import { TagsList } from '../components/TagBadge'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
+
+const tgApp = window.Telegram?.WebApp
 
 function VideoBlock({ url }) {
   const v = parseVideo(url)
@@ -80,26 +84,87 @@ function CyberlinkPopup({ guideKey, title, icon, onOpen, onClose }) {
   )
 }
 
-export function GuideView({ guideKey, isFavorite, onToggleFavorite, onOpenGuide, onGuideLoaded }) {
+function ShareButton({ guide }) {
+  const [shared, setShared] = useState(false)
+
+  const share = () => {
+    haptic.light()
+    const botUsername = 'blackrosesl1_bot'
+    const deepLink = `https://t.me/${botUsername}?start=guide_${guide.key}`
+
+    // Try Telegram share first
+    if (tgApp?.switchInlineQuery) {
+      tgApp.switchInlineQuery(guide.title, ['users', 'groups'])
+      return
+    }
+    // Fallback: copy deep link
+    navigator.clipboard?.writeText(deepLink).then(() => {
+      setShared(true)
+      haptic.success?.()
+      setTimeout(() => setShared(false), 2000)
+    }).catch(() => {
+      // last resort: open share
+      if (navigator.share) {
+        navigator.share({ title: guide.title, url: deepLink })
+      }
+    })
+  }
+
+  return (
+    <button className="guide-share-btn" onClick={share} title="Поделиться">
+      {shared
+        ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="18" height="18"><path d="M20 6L9 17l-5-5"/></svg>
+        : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="18" height="18">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+      }
+    </button>
+  )
+}
+
+function ViewsCounter({ views }) {
+  if (!views) return null
+  return (
+    <span className="guide-views">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="13" height="13">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      {views >= 1000 ? `${(views / 1000).toFixed(1)}k` : views}
+    </span>
+  )
+}
+
+export function GuideView({ guideKey, isFavorite, onToggleFavorite, onOpenGuide, onGuideLoaded, onTagClick }) {
   const [guide, setGuide]         = useState(null)
   const [error, setError]         = useState(null)
   const [lightbox, setLightbox]   = useState(null)
   const [cyberlink, setCyberlink] = useState(null)
   const scrollRef  = useRef(null)
   const contentRef = useRef(null)
+  const viewRecorded = useRef(false)
 
   const load = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/guide/${guideKey}`)
       setGuide(res)
       setError(null)
-      onGuideLoaded?.(res)   // ← notify App to add to history with full title+icon
+      onGuideLoaded?.(res)
     } catch (e) {
       if (e.message !== 'ACCESS_DENIED') setError(e.message)
     }
   }, [guideKey, onGuideLoaded])
 
   useEffect(() => { load() }, [load])
+
+  // Record view once per mount
+  useEffect(() => {
+    if (!guideKey || viewRecorded.current) return
+    viewRecorded.current = true
+    apiRecordView(guideKey).catch(() => {})
+  }, [guideKey])
 
   useEffect(() => {
     const el = contentRef.current
@@ -133,12 +198,23 @@ export function GuideView({ guideKey, isFavorite, onToggleFavorite, onOpenGuide,
               <div className="guide-icon-box">
                 {guide.icon && <img src={guide.icon} alt="" onError={e => e.target.style.display='none'} />}
               </div>
-              <h2 className="guide-title">{guide.title}</h2>
-              <FavoriteButton
-                isFav={isFavorite}
-                onToggle={() => onToggleFavorite({ key: guide.key, title: guide.title, icon: guide.icon })}
-                size={36}
-              />
+              <div className="guide-header-info">
+                <h2 className="guide-title">{guide.title}</h2>
+                <div className="guide-header-meta">
+                  <ViewsCounter views={guide.views} />
+                  {guide.tags?.length > 0 && (
+                    <TagsList tags={guide.tags} onTagClick={onTagClick} />
+                  )}
+                </div>
+              </div>
+              <div className="guide-header-actions">
+                <ShareButton guide={guide} />
+                <FavoriteButton
+                  isFav={isFavorite}
+                  onToggle={() => onToggleFavorite({ key: guide.key, title: guide.title, icon: guide.icon })}
+                  size={36}
+                />
+              </div>
             </div>
 
             <div ref={contentRef} className="guide-content"
@@ -151,6 +227,8 @@ export function GuideView({ guideKey, isFavorite, onToggleFavorite, onOpenGuide,
             ))}
             {(guide.video    || []).map((url, i) => <VideoBlock key={i} url={url} />)}
             {(guide.document || []).map((url, i) => <DocBlock   key={i} url={url} />)}
+
+            <CommentsSection guideKey={guideKey} />
           </div>
         )}
       </div>

@@ -71,7 +71,7 @@ _ALLOWED_ATTRS = {
     "a":    ["href", "target", "rel", "class",
              "data-guide-key", "data-guide-title", "data-guide-icon"],
     "img":  ["src", "alt", "width", "height", "class", "style",
-             "loading", "onerror"],
+             "loading"],
     "svg":  ["viewBox", "width", "height", "fill", "stroke",
              "stroke-width", "stroke-linecap", "class", "style"],
     "path": ["d", "fill", "stroke", "stroke-width", "stroke-linecap"],
@@ -94,14 +94,21 @@ def normalize_icon_syntax(text: str) -> str:
     return result
 
 
-async def resolve_guide_link(key: str) -> dict | None:
+async def resolve_guide_links_bulk(keys: list[str]) -> dict[str, dict]:
+    """Batch-fetch guide meta for [[key]] links — one query instead of N."""
+    if not keys:
+        return {}
     try:
-        g = await get_guide(key)
-        if g:
-            return {"title": g["title"], "icon": g["icon_url"] or ""}
-    except Exception:
-        pass
-    return None
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT key, title, icon_url FROM guides WHERE key = ANY(::text[])",
+                keys,
+            )
+        return {r["key"]: {"title": r["title"], "icon": r["icon_url"] or ""} for r in rows}
+    except Exception as e:
+        logger.warning(f"resolve_guide_links_bulk: {e}")
+        return {}
 
 
 def format_guide_text(text: str, guide_links: dict | None = None) -> str:
@@ -284,15 +291,40 @@ async def auth(user=Depends(require_telegram_user)):
     }
 
 
-# ── Categories cache (simple in-process, invalidated on write) ──
+# ── In-process cache (asyncio.Lock-protected) ──
+import asyncio as _asyncio
+from functools import lru_cache as _lru_cache
+
 _cats_cache: dict | None = None
 _cats_cache_ts: float = 0
 _CACHE_TTL = 60
+_cache_lock = _asyncio.Lock()
+
+# Guide cache: key -> (timestamp, data)
+_guide_cache: dict[str, tuple[float, dict]] = {}
+_GUIDE_CACHE_TTL = 120  # 2 min
+_GUIDE_CACHE_MAX = 200
 
 def _invalidate_cache():
     global _cats_cache, _cats_cache_ts
     _cats_cache = None
     _cats_cache_ts = 0
+    _guide_cache.clear()
+
+def _get_guide_cache(key: str) -> dict | None:
+    entry = _guide_cache.get(key)
+    if entry and (time.time() - entry[0]) < _GUIDE_CACHE_TTL:
+        return entry[1]
+    return None
+
+def _set_guide_cache(key: str, data: dict):
+    if len(_guide_cache) >= _GUIDE_CACHE_MAX:
+        oldest = min(_guide_cache, key=lambda k: _guide_cache[k][0])
+        _guide_cache.pop(oldest, None)
+    _guide_cache[key] = (time.time(), data)
+
+def _invalidate_guide_cache(key: str):
+    _guide_cache.pop(key, None)
 
 
 @app.get("/api/categories")
@@ -301,6 +333,11 @@ async def categories(user=Depends(require_telegram_user)):
     now = time.time()
     if _cats_cache and (now - _cats_cache_ts) < _CACHE_TTL:
         return _cats_cache
+    async with _cache_lock:
+        # Double-check after acquiring lock
+        now = time.time()
+        if _cats_cache and (now - _cats_cache_ts) < _CACHE_TTL:
+            return _cats_cache
 
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -354,7 +391,10 @@ async def category(key: str, user=Depends(require_telegram_user)):
 
 @app.get("/api/guide/{key}")
 async def guide(key: str, user=Depends(require_telegram_user)):
-    import asyncio
+    cached = _get_guide_cache(key)
+    if cached:
+        return cached
+
     g = await get_guide(key)
     if not g:
         raise HTTPException(status_code=404, detail="Гайд не найден")
@@ -364,20 +404,25 @@ async def guide(key: str, user=Depends(require_telegram_user)):
         k.strip() for k in re.findall(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]", raw_text)
     ))
 
-    results = await asyncio.gather(*[
-        resolve_guide_link(k) for k in link_keys
-    ])
-    guide_links = {k: (v or {}) for k, v in zip(link_keys, results)}
+    guide_links = await resolve_guide_links_bulk(link_keys)
 
-    return {
+    import asyncio
+    formatted_text = await asyncio.to_thread(format_guide_text, raw_text, guide_links=guide_links)
+
+    tags = await get_guide_tags(key)
+    result = {
         "key":      g["key"],
         "title":    g["title"],
         "icon":     g["icon_url"],
-        "text":     format_guide_text(raw_text, guide_links=guide_links),
+        "text":     formatted_text,
         "photo":    g["photo"] or [],
         "video":    g["video"] or [],
         "document": g["document"] or [],
+        "views":    g.get("views") or 0,
+        "tags":     tags,
     }
+    _set_guide_cache(key, result)
+    return result
 
 
 # ── Search ────────────────────────────────────────────
@@ -402,12 +447,40 @@ async def search(request: Request, q: str = "", user=Depends(require_telegram_us
     }
 
 
+# ── Preview endpoint (admin live preview) ────────────────────
+
+class PreviewIn(BaseModel):
+    text: str = ""
+
+@app.post("/api/guide/__preview__")
+async def preview_guide(body: PreviewIn, user=Depends(require_telegram_user)):
+    """Server-side render for admin live preview."""
+    import asyncio
+    html = await asyncio.to_thread(format_guide_text, body.text, guide_links={})
+    return {"html": html}
+
+
 # ── Admin: Pydantic models ────────────────────────────
+
+_KEY_RE = re.compile(r'^[a-z0-9_-]{1,64}$')
+
+def _validate_key(v: str) -> str:
+    if not _KEY_RE.match(v):
+        raise ValueError("Ключ должен содержать только строчные буквы, цифры, _ и - (до 64 символов)")
+    return v
+
 
 class CategoryIn(BaseModel):
     title:      str
     icon_url:   Optional[str] = None
     sort_order: int = 0
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Название не может быть пустым")
+        return v.strip()
 
 
 class GuideIn(BaseModel):
@@ -419,6 +492,17 @@ class GuideIn(BaseModel):
     video:        list[str] = []
     document:     list[str] = []
     sort_order:   int = 0
+
+    @field_validator("category_key")
+    @classmethod
+    def validate_category_key(cls, v): return _validate_key(v)
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Название не может быть пустым")
+        return v.strip()
 
     @field_validator("photo", "video", "document", mode="before")
     @classmethod
@@ -455,6 +539,7 @@ async def admin_categories(user=Depends(require_admin)):
 
 @app.put("/api/admin/category/{key}")
 async def admin_upsert_category(key: str, body: CategoryIn, user=Depends(require_admin)):
+    _validate_key(key)
     await upsert_category(key, body.title, body.icon_url, body.sort_order)
     _invalidate_cache()
     return {"ok": True}
@@ -495,6 +580,7 @@ async def admin_guide(key: str, user=Depends(require_admin)):
 
 @app.put("/api/admin/guide/{key}")
 async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin)):
+    _validate_key(key)
     await upsert_guide(
         key=key,
         category_key=body.category_key,
@@ -508,6 +594,7 @@ async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin
         changed_by=user.get("id"),
     )
     _invalidate_cache()
+    _invalidate_guide_cache(key)
     return {"ok": True}
 
 
@@ -560,7 +647,10 @@ async def admin_import(request: Request, user=Depends(require_admin)):
         raise HTTPException(status_code=400, detail="Неверный JSON")
     if "categories" not in data or "guides" not in data:
         raise HTTPException(status_code=400, detail="Неверный формат файла")
-    stats = await import_guides(data, changed_by=user.get("id"))
+    try:
+        stats = await import_guides(data, changed_by=user.get("id"))
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     _invalidate_cache()
     logger.info(f"Import by {user.get('id')}: {stats}")
     return {"ok": True, **stats}
@@ -591,3 +681,155 @@ async def admin_icons_grouped(user=Depends(require_admin)):
          "icons": [{"key": k, "url": v} for k, v in g["icons"].items()]}
         for g in groups
     ]
+
+
+# ════════════════════════════════════════════════════════════════
+# TAGS
+# ════════════════════════════════════════════════════════════════
+
+from database import (
+    get_guide_tags, set_guide_tags, get_all_tags, get_guides_by_tag,
+    increment_views, get_top_guides,
+    get_comments, add_comment, delete_comment,
+    subscribe, unsubscribe, get_user_subscriptions, get_subscribers,
+)
+
+@app.get("/api/tags")
+async def tags_list(user=Depends(require_telegram_user)):
+    return {"tags": await get_all_tags()}
+
+@app.get("/api/tag/{tag}")
+async def guides_by_tag(tag: str, user=Depends(require_telegram_user)):
+    return {"tag": tag, "results": await get_guides_by_tag(tag.lower())}
+
+
+# ════════════════════════════════════════════════════════════════
+# VIEWS
+# ════════════════════════════════════════════════════════════════
+
+@app.post("/api/guide/{key}/view")
+@limiter.limit("60/minute")
+async def record_view(request: Request, key: str, user=Depends(require_telegram_user)):
+    views = await increment_views(key)
+    _invalidate_guide_cache(key)
+    return {"views": views}
+
+@app.get("/api/top")
+async def top_guides(user=Depends(require_telegram_user)):
+    return {"results": await get_top_guides(limit=10)}
+
+
+# ════════════════════════════════════════════════════════════════
+# COMMENTS
+# ════════════════════════════════════════════════════════════════
+
+class CommentIn(BaseModel):
+    text: str
+
+    @field_validator("text")
+    @classmethod
+    def validate_text(cls, v):
+        v = v.strip()
+        if not v:
+            raise ValueError("Комментарий не может быть пустым")
+        if len(v) > 1000:
+            raise ValueError("Комментарий слишком длинный (макс. 1000 символов)")
+        return bleach.clean(v, tags=[], strip=True)
+
+
+@app.get("/api/guide/{key}/comments")
+async def comments_list(key: str, user=Depends(require_telegram_user)):
+    rows = await get_comments(key)
+    return {"comments": [
+        {
+            "id":         r["id"],
+            "user_id":    r["user_id"],
+            "name":       r["first_name"] or r["username"] or "Участник",
+            "text":       r["text"],
+            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+            "is_own":     r["user_id"] == user.get("id"),
+        }
+        for r in rows
+    ]}
+
+@app.post("/api/guide/{key}/comments")
+@limiter.limit("10/minute")
+async def comment_add(request: Request, key: str, body: CommentIn, user=Depends(require_telegram_user)):
+    g = await get_guide(key)
+    if not g:
+        raise HTTPException(status_code=404, detail="Гайд не найден")
+    result = await add_comment(
+        guide_key=key,
+        user_id=user.get("id"),
+        username=user.get("username"),
+        first_name=user.get("first_name"),
+        text=body.text,
+    )
+    return {"ok": True, **result}
+
+@app.delete("/api/guide/{key}/comments/{comment_id}")
+async def comment_delete(key: str, comment_id: int, user=Depends(require_telegram_user)):
+    uid = user.get("id", 0)
+    is_admin = uid in ADMIN_USERS
+    deleted = await delete_comment(comment_id, user_id=uid, is_admin=is_admin)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Комментарий не найден или нет прав")
+    return {"ok": True}
+
+
+# ════════════════════════════════════════════════════════════════
+# SUBSCRIPTIONS
+# ════════════════════════════════════════════════════════════════
+
+@app.get("/api/subscriptions")
+async def my_subscriptions(user=Depends(require_telegram_user)):
+    subs = await get_user_subscriptions(user.get("id"))
+    return {"subscriptions": subs}
+
+@app.post("/api/subscriptions/{category_key}")
+async def subscribe_category(category_key: str, user=Depends(require_telegram_user)):
+    cat = await get_category(category_key)
+    if not cat:
+        raise HTTPException(status_code=404, detail="Категория не найдена")
+    await subscribe(user.get("id"), category_key)
+    return {"ok": True, "subscribed": True}
+
+@app.delete("/api/subscriptions/{category_key}")
+async def unsubscribe_category(category_key: str, user=Depends(require_telegram_user)):
+    await unsubscribe(user.get("id"), category_key)
+    return {"ok": True, "subscribed": False}
+
+
+# ════════════════════════════════════════════════════════════════
+# ADMIN: Tags management
+# ════════════════════════════════════════════════════════════════
+
+class TagsIn(BaseModel):
+    tags: list[str]
+
+@app.put("/api/admin/guide/{key}/tags")
+async def admin_set_tags(key: str, body: TagsIn, user=Depends(require_admin)):
+    if not await get_guide(key):
+        raise HTTPException(status_code=404, detail="Гайд не найден")
+    await set_guide_tags(key, body.tags)
+    _invalidate_guide_cache(key)
+    return {"ok": True}
+
+
+# ════════════════════════════════════════════════════════════════
+# NOTIFICATIONS helper (called by bot after guide creation)
+# ════════════════════════════════════════════════════════════════
+
+class NotifyIn(BaseModel):
+    guide_key:    str
+    guide_title:  str
+    category_key: str
+    bot_token:    str  # validated against BOT_TOKEN
+
+@app.post("/api/internal/notify")
+async def notify_subscribers(body: NotifyIn):
+    """Internal endpoint — bot calls this after creating a guide."""
+    if body.bot_token != BOT_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    subs = await get_subscribers(body.category_key)
+    return {"ok": True, "subscribers": len(subs), "user_ids": subs}

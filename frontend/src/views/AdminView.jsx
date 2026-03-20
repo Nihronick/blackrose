@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ExportImport } from '../components/ExportImport'
 import { ReorderList } from '../components/ReorderList'
 import { apiReorderGuides, apiReorderCategories } from '../api'
-import { apiFetch, apiPut, apiDelete, apiIconsGrouped } from '../api'
+import { apiFetch, apiPut, apiDelete, apiIconsGrouped, apiSetGuideTags } from '../api'
+import { TagEditor } from '../components/TagBadge'
 import { haptic } from '../haptic'
 import { IconLibrary } from '../components/IconLibrary'
 
@@ -207,9 +208,46 @@ function renderMd(text) {
 
 function RichEditor({ value, onChange, rows = 16, placeholder }) {
   const [showSheet, setShowSheet] = useState(false)
-  const [preview, setPreview] = useState(false)
-  const taRef = useRef(null)
+  const [preview, setPreview]     = useState(false)
+  const [liveHtml, setLiveHtml]   = useState('')
+  const [rendering, setRendering] = useState(false)
+  const taRef       = useRef(null)
+  const renderTimer = useRef(null)
   const words = value.trim().split(/\s+/).filter(Boolean).length
+
+  // Live preview: debounced server-side render
+  useEffect(() => {
+    if (!preview) return
+    clearTimeout(renderTimer.current)
+    if (!value.trim()) { setLiveHtml(''); return }
+    setRendering(true)
+    renderTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          (import.meta.env.VITE_API_URL ?? '') + '/api/guide/__preview__',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Telegram-Init-Data': window.Telegram?.WebApp?.initData ?? '',
+            },
+            body: JSON.stringify({ text: value }),
+          }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          setLiveHtml(data.html || '')
+        } else {
+          setLiveHtml(renderMd(value))
+        }
+      } catch {
+        setLiveHtml(renderMd(value))
+      } finally {
+        setRendering(false)
+      }
+    }, 400)
+    return () => clearTimeout(renderTimer.current)
+  }, [preview, value])
 
   const insertIcon = (key) => {
     const tag = `{{${key}}}`
@@ -250,10 +288,17 @@ function RichEditor({ value, onChange, rows = 16, placeholder }) {
       </div>
 
       {preview
-        ? <div className="adm2-preview"
-          dangerouslySetInnerHTML={{ __html: value ? renderMd(value) : '<span class="adm2-prev-ph">Предварительный просмотр...</span>' }} />
+        ? <div className="adm2-preview">
+            {rendering
+              ? <div style={{display:'flex',justifyContent:'center',padding:'28px'}}>
+                  <div className="adm2-spinner"/>
+                </div>
+              : <div className="guide-content"
+                  dangerouslySetInnerHTML={{ __html: liveHtml || '<span class="adm2-prev-ph">Предварительный просмотр...</span>' }} />
+            }
+          </div>
         : <textarea ref={taRef} className="adm2-textarea" rows={rows} value={value}
-          onChange={handleChange} placeholder={placeholder} spellCheck={false} />
+            onChange={handleChange} placeholder={placeholder} spellCheck={false} />
       }
 
       <div className="adm2-rich-footer">
@@ -337,6 +382,7 @@ function GuideEditor({ guide, categories, onSave, onCancel }) {
     video: (guide?.video ?? []).join('\n'),
     document: (guide?.document ?? []).join('\n'),
     sort_order: guide?.sort_order ?? 0,
+    tags: guide?.tags ?? [],
   })
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
@@ -358,6 +404,7 @@ function GuideEditor({ guide, categories, onSave, onCancel }) {
         document: form.document.split('\n').map(s => s.trim()).filter(Boolean),
         sort_order: Number(form.sort_order),
       })
+      await apiSetGuideTags(form.key, form.tags).catch(() => {})
       haptic.success(); onSave()
     } catch (e) { setErr(e.message) }
     finally { setSaving(false) }
@@ -380,10 +427,8 @@ function GuideEditor({ guide, categories, onSave, onCancel }) {
       {err && <div className="adm2-error">{err}</div>}
 
       <div className="adm2-inner-tabs">
-        {['main', 'text', 'media'].map(t => (
-          <button key={t} className={`adm2-inner-tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
-            {t === 'main' ? 'Основное' : t === 'text' ? 'Текст' : 'Медиа'}
-          </button>
+        {[['main','Основное'],['text','Текст'],['media','Медиа'],['tags','Теги']].map(([t,l]) => (
+          <button key={t} className={`adm2-inner-tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>{l}</button>
         ))}
       </div>
 
@@ -422,6 +467,13 @@ function GuideEditor({ guide, categories, onSave, onCancel }) {
             </Field>
             <Field label="Документы" hint="по одному URL на строку">
               <textarea className="adm2-textarea" rows={3} value={form.document} onChange={set('document')} placeholder="https://..." />
+            </Field>
+          </div>
+        )}
+        {tab === 'tags' && (
+          <div className="adm2-fields">
+            <Field label="Теги" hint="помогают участникам фильтровать гайды">
+              <TagEditor tags={form.tags} onChange={val => setForm(p => ({ ...p, tags: val }))} />
             </Field>
           </div>
         )}
@@ -622,6 +674,73 @@ function CategoriesTab({ categories, onReload }) {
 }
 
 // ── Main ───────────────────────────────────────────────
+// ── History Tab (audit log viewer) ───────────────────────────
+function HistoryTab() {
+  const [guides, setGuides]   = useState([])
+  const [selected, setSelected] = useState(null)
+  const [history, setHistory] = useState([])
+  const [loadingH, setLoadingH] = useState(false)
+
+  useEffect(() => {
+    adminFetch('/api/admin/guides').then(setGuides).catch(() => {})
+  }, [])
+
+  const loadHistory = async (g) => {
+    setSelected(g); setLoadingH(true)
+    try {
+      const res = await adminFetch(`/api/admin/guide/${g.key}/history`)
+      setHistory(res.history || [])
+    } catch {} finally { setLoadingH(false) }
+  }
+
+  const formatDate = (iso) => iso ? new Date(iso).toLocaleString('ru', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—'
+  const actionLabel = (a) => ({ create:'Создан', update:'Изменён', delete:'Удалён', import:'Импорт' }[a] || a)
+  const actionColor = (a) => ({ create:'#34c759', update:'var(--accent)', delete:'#e74c3c', import:'#ff9500' }[a] || 'var(--text-secondary)')
+
+  return (
+    <div style={{ display:'flex', gap:'12px', padding:'12px', height:'100%' }}>
+      {/* Guide list */}
+      <div style={{ width:'42%', display:'flex', flexDirection:'column', gap:'6px', overflowY:'auto' }}>
+        <div style={{ fontSize:'12px', color:'var(--text-secondary)', fontWeight:600, marginBottom:'4px' }}>Выберите гайд</div>
+        {guides.map(g => (
+          <button key={g.key} onClick={() => loadHistory(g)}
+            style={{
+              textAlign:'left', padding:'8px 10px', borderRadius:'var(--radius)',
+              background: selected?.key === g.key ? 'rgba(51,144,236,.1)' : 'var(--surface)',
+              border: `1px solid ${selected?.key === g.key ? 'var(--accent)' : 'var(--separator)'}`,
+              cursor:'pointer', fontSize:'13px', fontWeight:'500', color:'var(--text)',
+            }}>
+            {g.title}
+          </button>
+        ))}
+      </div>
+      {/* History */}
+      <div style={{ flex:1, display:'flex', flexDirection:'column', gap:'8px', overflowY:'auto' }}>
+        {!selected && <div className="adm2-state-empty">Выберите гайд слева</div>}
+        {selected && loadingH && <div className="adm2-state-loading"><div className="adm2-spinner"/></div>}
+        {selected && !loadingH && history.length === 0 && <div className="adm2-state-empty">История пуста</div>}
+        {selected && !loadingH && history.map(h => (
+          <div key={h.id} style={{ padding:'10px 12px', background:'var(--surface)', borderRadius:'var(--radius)', border:'1px solid var(--separator)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
+              <span style={{ fontSize:'12px', fontWeight:700, color: actionColor(h.action) }}>{actionLabel(h.action)}</span>
+              <span style={{ fontSize:'11px', color:'var(--text-secondary)', marginLeft:'auto' }}>{formatDate(h.changed_at)}</span>
+            </div>
+            {h.changed_by && <div style={{ fontSize:'11px', color:'var(--text-secondary)' }}>User ID: {h.changed_by}</div>}
+            {h.snapshot && (
+              <details style={{ marginTop:'6px' }}>
+                <summary style={{ fontSize:'11px', color:'var(--accent)', cursor:'pointer' }}>Снапшот</summary>
+                <pre style={{ fontSize:'11px', background:'var(--surface2)', padding:'8px', borderRadius:'6px', marginTop:'4px', overflow:'auto', maxHeight:'120px' }}>
+                  {JSON.stringify(h.snapshot, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function AdminView({ onClose }) {
   const [tab, setTab] = useState('guides')
   const [categories, setCategories] = useState([])
@@ -666,7 +785,7 @@ export function AdminView({ onClose }) {
         <button className="adm2-close-btn" onClick={onClose}>{IC.close}</button>
       </div>
       <div className="adm2-tabs">
-        {[['guides', 'Гайды'], ['categories', 'Категории'], ['icons', '🎨 Иконки'], ['export', 'Экспорт']].map(([id, lbl]) => (
+        {[['guides', 'Гайды'], ['categories', 'Категории'], ['icons', '🎨 Иконки'], ['export', 'Экспорт'], ['history', '📋 История']].map(([id, lbl]) => (
           <button key={id} className={`adm2-tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>{lbl}</button>
         ))}
       </div>
@@ -675,6 +794,7 @@ export function AdminView({ onClose }) {
         {tab === 'categories' && <CategoriesTab categories={categories} onReload={load} />}
         {tab === 'icons' && <IconLibrary />}
         {tab === 'export' && <ExportImport />}
+        {tab === 'history' && <HistoryTab />}
       </div>
     </div>
   )

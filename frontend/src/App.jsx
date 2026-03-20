@@ -4,6 +4,7 @@ import { haptic } from './haptic'
 import { tgApp } from './theme'
 import { useFavorites } from './hooks/useFavorites'
 import { useHistory } from './hooks/useHistory'
+import { useSubscriptions } from './hooks/useSubscriptions'
 import { FabButton } from './components/FabButton'
 import { QuickNav } from './components/QuickNav'
 import { AccessDeniedView } from './views/AccessDeniedView'
@@ -35,12 +36,14 @@ export function App() {
   const [accessMsg, setAccessMsg] = useState(null)
   const [category, setCategory]   = useState(null)
   const [guideKey, setGuideKey]   = useState(null)
+  const [tagFilter, setTagFilter] = useState(null)
   const [cats, setCats]           = useState([])
   const [showQN, setShowQN]       = useState(false)
   const [isAdmin, setIsAdmin]     = useState(false)
 
   const { favorites, loaded: favsLoaded, toggle: toggleFav, isFavorite } = useFavorites()
   const { history, addToHistory } = useHistory()
+  const { isSubscribed, toggle: toggleSubscription } = useSubscriptions()
 
   // Auth + deep link on load
   useEffect(() => {
@@ -58,25 +61,24 @@ export function App() {
     // Deep link: ?guide=key
     const params = new URLSearchParams(window.location.search)
     const deepGuide = params.get('guide')
-    if (deepGuide) {
-      setGuideKey(deepGuide)
-      setView('guide')
-    }
+    if (deepGuide) { setGuideKey(deepGuide); setView('guide') }
   }, [])
 
   // Back navigation
   const goBack = useCallback(() => {
     haptic.light()
-    if (view === 'guide')    { setView('guides');     return }
-    if (view === 'guides')   { setView('categories'); return }
-    if (view === 'favorites'){ setView('categories'); return }
-    if (view === 'history')  { setView('categories'); return }
+    if (view === 'guide')      { setView('guides');     return }
+    if (view === 'guides')     { setView('categories'); return }
+    if (view === 'favorites')  { setView('categories'); return }
+    if (view === 'history')    { setView('categories'); return }
+    if (view === 'tag_results'){ setView('categories'); return }
   }, [view])
 
   useEffect(() => {
     const noBack = view === 'categories' || view === 'access_denied'
     noBack ? tgApp?.BackButton?.hide() : tgApp?.BackButton?.show()
     if (!noBack) history.pushState({ view }, '')
+    tgApp?.BackButton?.offClick(goBack)
     tgApp?.BackButton?.onClick(goBack)
     const onPop = e => { e.preventDefault(); goBack() }
     window.addEventListener('popstate', onPop)
@@ -91,27 +93,35 @@ export function App() {
   const openGuide = useCallback((key, title, icon) => {
     setGuideKey(key)
     setView('guide')
-    // Add to history (title/icon may not be known yet — GuideView will fill them in)
     if (key) addToHistory({ key, title: title || key, icon: icon || '' })
   }, [addToHistory])
 
-  const fabVisible = view === 'guides' || view === 'guide'
+  const openTag = useCallback((tag) => {
+    setTagFilter(tag)
+    setView('tag_results')
+  }, [])
+
+  const fabVisible = view === 'guides' || view === 'guide' || view === 'tag_results'
   const fabLabel   = view === 'guide' ? 'Назад' : 'Категории'
+
+  const headerTitle = () => {
+    if (view === 'favorites')   return 'Избранное'
+    if (view === 'history')     return 'История'
+    if (view === 'guides')      return category?.title
+    if (view === 'tag_results') return `#${tagFilter}`
+    return ''
+  }
 
   return (
     <div className="app-shell">
 
       {/* Header */}
-      {(view === 'guides' || view === 'guide' || view === 'favorites' || view === 'history') && (
+      {(view === 'guides' || view === 'guide' || view === 'favorites' || view === 'history' || view === 'tag_results') && (
         <div className="header">
           <div className="header-top">
             <button className="header-back" onClick={goBack}>{BACK_ICON}</button>
             <div className="header-titles">
-              <div className="header-title">
-                {view === 'favorites' && 'Избранное'}
-                {view === 'history'   && 'История'}
-                {view === 'guides'    && category?.title}
-              </div>
+              <div className="header-title">{headerTitle()}</div>
             </div>
           </div>
         </div>
@@ -153,10 +163,16 @@ export function App() {
           onSelectCategory={openCategory}
           onSelectGuide={openGuide}
           onCategoriesLoaded={setCats}
+          onTagClick={openTag}
         />
       )}
       {view === 'guides' && category && (
-        <GuidesView category={category} onSelectGuide={openGuide} />
+        <GuidesView
+          category={category}
+          onSelectGuide={openGuide}
+          isSubscribed={isSubscribed}
+          onToggleSubscription={toggleSubscription}
+        />
       )}
       {view === 'guide' && guideKey && (
         <GuideView
@@ -164,21 +180,18 @@ export function App() {
           isFavorite={isFavorite(guideKey)}
           onToggleFavorite={toggleFav}
           onOpenGuide={openGuide}
+          onTagClick={openTag}
           onGuideLoaded={(g) => addToHistory({ key: g.key, title: g.title, icon: g.icon })}
         />
       )}
+      {view === 'tag_results' && tagFilter && (
+        <TagResultsView tag={tagFilter} onSelectGuide={openGuide} />
+      )}
       {view === 'favorites' && (
-        <FavoritesView
-          favorites={favorites}
-          onSelectGuide={openGuide}
-          onToggle={toggleFav}
-        />
+        <FavoritesView favorites={favorites} onSelectGuide={openGuide} onToggle={toggleFav} />
       )}
       {view === 'history' && (
-        <HistoryView
-          history={history}
-          onSelectGuide={openGuide}
-        />
+        <HistoryView history={history} onSelectGuide={openGuide} />
       )}
       {view === 'admin' && (
         <AdminView onClose={() => setView('categories')} />
@@ -196,6 +209,43 @@ export function App() {
           onClose={()    => setShowQN(false)}
         />
       )}
+    </div>
+  )
+}
+
+// ── Tag Results View (inline, small) ────────────────────────
+function TagResultsView({ tag, onSelectGuide }) {
+  const [items, setItems]   = useState(null)
+  const [error, setError]   = useState(null)
+
+  useEffect(() => {
+    import('./api').then(({ apiGuidesByTag }) => {
+      apiGuidesByTag(tag)
+        .then(res => setItems(res.results || []))
+        .catch(e => { if (e.message !== 'ACCESS_DENIED') setError(e.message) })
+    })
+  }, [tag])
+
+  if (error) return <div className="list"><div className="state-error">{error}</div></div>
+  if (!items) return <div className="list">{[...Array(4)].map((_,i) => <div key={i} className="skeleton-card"><div className="sk-icon skeleton"/><div className="sk-body"><div className="sk-title skeleton"/><div className="sk-sub skeleton"/></div></div>)}</div>
+
+  return (
+    <div className="view-scroll">
+      <div className="list">
+        {items.length === 0
+          ? <div className="state-empty">Гайдов с тегом #{tag} не найдено</div>
+          : items.map(item => (
+              <div key={item.key} className="card" onClick={() => { haptic.light(); onSelectGuide(item.key) }}>
+                {item.icon_url && <img src={item.icon_url} alt="" width={44} height={44} style={{borderRadius:10,flexShrink:0}} onError={e=>e.target.style.display='none'}/>}
+                <div className="card-body">
+                  <div className="card-title">{item.title}</div>
+                  <div className="card-meta"><span className="card-subtitle">📂 {item.category_key}</span></div>
+                </div>
+                <span className="card-arrow">›</span>
+              </div>
+            ))
+        }
+      </div>
     </div>
   )
 }

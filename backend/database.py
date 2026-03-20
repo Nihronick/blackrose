@@ -118,7 +118,52 @@ async def init_db():
                 )), 'C')
             WHERE search_vec IS NULL
         """)
-    logger.info("DB ready: FTS + audit enabled")
+        # ── Tags ──────────────────────────────────────────────
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS guide_tags (
+                guide_key  TEXT NOT NULL REFERENCES guides(key) ON DELETE CASCADE,
+                tag        TEXT NOT NULL,
+                PRIMARY KEY (guide_key, tag)
+            )
+        """)
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_guide_tags_tag ON guide_tags(tag)"
+        )
+
+        # ── Views counter ─────────────────────────────────────
+        await conn.execute(
+            "ALTER TABLE guides ADD COLUMN IF NOT EXISTS views BIGINT DEFAULT 0"
+        )
+
+        # ── Comments ──────────────────────────────────────────
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS guide_comments (
+                id          BIGSERIAL PRIMARY KEY,
+                guide_key   TEXT NOT NULL REFERENCES guides(key) ON DELETE CASCADE,
+                user_id     BIGINT NOT NULL,
+                username    TEXT,
+                first_name  TEXT,
+                text        TEXT NOT NULL,
+                created_at  TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_comments_guide ON guide_comments(guide_key)"
+        )
+
+        # ── User subscriptions (notifications) ────────────────
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_subscriptions (
+                user_id      BIGINT NOT NULL,
+                category_key TEXT NOT NULL REFERENCES categories(key) ON DELETE CASCADE,
+                PRIMARY KEY (user_id, category_key)
+            )
+        """)
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_subs_category ON user_subscriptions(category_key)"
+        )
+
+    logger.info("DB ready: FTS + audit + tags + comments + subscriptions")
 
 
 # ── helpers ───────────────────────────────────────────
@@ -169,15 +214,18 @@ async def delete_category(key: str):
 
 
 async def reorder_categories(order: list[dict]):
-    """[{"key": "...", "sort_order": N}]"""
+    """[{"key": "...", "sort_order": N}] — batch UNNEST UPDATE."""
+    if not order:
+        return
     pool = await get_pool()
+    keys   = [item["key"]        for item in order]
+    orders = [item["sort_order"] for item in order]
     async with pool.acquire() as conn:
-        async with conn.transaction():
-            for item in order:
-                await conn.execute(
-                    "UPDATE categories SET sort_order=$1 WHERE key=$2",
-                    item["sort_order"], item["key"]
-                )
+        await conn.execute("""
+            UPDATE categories SET sort_order = v.so
+            FROM UNNEST($1::text[], $2::int[]) AS v(k, so)
+            WHERE categories.key = v.k
+        """, keys, orders)
 
 
 # ── Guides ────────────────────────────────────────────
@@ -189,6 +237,16 @@ async def get_guides_by_category(category_key: str) -> list[dict]:
             "SELECT * FROM guides WHERE category_key=$1 ORDER BY sort_order, key",
             category_key,
         )
+        # Batch-fetch tags for all guides
+        keys = [r["key"] for r in rows]
+        tag_rows = await conn.fetch(
+            "SELECT guide_key, tag FROM guide_tags WHERE guide_key = ANY($1::text[])", keys
+        ) if keys else []
+
+    tags_by_key: dict[str, list[str]] = {}
+    for tr in tag_rows:
+        tags_by_key.setdefault(tr["guide_key"], []).append(tr["tag"])
+
     result = []
     for r in rows:
         d = dict(r)
@@ -196,6 +254,7 @@ async def get_guides_by_category(category_key: str) -> list[dict]:
         d["has_photo"]    = bool(d.get("photo"))
         d["has_video"]    = bool(d.get("video"))
         d["has_document"] = bool(d.get("document"))
+        d["tags"]         = sorted(tags_by_key.get(d["key"], []))
         result.append(d)
     return result
 
@@ -266,15 +325,18 @@ async def get_all_guides() -> list[dict]:
 
 
 async def reorder_guides(order: list[dict]):
-    """[{"key": "...", "sort_order": N}]"""
+    """[{"key": "...", "sort_order": N}] — batch UNNEST UPDATE."""
+    if not order:
+        return
     pool = await get_pool()
+    keys   = [item["key"]        for item in order]
+    orders = [item["sort_order"] for item in order]
     async with pool.acquire() as conn:
-        async with conn.transaction():
-            for item in order:
-                await conn.execute(
-                    "UPDATE guides SET sort_order=$1 WHERE key=$2",
-                    item["sort_order"], item["key"]
-                )
+        await conn.execute("""
+            UPDATE guides SET sort_order = v.so
+            FROM UNNEST($1::text[], $2::int[]) AS v(k, so)
+            WHERE guides.key = v.k
+        """, keys, orders)
 
 
 async def get_guide_history(guide_key: str, limit: int = 30) -> list[dict]:
@@ -345,7 +407,20 @@ async def export_all() -> dict:
 async def import_guides(data: dict, changed_by: int | None = None) -> dict:
     cats   = data.get("categories", [])
     guides = data.get("guides", [])
+
+    # Pre-validate: all guide category_keys must exist in import or DB
+    cat_keys_in_import = {c["key"] for c in cats}
     pool   = await get_pool()
+    async with pool.acquire() as conn:
+        existing_cats = {r["key"] for r in await conn.fetch("SELECT key FROM categories")}
+    all_known_cats = cat_keys_in_import | existing_cats
+    missing = [g["key"] for g in guides if g.get("category_key") not in all_known_cats]
+    if missing:
+        raise ValueError(
+            f"Гайды ссылаются на несуществующие категории: {missing[:5]}"
+            + (" и ещё..." if len(missing) > 5 else "")
+        )
+
     async with pool.acquire() as conn:
         async with conn.transaction():
             for c in cats:
@@ -375,3 +450,142 @@ async def import_guides(data: dict, changed_by: int | None = None) -> dict:
                     json.dumps({"title": g["title"]}))
 
     return {"categories": len(cats), "guides": len(guides)}
+
+
+# ── Tags ──────────────────────────────────────────────────────
+
+async def get_guide_tags(guide_key: str) -> list[str]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT tag FROM guide_tags WHERE guide_key=$1 ORDER BY tag", guide_key
+        )
+    return [r["tag"] for r in rows]
+
+async def set_guide_tags(guide_key: str, tags: list[str]):
+    pool = await get_pool()
+    clean = list({t.strip().lower() for t in tags if t.strip()})[:20]
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute("DELETE FROM guide_tags WHERE guide_key=$1", guide_key)
+            if clean:
+                await conn.executemany(
+                    "INSERT INTO guide_tags(guide_key, tag) VALUES($1,$2) ON CONFLICT DO NOTHING",
+                    [(guide_key, tag) for tag in clean]
+                )
+
+async def get_all_tags() -> list[dict]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT tag, COUNT(*) AS count
+            FROM guide_tags GROUP BY tag ORDER BY count DESC, tag
+        """)
+    return [{"tag": r["tag"], "count": r["count"]} for r in rows]
+
+async def get_guides_by_tag(tag: str, limit: int = 50) -> list[dict]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT g.key, g.title, g.icon_url, g.category_key
+            FROM guides g
+            JOIN guide_tags t ON g.key = t.guide_key
+            WHERE t.tag = $1
+            ORDER BY g.sort_order, g.key
+            LIMIT $2
+        """, tag, limit)
+    return [dict(r) for r in rows]
+
+
+# ── Views ─────────────────────────────────────────────────────
+
+async def increment_views(guide_key: str) -> int:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE guides SET views = views + 1 WHERE key=$1 RETURNING views",
+            guide_key
+        )
+    return row["views"] if row else 0
+
+async def get_top_guides(limit: int = 10) -> list[dict]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT key, title, icon_url, category_key, views
+            FROM guides ORDER BY views DESC NULLS LAST LIMIT $1
+        """, limit)
+    return [dict(r) for r in rows]
+
+
+# ── Comments ──────────────────────────────────────────────────
+
+async def get_comments(guide_key: str, limit: int = 50) -> list[dict]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT id, user_id, username, first_name, text, created_at
+            FROM guide_comments
+            WHERE guide_key=$1
+            ORDER BY created_at ASC
+            LIMIT $2
+        """, guide_key, limit)
+    return [dict(r) for r in rows]
+
+async def add_comment(guide_key: str, user_id: int, username: str | None,
+                      first_name: str | None, text: str) -> dict:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("""
+            INSERT INTO guide_comments(guide_key, user_id, username, first_name, text)
+            VALUES($1,$2,$3,$4,$5) RETURNING id, created_at
+        """, guide_key, user_id, username, first_name, text)
+    return {"id": row["id"], "created_at": row["created_at"].isoformat()}
+
+async def delete_comment(comment_id: int, user_id: int | None = None,
+                         is_admin: bool = False) -> bool:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        if is_admin:
+            r = await conn.execute("DELETE FROM guide_comments WHERE id=$1", comment_id)
+        else:
+            r = await conn.execute(
+                "DELETE FROM guide_comments WHERE id=$1 AND user_id=$2",
+                comment_id, user_id
+            )
+    return r != "DELETE 0"
+
+
+# ── Subscriptions (notifications) ────────────────────────────
+
+async def subscribe(user_id: int, category_key: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO user_subscriptions(user_id, category_key)
+            VALUES($1,$2) ON CONFLICT DO NOTHING
+        """, user_id, category_key)
+
+async def unsubscribe(user_id: int, category_key: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "DELETE FROM user_subscriptions WHERE user_id=$1 AND category_key=$2",
+            user_id, category_key
+        )
+
+async def get_user_subscriptions(user_id: int) -> list[str]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT category_key FROM user_subscriptions WHERE user_id=$1", user_id
+        )
+    return [r["category_key"] for r in rows]
+
+async def get_subscribers(category_key: str) -> list[int]:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT user_id FROM user_subscriptions WHERE category_key=$1", category_key
+        )
+    return [r["user_id"] for r in rows]
