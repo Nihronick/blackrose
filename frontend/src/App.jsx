@@ -48,14 +48,24 @@ export function App() {
   // Auth + deep link on load
   useEffect(() => {
     const tg = window.Telegram?.WebApp
+
     const doAuth = () => {
       apiFetch('/api/auth')
         .then(data => { if (data.is_admin === true) setIsAdmin(true) })
         .catch(e => {
-          if (e.message === 'ACCESS_DENIED') { setAccessMsg(e.detail); setView('access_denied') }
+          // Only block access when running inside Telegram (has initData)
+          // On desktop/browser without Telegram, silently ignore auth errors
+          if (e.message === 'ACCESS_DENIED' && tg?.initData) {
+            setAccessMsg(e.detail)
+            setView('access_denied')
+          }
         })
     }
-    const delay = tg?.initData ? 0 : 300
+
+    // If no Telegram context at all, skip auth (desktop preview mode)
+    if (!tg) return
+
+    const delay = tg.initData ? 0 : 300
     setTimeout(doAuth, delay)
 
     // Deep link: ?guide=key

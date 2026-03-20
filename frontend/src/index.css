@@ -31,21 +31,37 @@
 
 /* ═══ RESET ════════════════════════════════════════════ */
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-html,body,#root { height:100%; overflow:hidden; }
+html, body { height:100%; }
+#root { height:100%; display:flex; flex-direction:column; }
 body {
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Roboto',sans-serif;
   background:var(--bg); color:var(--text); font-size:16px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
+  overflow:hidden; /* prevent body scroll, use .view-scroll instead */
 }
 
 /* ═══ LAYOUT ═══════════════════════════════════════════ */
-.app-shell { max-width:640px; margin:0 auto; height:100%; display:flex; flex-direction:column; position:relative; }
+.app-shell {
+  max-width:640px; margin:0 auto;
+  height:100%; /* fill #root which is 100vh */
+  display:flex; flex-direction:column; position:relative;
+  overflow:hidden; /* clip children, scrolling is per-view */
+}
 
 .view-scroll {
   flex:1; overflow-y:auto; overflow-x:hidden;
-  -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; min-height:0;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  min-height:0; /* critical for flex children */
+  scroll-behavior:smooth;
 }
-.view-scroll::-webkit-scrollbar { display:none; }
+/* Desktop: show thin scrollbar */
+.view-scroll::-webkit-scrollbar { width:4px; }
+.view-scroll::-webkit-scrollbar-track { background:transparent; }
+.view-scroll::-webkit-scrollbar-thumb { background:var(--separator); border-radius:4px; }
+@media (max-width:640px) {
+  .view-scroll::-webkit-scrollbar { display:none; }
+}
 
 /* ═══ HEADER ═══════════════════════════════════════════ */
 .header { background:var(--bg); padding:14px 16px 0; flex-shrink:0; }
@@ -459,7 +475,7 @@ body {
    ═══════════════════════════════════════════════════════ */
 
 /* Shell */
-.adm2-wrap { display:flex; flex-direction:column; height:100%; background:var(--bg); overflow:hidden; }
+.adm2-wrap { display:flex; flex-direction:column; height:100%; background:var(--bg); overflow:hidden; min-height:0; }
 
 /* Top bar */
 .adm2-top-bar {
@@ -483,7 +499,7 @@ body {
 }
 .adm2-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 
-.adm2-content { flex:1; overflow-y:auto; }
+.adm2-content { flex:1; overflow-y:auto; min-height:0; }
 .adm2-tab-content { padding:12px 14px 32px; }
 
 /* List toolbar */
@@ -579,7 +595,7 @@ body {
 }
 .adm2-inner-tab.on { color:var(--accent); border-bottom-color:var(--accent); background:var(--surface); }
 
-.adm2-editor-body { flex:1; overflow-y:auto; padding:14px; }
+.adm2-editor-body { flex:1; overflow-y:auto; padding:14px; min-height:0; }
 
 /* Fields */
 .adm2-fields { display:flex; flex-direction:column; gap:14px; }

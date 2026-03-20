@@ -2,7 +2,18 @@ export const tgApp = window.Telegram?.WebApp
 
 export function initTheme() {
   const tg = tgApp
-  if (!tg) return
+
+  // ── Desktop fallback: detect system dark mode ─────────────
+  if (!tg?.initData) {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light')
+    })
+    return
+  }
+
+  // ── Telegram WebApp theme ─────────────────────────────────
   try {
     tg.ready()
     tg.expand()

@@ -3,17 +3,26 @@ import { useState, useEffect, useCallback } from 'react'
 const STORAGE_KEY = 'blackrose_favorites'
 const tg = window.Telegram?.WebApp
 
+// ── Storage helpers: CloudStorage (Telegram) → localStorage (desktop) ──
+
 function csGet(key) {
   return new Promise((resolve) => {
-    if (!tg?.CloudStorage) { resolve(null); return }
-    tg.CloudStorage.getItem(key, (err, val) => resolve(err ? null : val))
+    if (tg?.CloudStorage) {
+      tg.CloudStorage.getItem(key, (err, val) => resolve(err ? null : val))
+    } else {
+      resolve(localStorage.getItem(key))
+    }
   })
 }
 
 function csSet(key, value) {
   return new Promise((resolve) => {
-    if (!tg?.CloudStorage) { resolve(false); return }
-    tg.CloudStorage.setItem(key, value, (err) => resolve(!err))
+    if (tg?.CloudStorage) {
+      tg.CloudStorage.setItem(key, value, (err) => resolve(!err))
+    } else {
+      try { localStorage.setItem(key, value); resolve(true) }
+      catch { resolve(false) }
+    }
   })
 }
 
@@ -28,11 +37,6 @@ export function useFavorites() {
       }
       setLoaded(true)
     })
-  }, [])
-
-  const save = useCallback(async (list) => {
-    setFavorites(list)
-    await csSet(STORAGE_KEY, JSON.stringify(list))
   }, [])
 
   const toggle = useCallback(async (guide) => {
