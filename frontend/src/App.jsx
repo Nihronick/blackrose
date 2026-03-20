@@ -77,7 +77,7 @@ export function App() {
   useEffect(() => {
     const noBack = view === 'categories' || view === 'access_denied'
     noBack ? tgApp?.BackButton?.hide() : tgApp?.BackButton?.show()
-    if (!noBack) history.pushState({ view }, '')
+    if (!noBack) window.history.pushState({ view }, '')
     tgApp?.BackButton?.offClick(goBack)
     tgApp?.BackButton?.onClick(goBack)
     const onPop = e => { e.preventDefault(); goBack() }
