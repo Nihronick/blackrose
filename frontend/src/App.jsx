@@ -79,7 +79,8 @@ export function App() {
     if (deepGuide) { setGuideKey(deepGuide); setView('guide') }
   }, [])
 
-  // Back navigation
+  // Back navigation — только через tgApp.BackButton, без window.history
+  // pushState/popstate не работают в Telegram Desktop webview
   const goBack = useCallback(() => {
     haptic.light()
     if (view === 'guide')      { setView('guides');     return }
@@ -92,24 +93,10 @@ export function App() {
   useEffect(() => {
     const noBack = view === 'categories' || view === 'access_denied'
     noBack ? tgApp?.BackButton?.hide() : tgApp?.BackButton?.show()
-
-    // window.history.pushState недоступен в Telegram Desktop webview — оборачиваем
-    if (!noBack) {
-      try { window.history.pushState({ view }, '') } catch {}
-    }
-
     tgApp?.BackButton?.offClick(goBack)
     tgApp?.BackButton?.onClick(goBack)
-
-    // popstate нужен только если pushState сработал (обычный браузер)
-    const onPop = e => { e.preventDefault(); goBack() }
-    try {
-      window.addEventListener('popstate', onPop)
-    } catch {}
-
     return () => {
       tgApp?.BackButton?.offClick(goBack)
-      try { window.removeEventListener('popstate', onPop) } catch {}
     }
   }, [view, goBack])
 
