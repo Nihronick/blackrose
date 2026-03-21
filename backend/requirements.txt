@@ -6,3 +6,5 @@ python-multipart==0.0.20
 nh3==0.3.3
 slowapi==0.1.9
 aiohttp>=3.9.0
+alembic==1.13.2
+psycopg2-binary==2.9.9
