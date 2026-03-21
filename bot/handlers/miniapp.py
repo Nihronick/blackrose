@@ -82,7 +82,7 @@ async def cmd_start(message: Message):
             reply_markup=ReplyKeyboardRemove(),
         )
         await message.answer(
-            "⬇️",
+            "📖 Нажми кнопку чтобы открыть гайд:",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                 InlineKeyboardButton(
                     text="📖 Открыть гайд",
@@ -92,29 +92,63 @@ async def cmd_start(message: Message):
         )
         return
 
-    # Одно сообщение + одна кнопка — для всех
-    keyboard = get_admin_keyboard() if is_admin else get_open_keyboard()
+    # Одно сообщение с кнопкой — текст и кнопка вместе
     text = (
         f"👋 Привет, <b>{user.first_name}</b>!\n\n"
         f"🗡 Добро пожаловать в <b>BlackRose</b> — справочник гильдии."
     )
     if is_admin:
         text += "\n\n🔑 <i>Вы вошли как администратор.</i>"
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="📖 Открыть гайды",
+                web_app=WebAppInfo(url=MINIAPP_URL),
+            )],
+            [InlineKeyboardButton(
+                text="⚙️ Открыть как администратор",
+                web_app=WebAppInfo(url=MINIAPP_URL),
+            )],
+        ])
+    else:
+        keyboard = get_open_keyboard()
 
-    await message.answer(text, parse_mode="HTML", reply_markup=ReplyKeyboardRemove())
-    await message.answer("⬇️", reply_markup=keyboard)
+    await message.answer(
+        text,
+        parse_mode="HTML",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await message.answer(
+        "⬇️ Выбери действие:",
+        reply_markup=keyboard,
+    )
 
 
 # ── /guides ───────────────────────────────────────────
 
 @miniapp_router.message(Command("guides", "miniapp", "app"))
 async def cmd_guides(message: Message):
-    user = message.from_user
-    logger.info(f"📖 /guides uid={user.id}")
+    user     = message.from_user
+    is_admin = user.id in ADMIN_USERS
+    logger.info(f"📖 /guides uid={user.id} admin={is_admin}")
+
+    if is_admin:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="📖 Открыть гайды",
+                web_app=WebAppInfo(url=MINIAPP_URL),
+            )],
+            [InlineKeyboardButton(
+                text="⚙️ Открыть как администратор",
+                web_app=WebAppInfo(url=MINIAPP_URL),
+            )],
+        ])
+    else:
+        keyboard = get_open_keyboard()
+
     await message.answer(
         "🗡 <b>BlackRose Guides</b> — справочник гильдии",
         parse_mode="HTML",
-        reply_markup=get_open_keyboard(),
+        reply_markup=keyboard,
     )
 
 
