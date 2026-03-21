@@ -31,7 +31,7 @@
 
 /* ═══ RESET ════════════════════════════════════════════ */
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-html, body { height:100%; }
+html, body { height:100%; margin:0; padding:0; }
 #root { height:100%; display:flex; flex-direction:column; }
 body {
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Roboto',sans-serif;
@@ -43,9 +43,9 @@ body {
 /* ═══ LAYOUT ═══════════════════════════════════════════ */
 .app-shell {
   max-width:640px; margin:0 auto;
-  height:100%; /* fill #root which is 100vh */
+  height:100%;
   display:flex; flex-direction:column; position:relative;
-  overflow:hidden; /* clip children, scrolling is per-view */
+  overflow:hidden;
 }
 
 .view-scroll {
