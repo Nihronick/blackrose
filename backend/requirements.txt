@@ -8,3 +8,4 @@ slowapi==0.1.9
 aiohttp>=3.9.0
 alembic==1.13.2
 psycopg2-binary==2.9.9
+redis[hiredis]==5.0.8
