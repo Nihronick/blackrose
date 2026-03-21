@@ -12,6 +12,21 @@ import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
 const tgApp = window.Telegram?.WebApp
 
+// Копирование через textarea + execCommand — работает везде включая Telegram Desktop
+function _fallbackCopy(text, onSuccess) {
+  try {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+    document.body.appendChild(el)
+    el.focus()
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+    onSuccess?.()
+  } catch {}
+}
+
 function VideoBlock({ url }) {
   const v = parseVideo(url)
   if (!v) return null
@@ -92,22 +107,36 @@ function ShareButton({ guide }) {
     const botUsername = 'blackrosesl1_bot'
     const deepLink = `https://t.me/${botUsername}?start=guide_${guide.key}`
 
-    // Try Telegram share first
-    if (tgApp?.switchInlineQuery) {
-      tgApp.switchInlineQuery(guide.title, ['users', 'groups'])
-      return
-    }
-    // Fallback: copy deep link
-    navigator.clipboard?.writeText(deepLink).then(() => {
+    const markShared = () => {
       setShared(true)
       haptic.success?.()
       setTimeout(() => setShared(false), 2000)
-    }).catch(() => {
-      // last resort: open share
-      if (navigator.share) {
-        navigator.share({ title: guide.title, url: deepLink })
-      }
-    })
+    }
+
+    // Вариант 1: Telegram Desktop/Mobile — openTelegramLink (самый надёжный способ)
+    // Открывает диалог выбора чата для пересылки ссылки
+    if (tgApp?.openTelegramLink) {
+      tgApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(guide.title)}`)
+      markShared()
+      return
+    }
+
+    // Вариант 2: clipboard API
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(deepLink)
+        .then(markShared)
+        .catch(() => _fallbackCopy(deepLink, markShared))
+      return
+    }
+
+    // Вариант 3: Web Share API (мобильные браузеры)
+    if (navigator.share) {
+      navigator.share({ title: guide.title, url: deepLink }).then(markShared).catch(() => {})
+      return
+    }
+
+    // Вариант 4: document.execCommand (IE/старые браузеры, всегда работает)
+    _fallbackCopy(deepLink, markShared)
   }
 
   return (

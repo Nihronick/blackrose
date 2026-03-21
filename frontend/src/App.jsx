@@ -51,6 +51,9 @@ export function App() {
   useEffect(() => {
     const tg = window.Telegram?.WebApp
 
+    // Сразу сообщаем Telegram что приложение готово — критично для Desktop
+    tg?.ready()
+
     const doAuth = () => {
       apiFetch('/api/auth')
         .then(data => { if (data.is_admin === true) setIsAdmin(true) })
