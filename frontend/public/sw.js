@@ -1,8 +1,7 @@
-const CACHE_NAME = 'blackrose-v2'
-const GUIDE_CACHE = 'blackrose-guides-v2'
-const STATIC_ASSETS = ['/', '/index.html']
+// BlackRose SW v3 — только API кеш, статика всегда с сервера
+const CACHE_NAME = 'blackrose-v3'
+const GUIDE_CACHE = 'blackrose-guides-v3'
 
-// Guides to cache on read (read-through cache)
 const API_CACHE_PATTERNS = [
   /\/api\/guide\/[^/]+$/,
   /\/api\/categories$/,
@@ -11,18 +10,13 @@ const API_CACHE_PATTERNS = [
 
 self.addEventListener('install', e => {
   self.skipWaiting()
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS).catch(() => {}))
-  )
 })
 
 self.addEventListener('activate', e => {
+  // Удаляем ВСЕ старые кеши включая v1 и v2
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys
-        .filter(k => k !== CACHE_NAME && k !== GUIDE_CACHE)
-        .map(k => caches.delete(k))
-      )
+      Promise.all(keys.map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   )
 })
@@ -31,10 +25,9 @@ self.addEventListener('fetch', e => {
   const { request } = e
   const url = new URL(request.url)
 
-  // Only handle GET
   if (request.method !== 'GET') return
 
-  // API guide caching (network-first, fallback to cache)
+  // Только API гайды кешируем (network-first)
   const isApiCacheable = API_CACHE_PATTERNS.some(p => p.test(url.pathname))
   if (isApiCacheable) {
     e.respondWith(
@@ -51,25 +44,6 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // Static assets: cache-first, НО index.html всегда network-first
-  if (url.origin === self.location.origin) {
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      // Network-first для index.html — всегда проверяем новую версию
-      e.respondWith(
-        fetch(request)
-          .then(res => {
-            if (res.ok) {
-              caches.open(CACHE_NAME).then(c => c.put(request, res.clone()))
-            }
-            return res
-          })
-          .catch(() => caches.match(request))
-      )
-    } else {
-      // JS/CSS/assets — cache-first (они имеют hash в имени и не меняются)
-      e.respondWith(
-        caches.match(request).then(cached => cached || fetch(request))
-      )
-    }
-  }
+  // Вся статика (JS, CSS, HTML) — всегда с сервера, без кеша
+  // Это гарантирует что новый bundle всегда загружается после деплоя
 })
