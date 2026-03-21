@@ -92,14 +92,24 @@ export function App() {
   useEffect(() => {
     const noBack = view === 'categories' || view === 'access_denied'
     noBack ? tgApp?.BackButton?.hide() : tgApp?.BackButton?.show()
-    if (!noBack) window.history.pushState({ view }, '')
+
+    // window.history.pushState недоступен в Telegram Desktop webview — оборачиваем
+    if (!noBack) {
+      try { window.history.pushState({ view }, '') } catch {}
+    }
+
     tgApp?.BackButton?.offClick(goBack)
     tgApp?.BackButton?.onClick(goBack)
+
+    // popstate нужен только если pushState сработал (обычный браузер)
     const onPop = e => { e.preventDefault(); goBack() }
-    window.addEventListener('popstate', onPop)
+    try {
+      window.addEventListener('popstate', onPop)
+    } catch {}
+
     return () => {
       tgApp?.BackButton?.offClick(goBack)
-      window.removeEventListener('popstate', onPop)
+      try { window.removeEventListener('popstate', onPop) } catch {}
     }
   }, [view, goBack])
 
