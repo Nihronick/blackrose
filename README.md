@@ -51,6 +51,8 @@ blackrose/
 | `ADMIN_USERS` | ID администраторов через запятую |
 | `INIT_DATA_MAX_AGE` | Время жизни initData в секундах (по умолчанию 86400) |
 | `LOG_LEVEL` | Уровень логирования (INFO / DEBUG) |
+| `FRONTEND_URL` | URL фронтенда (для CORS) |
+| `BOT_NOTIFY_URL` | URL бота (если бот доступен по HTTP) для push-уведомлений подписчикам при создании нового гайда |
 
 ### Bot
 | Переменная | Описание |
@@ -115,6 +117,23 @@ cd bot
 pip install -r requirements.txt
 python main.py
 ```
+
+---
+
+## Тесты
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
+Покрытие:
+- `tests/test_auth.py` — `verify_telegram_init_data`, `_parse_ids`, `_validate_key`
+- `tests/test_formatting.py` — `format_guide_text`, `normalize_icon_syntax`
+- `tests/test_api_endpoints.py` — HTTP endpoints (health, auth, search, guide, admin, top)
+
+Тесты не требуют реальной БД или Telegram — все внешние зависимости заменены stub-ами.
 
 ---
 

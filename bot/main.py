@@ -41,7 +41,9 @@ logger.add(
 
 
 class InterceptHandler(logging.Handler):
-    def emit(self, record):
+    """Перехватывает stdlib logging и направляет в loguru."""
+
+    def emit(self, record: logging.LogRecord) -> None:
         try:
             level = logger.level(record.levelname).name
         except ValueError:
@@ -53,7 +55,11 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
+# Перехватываем ВСЕ stdlib-логи (aiogram, aiohttp, asyncpg...)
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+# Отключаем propagation у шумных библиотечных логгеров
+for _noisy in ("aiogram.event", "aiohttp.access"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 # ── Bot + Dispatcher ─────────────────────────────────
 logger.info("🚀 Инициализация бота...")

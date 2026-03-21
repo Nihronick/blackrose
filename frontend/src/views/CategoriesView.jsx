@@ -7,7 +7,9 @@ import { CardIcon } from '../components/CardIcon'
 import { PtrIndicator } from '../components/PtrIndicator'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 
-export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLoaded }) {
+import { TagBadge } from '../components/TagBadge'
+
+export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLoaded, onTagClick }) {
   const [categories, setCategories] = useState(null)
   const [error, setError]           = useState(null)
   const [search, setSearch]         = useState('')
@@ -94,6 +96,13 @@ export function CategoriesView({ onSelectCategory, onSelectGuide, onCategoriesLo
                         <span className="card-subtitle">📂 {getCatTitle(item.category_key)}</span>
                       )}
                     </div>
+                    {isSearch && item.tags?.length > 0 && (
+                      <div className="card-tags" onClick={e => e.stopPropagation()}>
+                        {item.tags.slice(0, 3).map(t => (
+                          <TagBadge key={t} tag={t} onClick={() => { haptic.light(); onTagClick?.(t) }} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <span className="card-arrow">›</span>
                 </div>

@@ -17,7 +17,8 @@ import hmac
 import hashlib
 import logging
 import json
-import bleach
+import nh3
+import aiohttp
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs
 
@@ -53,6 +54,30 @@ logger = logging.getLogger("blackrose")
 
 BOT_TOKEN         = os.getenv("BOT_TOKEN", "")
 INIT_DATA_MAX_AGE = int(os.getenv("INIT_DATA_MAX_AGE", 86400))
+BOT_NOTIFY_URL    = os.getenv("BOT_NOTIFY_URL", "")   # URL самого бота для webhook-нотификаций
+
+
+async def _notify_new_guide(guide_key: str, guide_title: str, category_key: str) -> None:
+    """Fire-and-forget: tell the bot to push notifications to category subscribers."""
+    if not BOT_NOTIFY_URL or not BOT_TOKEN:
+        return
+    try:
+        payload = {
+            "guide_key":    guide_key,
+            "guide_title":  guide_title,
+            "category_key": category_key,
+            "bot_token":    BOT_TOKEN,
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{BOT_NOTIFY_URL}/api/internal/notify",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=5),
+            ) as r:
+                if r.status != 200:
+                    logger.warning(f"notify webhook status={r.status}")
+    except Exception as e:
+        logger.warning(f"_notify_new_guide failed: {e}")
 
 def _parse_ids(raw: str) -> set[int]:
     s: set[int] = set()
@@ -66,21 +91,28 @@ ALLOWED_USERS = _parse_ids(os.getenv("ALLOWED_USERS", ""))
 ADMIN_USERS   = _parse_ids(os.getenv("ADMIN_USERS", ""))
 
 # ── Bleach whitelist ──────────────────────────────────
-_ALLOWED_TAGS = [
+# nh3 uses sets, not lists; wildcard "*" is not supported — use tag_attribute_values
+# IMPORTANT: nh3 controls <a rel="..."> via the separate link_rel= parameter.
+# Adding "rel" to attributes["a"] causes a Rust-level panic in ammonia.
+_ALLOWED_TAGS: set[str] = {
     "strong", "em", "s", "u", "code", "h2", "h3",
     "blockquote", "li", "a", "img", "br", "hr",
     "span", "svg", "path", "line",
-]
-_ALLOWED_ATTRS = {
-    "a":    ["href", "target", "rel", "class",
-             "data-guide-key", "data-guide-title", "data-guide-icon"],
-    "img":  ["src", "alt", "width", "height", "class", "style",
-             "loading"],
-    "svg":  ["viewBox", "width", "height", "fill", "stroke",
-             "stroke-width", "stroke-linecap", "class", "style"],
-    "path": ["d", "fill", "stroke", "stroke-width", "stroke-linecap"],
-    "line": ["x1", "y1", "x2", "x2", "stroke", "stroke-width"],
-    "*":    ["class", "style"],
+}
+_ALLOWED_ATTRS: dict[str, set[str]] = {
+    "a":    {"href", "target", "class",
+             "data-guide-key", "data-guide-title", "data-guide-icon"},
+    "img":  {"src", "alt", "width", "height", "class", "style", "loading"},
+    "svg":  {"viewBox", "width", "height", "fill", "stroke",
+             "stroke-width", "stroke-linecap", "class", "style"},
+    "path": {"d", "fill", "stroke", "stroke-width", "stroke-linecap"},
+    "line": {"x1", "y1", "x2", "stroke", "stroke-width"},
+    "strong": {"class", "style"}, "em": {"class", "style"},
+    "s": {"class", "style"}, "u": {"class", "style"},
+    "code": {"class", "style"}, "h2": {"class", "style"},
+    "h3": {"class", "style"}, "blockquote": {"class", "style"},
+    "li": {"class", "style"}, "br": {"class"}, "hr": {"class"},
+    "span": {"class", "style"},
 }
 
 
@@ -106,7 +138,7 @@ async def resolve_guide_links_bulk(keys: list[str]) -> dict[str, dict]:
         pool = await get_pool()
         async with pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT key, title, icon_url FROM guides WHERE key = ANY(::text[])",
+                "SELECT key, title, icon_url FROM guides WHERE key = ANY($1::text[])",
                 keys,
             )
         return {r["key"]: {"title": r["title"], "icon": r["icon_url"] or ""} for r in rows}
@@ -183,7 +215,12 @@ def format_guide_text(text: str, guide_links: dict | None = None) -> str:
     result = re.sub(r"\[(.+?)\]\((https?://[^\)]+)\)",
                     r'<a href="\2" target="_blank" rel="noreferrer" class="guide-extlink">\1</a>', result)
     result = result.replace("\n", "<br>")
-    result = bleach.clean(result, tags=_ALLOWED_TAGS, attributes=_ALLOWED_ATTRS, strip=True)
+    result = nh3.clean(
+        result,
+        tags=_ALLOWED_TAGS,
+        attributes=_ALLOWED_ATTRS,
+        link_rel="noreferrer",   # nh3 sets rel on <a> via this param, not attributes
+    )
     return result
 
 
@@ -387,6 +424,8 @@ async def category(key: str, user=Depends(require_telegram_user)):
                 "has_photo":    g["has_photo"],
                 "has_video":    g["has_video"],
                 "has_document": g["has_document"],
+                "views":        g.get("views") or 0,
+                "tags":         g.get("tags") or [],
             }
             for g in guides
         ],
@@ -470,7 +509,10 @@ _KEY_RE = re.compile(r'^[a-z0-9_-]{1,64}$')
 
 def _validate_key(v: str) -> str:
     if not _KEY_RE.match(v):
-        raise ValueError("Ключ должен содержать только строчные буквы, цифры, _ и - (до 64 символов)")
+        raise HTTPException(
+            status_code=422,
+            detail="Ключ должен содержать только строчные буквы, цифры, _ и - (до 64 символов)",
+        )
     return v
 
 
@@ -585,6 +627,7 @@ async def admin_guide(key: str, user=Depends(require_admin)):
 @app.put("/api/admin/guide/{key}")
 async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin)):
     _validate_key(key)
+    is_new = not await get_guide(key)
     await upsert_guide(
         key=key,
         category_key=body.category_key,
@@ -599,7 +642,12 @@ async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin
     )
     _invalidate_cache()
     _invalidate_guide_cache(key)
-    return {"ok": True}
+    if is_new:
+        import asyncio
+        asyncio.create_task(
+            _notify_new_guide(key, body.title, body.category_key)
+        )
+    return {"ok": True, "created": is_new}
 
 
 @app.delete("/api/admin/guide/{key}")
@@ -731,7 +779,7 @@ class CommentIn(BaseModel):
             raise ValueError("Комментарий не может быть пустым")
         if len(v) > 1000:
             raise ValueError("Комментарий слишком длинный (макс. 1000 символов)")
-        return bleach.clean(v, tags=[], strip=True)
+        return nh3.clean(v, tags=set())
 
 
 @app.get("/api/guide/{key}/comments")
