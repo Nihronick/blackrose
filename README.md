@@ -1,6 +1,6 @@
 # BlackRose Guides 🌹
 
-Telegram Mini App — справочник гильдии BlackRose для игры Slayer Legend.  
+Telegram Mini App — справочник гильдии BlackRose для игры Slayer Legend.
 Позволяет участникам гильдии быстро находить гайды прямо в Telegram, не выходя из чата.
 
 ---
@@ -119,6 +119,32 @@ python main.py
 ```
 
 ---
+
+## CI/CD
+
+Каждый push в `main` запускает GitHub Actions:
+
+| Job | Что проверяет |
+|---|---|
+| `backend-test` | pytest 87 тестов |
+| `backend-lint` | ruff lint + format |
+| `bot-lint` | ruff lint |
+| `frontend-build` | `npm run build` |
+| `all-checks` | gate для Railway деплоя |
+
+Railway деплоит только после зелёного `all-checks`. Настройка: Railway → сервис → Settings → вкладка **Deploy** → **Check CI status before deploying** → включить.
+
+## Pre-commit хуки
+
+```bash
+pip install pre-commit
+pre-commit install   # один раз после клонирования репо
+```
+
+После этого перед каждым `git commit` автоматически запускаются:
+- ruff lint + format (Python)
+- prettier (JS/JSX/CSS)
+- проверка на случайно закоммиченные токены и ключи
 
 ## Тесты
 
