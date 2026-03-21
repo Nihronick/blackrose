@@ -1,5 +1,5 @@
-const CACHE_NAME = 'blackrose-v1'
-const GUIDE_CACHE = 'blackrose-guides-v1'
+const CACHE_NAME = 'blackrose-v2'
+const GUIDE_CACHE = 'blackrose-guides-v2'
 const STATIC_ASSETS = ['/', '/index.html']
 
 // Guides to cache on read (read-through cache)
@@ -51,10 +51,25 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // Static assets: cache-first
+  // Static assets: cache-first, НО index.html всегда network-first
   if (url.origin === self.location.origin) {
-    e.respondWith(
-      caches.match(request).then(cached => cached || fetch(request))
-    )
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      // Network-first для index.html — всегда проверяем новую версию
+      e.respondWith(
+        fetch(request)
+          .then(res => {
+            if (res.ok) {
+              caches.open(CACHE_NAME).then(c => c.put(request, res.clone()))
+            }
+            return res
+          })
+          .catch(() => caches.match(request))
+      )
+    } else {
+      // JS/CSS/assets — cache-first (они имеют hash в имени и не меняются)
+      e.respondWith(
+        caches.match(request).then(cached => cached || fetch(request))
+      )
+    }
   }
 })
