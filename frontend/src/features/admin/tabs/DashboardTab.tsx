@@ -31,12 +31,18 @@ export const DashboardTab: React.FC = () => {
       .catch(() => {})
   }, [])
 
-  if (!stats)
+  const chartData = (analytics || []).map(d => ({
+    name: new Date(d.day).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
+    views: d.count
+  }))
+
+  if (!stats) {
     return (
       <div className="flex h-60 items-center justify-center">
         <div className="adm2-spinner" />
       </div>
     )
+  }
 
   const statCards = [
     {
@@ -69,10 +75,6 @@ export const DashboardTab: React.FC = () => {
     },
   ]
 
-  const chartData = analytics.map(d => ({
-    name: new Date(d.day).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
-    views: d.count
-  }))
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
