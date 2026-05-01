@@ -1,26 +1,44 @@
-# Скрипт для деплоя фронтенда в GitHub Pages
-# Использование: .\deploy-frontend.ps1
+# Frontend deployment script for GitHub Pages
+# Usage: .\deploy-frontend.ps1
 
-Write-Host "🚀 Начинаю сборку и деплой фронтенда на GitHub..." -ForegroundColor Cyan
+$ErrorActionPreference = "Stop"
+Write-Host "Starting Frontend Build and Deployment to GitHub..."
 
-# 1. Переходим в папку фронтенда
-cd frontend
+# 1. Enter frontend folder and build
+Push-Location frontend
 
-# 2. Устанавливаем зависимости и собираем проект
-Write-Host "📦 Установка зависимостей..." -ForegroundColor Gray
+Write-Host "Installing dependencies..."
 npm install
 
-Write-Host "🏗️ Сборка проекта..." -ForegroundColor Yellow
+Write-Host "Building project..."
 npm run build
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Ошибка при сборке!" -ForegroundColor Red
-    exit 1
-}
+Pop-Location
 
-# 3. Деплой через gh-pages (если установлен пакет)
-Write-Host "📤 Отправка на GitHub Pages..." -ForegroundColor Green
-npx gh-pages -d dist
+# 2. Isolated Deployment
+$deployDir = Join-Path $PSScriptRoot ".deploy_temp_frontend"
+if (Test-Path $deployDir) { Remove-Item $deployDir -Recurse -Force }
+New-Item -ItemType Directory -Path $deployDir | Out-Null
 
-Write-Host "✅ Фронтенд успешно обновлен!" -ForegroundColor Green
-cd ..
+# Copy built assets
+Copy-Item "frontend/dist/*" $deployDir -Recurse -Force
+
+# Deploy using gh-pages from the isolated folder
+Push-Location $deployDir
+git init -b gh-pages
+git config user.email "deploy@blackrose.ai"
+git config user.name "BlackRose Deployer"
+
+git remote add origin https://github.com/Nihronick/blackrose.git
+git add .
+git commit -m "Deploy: Clean frontend build"
+
+Write-Host "Pushing to GitHub Pages (Force)..."
+git push origin gh-pages --force
+
+Pop-Location
+
+# 3. Cleanup
+Remove-Item $deployDir -Recurse -Force
+
+Write-Host "Frontend deployment finished successfully!"

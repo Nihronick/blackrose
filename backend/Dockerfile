@@ -14,17 +14,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Backend зависимости
-COPY backend/requirements.txt ./requirements.txt
+# Backend dependencies
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Bot зависимости
-COPY backend/bot/requirements.txt ./bot-requirements.txt
+# Bot dependencies
+COPY bot/requirements.txt ./bot-requirements.txt
 RUN pip install --no-cache-dir -r bot-requirements.txt
 
-# Копируем содержимое backend и папку assets
-COPY backend/ .
-COPY assets/ ./assets/
+# Copy all code
+COPY . .
 
 RUN chmod +x entrypoint.sh && mkdir -p logs
 

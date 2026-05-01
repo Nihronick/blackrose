@@ -1,31 +1,41 @@
-# Скрипт для деплоя бэкенда в Hugging Face Spaces
-# Использование: .\deploy-backend.ps1
+# Backend deployment script for Hugging Face Spaces (Docker)
+# Isolated preparation strategy
+# Usage: .\deploy-backend.ps1
 
-Write-Host "🚀 Начинаю деплой бэкенда в Hugging Face..." -ForegroundColor Cyan
+$ErrorActionPreference = "Stop"
+Write-Host "Starting Isolated Backend Deployment to Hugging Face..."
 
-# 1. Сохраняем текущее состояние
-$currentBranch = (git branch --show-current)
-Write-Host "📍 Текущая ветка: $currentBranch"
+$deployDir = Join-Path $PSScriptRoot ".deploy_temp_backend"
 
-# 2. Создаем чистую ветку для деплоя
-Write-Host "🧹 Очистка временных веток..." -ForegroundColor Gray
-git branch -D hf-deploy-tmp 2>$null
+# 1. Cleanup old deploy dir
+if (Test-Path $deployDir) {
+    Remove-Item $deployDir -Recurse -Force
+}
 
-Write-Host "📦 Подготовка чистого бэкенда..." -ForegroundColor Yellow
-git checkout --orphan hf-deploy-tmp
-git rm -rf --cached .
+# 2. Create clean structure
+New-Item -ItemType Directory -Path $deployDir | Out-Null
 
-# 3. Копируем только то, что нужно для HF
-git checkout main -- backend/ README.md CLAUDE.md
+# 3. Copy only backend files
+Write-Host "Copying backend files..."
+Copy-Item "backend/*" $deployDir -Recurse -Force
 
-# 4. Коммит и Пуш
-git commit -m "Production deployment to HF Spaces"
-Write-Host "📤 Отправка в Hugging Face..." -ForegroundColor Green
-git push hf_deploy hf-deploy-tmp:main --force
+# 4. Deploy from isolated folder
+Push-Location $deployDir
 
-# 5. Возвращаемся назад
-Write-Host "🏠 Возвращаюсь в ветку $currentBranch" -ForegroundColor Gray
-git checkout $currentBranch
-git branch -D hf-deploy-tmp
+git init -b main
+git config user.email "deploy@blackrose.ai"
+git config user.name "BlackRose Deployer"
 
-Write-Host "✅ Деплой завершен успешно!" -ForegroundColor Green
+git remote add origin https://huggingface.co/spaces/Nihronick/blackrose-backend
+git add .
+git commit -m "Deploy: Clean backend build"
+
+Write-Host "Pushing to Hugging Face (Force)..."
+git push origin main --force
+
+Pop-Location
+
+# 5. Final Cleanup
+Remove-Item $deployDir -Recurse -Force
+
+Write-Host "Backend deployment finished successfully!"
