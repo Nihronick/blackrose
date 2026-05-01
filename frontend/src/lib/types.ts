@@ -22,14 +22,16 @@ export interface Guide {
   icon?: string
   category_key: string
   views: number
-  content?: string
   text?: string
-  text_content?: string
+  preview?: string
   created_at?: string
   updated_at?: string
   photo?: string[]
   video?: string[]
   document?: string[]
+  has_photo?: boolean
+  has_video?: boolean
+  has_document?: boolean
   sort_order?: number
   tags?: string[]
   guide_links?: Record<string, unknown>
@@ -39,8 +41,10 @@ export interface Guide {
 export interface Category {
   key: string
   title: string
+  icon?: string
   icon_url?: string
   sort_order: number
+  count?: number
 }
 
 export interface GuideHistory {
@@ -99,9 +103,8 @@ export interface IconGroupResponse {
   icons: Array<{ key: string; url: string }>
 }
 
-export interface IconsGroupedResponse {
-  data: IconGroupResponse[]
-}
+// Backend returns IconGroupResponse[] directly (array, not wrapped)
+export type IconsGroupedResponse = IconGroupResponse[]
 
 export interface SubscriptionsResponse {
   subscriptions: string[]

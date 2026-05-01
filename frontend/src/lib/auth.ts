@@ -63,7 +63,7 @@ export function getStoredUser(): O.Option<User> {
 }
 
 export function getAuthHeaders() {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = {}
   const initData = getTelegramInitData()
   if (initData) {
     headers['X-Telegram-Init-Data'] = initData
@@ -85,16 +85,21 @@ interface TelegramUser {
 }
 
 export async function handleTelegramLogin(user: TelegramUser, base: string) {
-  const resp = await fetch(`${base}/api/auth/telegram`, {
+  const resp = await fetch(`${base}/api/auth/web-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user),
   })
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}))
-    throw new Error(err.message || 'Ошибка авторизации')
+    throw new Error(err.detail || err.message || 'Ошибка авторизации')
   }
   const result = await resp.json()
-  setStoredToken(result.token, result.user)
+  // Backend returns flat: { token, user_id, first_name, is_admin }
+  setStoredToken(result.token, {
+    id: result.user_id,
+    first_name: result.first_name,
+    is_admin: result.is_admin,
+  })
   return result
 }

@@ -98,10 +98,10 @@ export const apiSetGuideTags = (key: string, tags: string[]) =>
   apiPut<unknown>(`/api/admin/guide/${key}/tags`, { tags })
 
 export const apiReorderGuides = (items: { key: string; sort_order: number }[]) =>
-  apiPost<unknown>('/api/admin/reorder/guides', { items })
+  apiPost<unknown>('/api/admin/reorder/guides', { order: items })
 
 export const apiReorderCategories = (items: { key: string; sort_order: number }[]) =>
-  apiPost<unknown>('/api/admin/reorder/categories', { items })
+  apiPost<unknown>('/api/admin/reorder/categories', { order: items })
 
 export const apiAddComment = (guideKey: string, text: string) =>
   apiPost<unknown>(`/api/guide/${guideKey}/comments`, { text })
