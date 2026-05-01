@@ -443,15 +443,15 @@ git diff HEAD
 
 ---
 
-## 📝 Current Status (Last Updated: 2026-05-01, Session 2)
+## 📝 Current Status (Last Updated: 2026-05-02, Session 3)
 
 ### Recent Changes
-- Migrated from Render to Hugging Face Spaces (Docker).
-- Media storage moved to HF Datasets (cloud-native, no local files).
-- Deploy scripts rewritten with isolated temp directories.
-- Modular `.gitignore` structure (per-directory).
-- Admin media management uses HF API instead of local filesystem.
-- CLAUDE.md fully rebuilt: file map, env vars, skills, anti-patterns, ADR.
+- **Premium Video Player**: Custom high-performance player with PiP, muted loop, and Glassmorphism UI.
+- **Video Hydration**: Dynamic replacement of standard video tags with React components in guide content.
+- **TMA Navigation**: Fixed "Back" button reliability for deep links and eliminated redundant headers.
+- **Icon Infrastructure**: Synchronized GitHub Pages CDN with backend `icons.py` mapping.
+- **Performance**: Removed FFmpeg from backend; media processing is now direct and resource-efficient.
+- **Deployment**: Stabilized scripts for HF Spaces (backend) and GH Pages (frontend).
 
 ### Code Audit Fixes (2026-05-01, Session 1)
 - ✅ Fixed `select(1)` → `text("SELECT 1")` in `database.py` (Anti-Pattern #1).

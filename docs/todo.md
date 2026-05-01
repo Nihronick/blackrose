@@ -6,9 +6,13 @@
 - [x] Implement/Fix Guide deletion logic.
 - [x] Simplify Backend Storage (Remove CPU-heavy video compression).
 - [x] Optimize Frontend (Remove complex animations and universal transitions).
+- [x] **Stabilize TMA Navigation** (Fixed Back button and double header).
+- [x] **Premium Video Player** (Custom UI, PiP, Looping, Hydration).
 
 ## 🛠️ Features & Improvements
 - [x] Clean up redundant Graphify files (Verified removed).
+- [ ] Implement automated icon downloader for Discord Lab.
+- [ ] Add `/health` endpoint to FastAPI for monitoring.
 
 ## ✅ Completed
 - [x] Implement **Home Dashboard** (Hero section, Horizontal scrolls, Activity feed).

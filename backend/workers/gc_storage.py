@@ -1,7 +1,10 @@
-import asyncio
-import logging
-import os
-from datetime import datetime
+import sys
+from pathlib import Path
+
+# Добавляем корневую директорию проекта в sys.path
+root_path = Path(__file__).parent.parent
+if str(root_path) not in sys.path:
+    sys.path.append(str(root_path))
 
 from database import init_db, get_sessionmaker, close_pool
 from db_models import Guide, Category
