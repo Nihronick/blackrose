@@ -128,13 +128,13 @@ export const App: React.FC = () => {
       className="app-shell flex h-[calc(100dvh-var(--tg-viewport-stable-height,0px))] flex-col overflow-hidden bg-background text-foreground"
       data-testid="app-shell"
     >
-      <header className="sticky top-0 z-40 flex h-16 items-center px-4 glass shrink-0">
-        {!isHome && location.pathname !== '/admin' ? (
-          <Header
-            title={headerTitle}
-            onBack={handleBack}
-          />
-        ) : (
+      {!isHome && location.pathname !== '/admin' ? (
+        <Header
+          title={headerTitle}
+          onBack={handleBack}
+        />
+      ) : (
+        <header className="sticky top-0 z-40 flex h-16 items-center px-4 glass shrink-0">
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex size-10 items-center justify-center overflow-hidden rounded-2xl border border-border/10 bg-background shadow-lg shadow-primary/20">
@@ -228,8 +228,8 @@ export const App: React.FC = () => {
               </Button>
             </div>
           </div>
-        )}
-      </header>
+        </header>
+      )}
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <AnimatePresence mode="wait">
