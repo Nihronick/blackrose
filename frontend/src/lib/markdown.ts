@@ -92,14 +92,7 @@ marked.use({
 
       // Специальная обработка для [Video: name](url)
       if (typeof label === 'string' && label.includes('Video:')) {
-        return (
-          '<div class="guide-inline-video my-6">' +
-          `<video src="${normalizedHref}" controls class="w-full rounded-2xl border border-border/50 shadow-2xl" preload="none" playsinline></video>` +
-          `<p class="text-[10px] text-muted-foreground mt-2 text-center font-bold tracking-wider uppercase">${label
-            .replace('Video:', '')
-            .trim()}</p>` +
-          '</div>'
-        )
+        return `<div class="premium-video-placeholder my-6" data-video-url="${normalizedHref}" data-video-alt="${label.replace('Video:', '').trim()}"></div>`
       }
 
       if (normalizedHref.startsWith('http')) {
@@ -113,14 +106,7 @@ marked.use({
       const alt = text ?? ''
       const parsedVideo = parseVideo(src)
       if (parsedVideo?.type === 'video') {
-        return (
-          '<div class="guide-inline-video my-6">' +
-          `<video src="${src}" controls class="w-full rounded-2xl border border-border/50 shadow-2xl" preload="none" playsinline></video>` +
-          (alt
-            ? `<p class="text-[11px] text-muted-foreground mt-2 text-center italic">${alt}</p>`
-            : '') +
-          '</div>'
-        )
+        return `<div class="premium-video-placeholder my-6" data-video-url="${src}" data-video-alt="${alt}"></div>`
       }
       return (
         '<div class="my-6">' +
@@ -205,7 +191,7 @@ function normalizeDiscordMarkdown(text: string, iconResolver: (name: string) => 
 // ── DOMPurify конфиг ──────────────────────────────────────────
 
 const PURIFY_CONFIG = {
-  ALLOWED_TAGS: [
+    'div',
     'strong',
     'em',
     's',
@@ -251,6 +237,8 @@ const PURIFY_CONFIG = {
     'data-guide-title',
     'data-guide-icon',
     'data-icon-name',
+    'data-video-url',
+    'data-video-alt',
     'id',
   ],
   FORCE_BODY: false,

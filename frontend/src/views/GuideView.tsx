@@ -150,6 +150,33 @@ export const GuideView: React.FC<GuideViewProps> = ({
     return () => el.removeEventListener('click', handleClick)
   }, [formattedText])
 
+  // Hydrate premium video players
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+
+    const placeholders = el.querySelectorAll('.premium-video-placeholder')
+    const roots: any[] = []
+
+    import('react-dom/client').then(({ createRoot }) => {
+      placeholders.forEach((p) => {
+        const placeholder = p as HTMLElement
+        const url = placeholder.dataset.videoUrl
+        if (url) {
+          const root = createRoot(placeholder)
+          root.render(<VideoBlock url={url} />)
+          roots.push(root)
+        }
+      })
+    })
+
+    return () => {
+      roots.forEach((root) => {
+        setTimeout(() => root.unmount(), 0)
+      })
+    }
+  }, [formattedText])
+
   const handleRefetch = async () => {
     await refetch()
   }
