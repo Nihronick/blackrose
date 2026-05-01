@@ -76,27 +76,6 @@ export const GuidesTab: React.FC<GuidesTabProps> = ({ categories, importedGuide,
     }
   }, [])
 
-  if (editing !== null) {
-    return (
-      <GuideEditor
-        guide={editing === 'new' ? null : editing}
-        categories={categories}
-        onSave={() => {
-          setEditing(null)
-          load()
-        }}
-        onCancel={() => setEditing(null)}
-      />
-    )
-  }
-
-  const visible = guides.filter(
-    (g) =>
-      !search ||
-      g.title.toLowerCase().includes(search.toLowerCase()) ||
-      g.key.toLowerCase().includes(search.toLowerCase())
-  )
-
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }, [])
@@ -110,6 +89,27 @@ export const GuidesTab: React.FC<GuidesTabProps> = ({ categories, importedGuide,
       () => {}
     )
   }, [])
+
+  const visible = guides.filter(
+    (g) =>
+      !search ||
+      g.title.toLowerCase().includes(search.toLowerCase()) ||
+      g.key.toLowerCase().includes(search.toLowerCase())
+  )
+
+  if (editing !== null) {
+    return (
+      <GuideEditor
+        guide={editing === 'new' ? null : editing}
+        categories={categories}
+        onSave={() => {
+          setEditing(null)
+          load()
+        }}
+        onCancel={() => setEditing(null)}
+      />
+    )
+  }
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">
