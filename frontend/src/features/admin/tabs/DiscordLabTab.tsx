@@ -6,8 +6,8 @@ import { Beaker, Copy, Globe, RefreshCcw, Send, Settings, Database } from '@/lib
 import type React from 'react'
 import { useState, useMemo, useEffect } from 'react'
 import { getGameIconUrl } from '@/lib/gameIcons'
-import { apiFetch, apiPost, apiImportMedia, apiGetProxyUrl } from '@/lib/api'
-import type { Guide } from '@/lib/types'
+import { apiFetch, apiPost, apiPut, apiImportMedia, apiGetProxyUrl } from '@/lib/api'
+import type { Guide, Category } from '@/lib/types'
 
 export const DiscordLabTab: React.FC = () => {
   const [jsonInput, setJsonInput] = useState('')
@@ -19,9 +19,15 @@ export const DiscordLabTab: React.FC = () => {
   const [editableTitle, setEditableTitle] = useState('')
   const [selectedGuideKey, setSelectedGuideKey] = useState<string>('new')
   const [allGuides, setAllGuides] = useState<Guide[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
 
   useEffect(() => {
     apiFetch<Guide[]>('/api/admin/guides').then(setAllGuides).catch(() => {})
+    apiFetch<Category[]>('/api/admin/categories').then(cats => {
+      setCategories(cats)
+      if (cats.length > 0) setSelectedCategory(cats[0].key)
+    }).catch(() => {})
   }, [])
 
   const runTest = async () => {
@@ -90,6 +96,7 @@ export const DiscordLabTab: React.FC = () => {
     let finalContent = result.content
     const photos: string[] = []
     const videos: string[] = []
+    let failedMedia = 0
     
     try {
       const filesToProcess = result.media_files || []
@@ -97,7 +104,7 @@ export const DiscordLabTab: React.FC = () => {
       
       for (let i = 0; i < filesToProcess.length; i++) {
         const file = filesToProcess[i]
-        setImportProgress(prev => ({ ...prev, current: i + 1, status: `Загрузка: ${file.filename || 'файл'}` }))
+        setImportProgress(prev => ({ ...prev, current: i + 1, status: `Загрузка: ${file.filename || 'файл'} (${i + 1}/${filesToProcess.length})` }))
         
         try {
           const uploadRes: any = await apiImportMedia(file.url, `imported/discord/${Date.now()}`)
@@ -112,31 +119,53 @@ export const DiscordLabTab: React.FC = () => {
             }
           }
         } catch (err) {
+          failedMedia++
           console.error("Failed to import media file:", file.url, err)
         }
       }
       
-      setImportProgress(prev => ({ ...prev, status: 'Завершение...' }))
+      setImportProgress(prev => ({ ...prev, status: 'Сохранение гайда в базу...' }))
       
-      // Сначала выключаем состояние загрузки, потом шлем событие
-      setIsImporting(false)
-
-      const event = new CustomEvent('blackrose:import:guide', {
-        detail: {
-          guide: {
-            key: selectedGuideKey === 'new' ? `imported_${Date.now()}` : selectedGuideKey,
-            title: editableTitle,
-            text: finalContent,
-            photo: photos,
-            video: videos,
-            category_key: 'general'
-          }
-        }
+      // Сохраняем гайд в БД через API
+      const guideKey = selectedGuideKey === 'new' ? `imported_${Date.now()}` : selectedGuideKey
+      
+      // Определяем category_key
+      let categoryKey = selectedCategory || 'general'
+      if (selectedGuideKey !== 'new') {
+        // Для существующего гайда — берём его категорию
+        const existing = allGuides.find(g => g.key === selectedGuideKey)
+        if (existing) categoryKey = existing.category_key
+      }
+      
+      await apiPut(`/api/admin/guide/${guideKey}`, {
+        category_key: categoryKey,
+        title: editableTitle,
+        text: finalContent,
+        photo: photos,
+        video: videos,
+        document: [],
+        sort_order: 0,
       })
-      window.dispatchEvent(event)
+      
+      setIsImporting(false)
+      
+      const statusParts = ['✅ Гайд сохранён!']
+      if (failedMedia > 0) {
+        statusParts.push(`⚠️ ${failedMedia} медиа не загружено (истёкшие ссылки Discord)`)
+      }
+      
+      setResult({
+        ...result,
+        content: finalContent,
+        status: statusParts.join(' | ')
+      })
+      
+      // Обновляем список гайдов
+      apiFetch<Guide[]>('/api/admin/guides').then(setAllGuides).catch(() => {})
       
     } catch (e) {
-      alert("Ошибка при импорте. Попробуйте вручную.")
+      const msg = e instanceof Error ? e.message : String(e)
+      alert(`Ошибка при импорте: ${msg}`)
       setIsImporting(false)
     }
   }
@@ -245,105 +274,20 @@ export const DiscordLabTab: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Название гайда</div>
-                  <Input 
-                    className="h-11 bg-background/50 border-none font-bold text-sm focus-visible:ring-primary/20 rounded-xl"
-                    value={editableTitle}
-                    onChange={(e) => setEditableTitle(e.target.value)}
-                    placeholder="Введите название..."
-                  />
-                </div>
-                
-                <div className="col-span-full pt-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Database className="size-3 text-primary/40" />
-                    <span className="text-[9px] font-bold text-muted-foreground/40 uppercase">
-                      {selectedGuideKey === 'new' ? 'Будет создан новый объект в базе' : `Обновит контент гайда: ${selectedGuideKey}`}
-                    </span>
-                  </div>
-                  <div className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-[9px] font-black uppercase tracking-widest">
-                    {result.status}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex-1 p-8 bg-muted/20 rounded-[32px] border border-white/5 space-y-4 shadow-inner relative overflow-hidden">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">Содержимое гайда</div>
-                  <div className="px-3 py-1 bg-muted/40 rounded-full text-[9px] font-bold text-primary/60 border border-primary/5">{result.media_count} медиа-файлов</div>
-                </div>
-                <div className="max-h-[400px] overflow-y-auto no-scrollbar pr-2">
-                  <FormattedContent text={result.content} />
-                </div>
-              </div>
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <Beaker className="size-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-xl font-black tracking-tight uppercase">Discord Sync Lab</h2>
-            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-              Тестовая площадка для импорта из Slayerpedia
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-        <Card className="xl:col-span-5 p-8 border-none bg-card/40 backdrop-blur-sm space-y-6 shadow-2xl ring-1 ring-white/5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">
-              Ввод: JSON из Discord
-            </h3>
-            <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] uppercase font-bold hover:bg-destructive/10 hover:text-destructive" onClick={() => setJsonInput('')}>
-              Очистить
-            </Button>
-          </div>
-          <Textarea 
-            className="min-h-[550px] font-mono text-[11px] bg-muted/20 border-none focus-visible:ring-primary/20 p-6 rounded-2xl no-scrollbar"
-            placeholder='[{"content": "Hello :fire:", "author": {"username": "HalfSquirrel"}}, ...]'
-            value={jsonInput}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setJsonInput(e.target.value)}
-          />
-          <Button 
-            className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 text-xs"
-            onClick={runTest}
-            disabled={loading}
-          >
-            {loading ? <RefreshCcw className="size-5 animate-spin" /> : <Send className="size-5" />}
-            Запустить синтез
-          </Button>
-        </Card>
-
-        <Card className="xl:col-span-7 p-8 border-none bg-card/40 backdrop-blur-sm space-y-8 shadow-2xl ring-1 ring-white/5 min-h-[710px] flex flex-col">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">
-            Результат синтеза и перевода
-          </h3>
-          
-          {result ? (
-            <div className="space-y-6 animate-in zoom-in-95 duration-500 flex-1 flex flex-col">
-              {/* Настройки импорта */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-primary/5 rounded-[24px] border border-primary/10 shadow-inner">
-                <div className="space-y-2">
-                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Целевой гайд</div>
-                  <select 
-                    className="w-full h-11 bg-background/50 border-none rounded-xl px-3 text-xs font-bold focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
-                    value={selectedGuideKey}
-                    onChange={(e) => setSelectedGuideKey(e.target.value)}
-                  >
-                    <option value="new">+ Создать новый гайд</option>
-                    <optgroup label="Существующие гайды (Заменить)">
-                      {allGuides.map(g => (
-                        <option key={g.key} value={g.key}>{g.title}</option>
+                {selectedGuideKey === 'new' && categories.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Категория</div>
+                    <select 
+                      className="w-full h-11 bg-background/50 border-none rounded-xl px-3 text-xs font-bold focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                    >
+                      {categories.map(c => (
+                        <option key={c.key} value={c.key}>{c.title}</option>
                       ))}
-                    </optgroup>
-                  </select>
-                </div>
+                    </select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Название гайда</div>
@@ -384,8 +328,8 @@ export const DiscordLabTab: React.FC = () => {
                   <div className="grid grid-cols-1 gap-2">
                     {result.media_files.slice(0, 3).map((f: any, i: number) => (
                       <div key={i} className="flex items-center justify-between p-2 bg-muted/10 rounded-xl text-[10px] font-mono truncate">
-                        <span className="truncate flex-1 pr-2">{f.name}</span>
-                        <span className="text-primary/40 shrink-0">{f.type}</span>
+                        <span className="truncate flex-1 pr-2">{f.filename}</span>
+                        <span className="text-primary/40 shrink-0">{f.content_type}</span>
                       </div>
                     ))}
                     {result.media_files.length > 3 && (
