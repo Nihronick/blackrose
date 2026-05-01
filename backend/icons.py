@@ -8,7 +8,7 @@ from urllib.parse import quote
 # БАЗОВЫЙ URL ДЛЯ ИЗОБРАЖЕНИЙ
 # ═══════════════════════════════════════════════════════
 # Иконки в исходном репозитории хранятся в frontend/public/assets/images/icons
-BASE_URL = "https://huggingface.co/datasets/Nihronick/blackrose-media/resolve/main/icons"
+BASE_URL = "https://cdn.jsdelivr.net/gh/Nihronick/blackrose@gh-pages/assets/images/icons"
 WSRV = "https://wsrv.nl/?url="
 WSRV_OPT = "&output=webp&n=-1"
 

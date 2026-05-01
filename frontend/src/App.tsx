@@ -125,7 +125,7 @@ export const App: React.FC = () => {
 
   return (
     <div
-      className="app-shell flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground transition-all duration-500"
+      className="app-shell flex h-[calc(100dvh-var(--tg-viewport-stable-height,0px))] flex-col overflow-hidden bg-background text-foreground"
       data-testid="app-shell"
     >
       <header className="sticky top-0 z-40 flex h-16 items-center px-4 glass shrink-0">
@@ -235,10 +235,10 @@ export const App: React.FC = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className="flex flex-col h-full"
           >
 

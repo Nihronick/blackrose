@@ -231,13 +231,19 @@ async def delete_category(key: str):
 
 
 async def reorder_categories(items: list[dict]):
+    """Оптимизированное пакетное обновление порядка категорий."""
+    if not items:
+        return
     async with get_sessionmaker()() as session:
-        for item in items:
-            await session.execute(
-                update(Category)
-                .where(Category.key == item["key"])
-                .values(sort_order=item["sort_order"])
-            )
+        # Используем PostgreSQL CASE для обновления всех записей одним запросом
+        # Это значительно быстрее, чем N отдельных UPDATE в цикле
+        whens = {item["key"]: item["sort_order"] for item in items}
+        stmt = (
+            update(Category)
+            .where(Category.key.in_(whens.keys()))
+            .values(sort_order=func.case(whens, value=Category.key))
+        )
+        await session.execute(stmt)
         await session.commit()
 
 
@@ -380,27 +386,39 @@ async def delete_guide(key: str, changed_by: int | None = None) -> dict | None:
 
 
 async def reorder_guides(items: list[dict]):
+    """Оптимизированное пакетное обновление порядка гайдов."""
+    if not items:
+        return
     async with get_sessionmaker()() as session:
-        for item in items:
-            await session.execute(
-                update(Guide)
-                .where(Guide.key == item["key"])
-                .values(sort_order=item["sort_order"])
-            )
+        whens = {item["key"]: item["sort_order"] for item in items}
+        stmt = (
+            update(Guide)
+            .where(Guide.key.in_(whens.keys()))
+            .values(sort_order=func.case(whens, value=Guide.key))
+        )
+        await session.execute(stmt)
         await session.commit()
 
 
 async def search_guides(q: str) -> list[dict]:
+    """Полнотекстовый поиск по гайдам с использованием tsvector и ранжирования."""
+    if not q or len(q) < 2:
+        return []
+        
     async with get_sessionmaker()() as session:
-        # Escape LIKE wildcards to prevent unintended matches
-        safe_q = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        pattern = f"%{safe_q}%"
+        # Используем plainto_tsquery для безопасной конвертации пользовательского ввода
+        # в поисковый запрос (поддерживает русский язык)
+        search_query = func.plainto_tsquery("russian", q)
+        
         stmt = (
             select(Guide)
             .options(selectinload(Guide.tags))
-            .where(Guide.title.ilike(pattern))
-            .order_by(Guide.sort_order)
-            .limit(20)
+            .where(Guide.search_vec.bool_op("@@")(search_query))
+            .order_by(
+                desc(func.ts_rank(Guide.search_vec, search_query)),
+                Guide.sort_order
+            )
+            .limit(30)
         )
         result = await session.execute(stmt)
         return [_guide_to_dict(g) for g in result.scalars()]

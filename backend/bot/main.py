@@ -1,31 +1,26 @@
 """
-BlackRose Bot v2 — webhook + polling fallback.
-
-В Koyeb контейнере бот запускается рядом с FastAPI на том же порту НЕТ —
-бот запускает свой собственный aiohttp сервер на порту 8443 (внутренний).
-Nginx/Koyeb проксирует /bot/webhook → порт 8443.
-
-Либо проще: бот слушает на отдельном порту BOT_PORT (по умолчанию 8443),
-FastAPI на PORT (8080). Koyeb видит только один внешний порт (8080),
-поэтому webhook регистрируем через WEBHOOK_URL без порта.
-
-Самый простой вариант для Koyeb: polling режим для бота,
-webhook только если WEBHOOK_URL явно задан.
+BlackRose Bot v2 — hardened for Hugging Face / modern hosting.
+Uses IPv4 forcing and robust error handling for connection stability.
 """
 
 import asyncio
 import logging
 import os
 import sys
+import socket
 from pathlib import Path
 
+import aiohttp
+from aiohttp import TCPConnector
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.session.aiohttp import AiohttpSession
+from loguru import logger
+
 from config import API_TOKEN, WEBHOOK_PATH, WEBHOOK_SECRET, WEBHOOK_URL
 from handlers.errors import router as errors_router
 from handlers.miniapp import miniapp_router
 from handlers.admin import admin_router
-from loguru import logger
 
 # ── Логи ─────────────────────────────────────────────────────
 Path("logs").mkdir(exist_ok=True)
@@ -53,74 +48,87 @@ logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 for _n in ("aiogram.event", "aiohttp.access"):
     logging.getLogger(_n).setLevel(logging.WARNING)
 
-# ── Bot + Dispatcher ─────────────────────────────────────────
-bot = Bot(token=API_TOKEN)
-dp  = Dispatcher(storage=MemoryStorage())
-
+# ── Dispatcher ───────────────────────────────────────────────
+dp = Dispatcher(storage=MemoryStorage())
 dp.include_router(errors_router)
 dp.include_router(miniapp_router)
 dp.include_router(admin_router)
 
 
-# ── Shutdown ─────────────────────────────────────────────────
-async def shutdown():
+async def perform_shutdown(bot: Bot):
     logger.info("🛑 Bot shutting down...")
-    await bot.session.close()
+    if bot:
+        await bot.session.close()
     await dp.storage.close()
 
 
-# ── Main ─────────────────────────────────────────────────────
 async def main():
-    if WEBHOOK_URL:
-        # Webhook режим — регистрируем и запускаем aiohttp сервер
-        from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-        from aiohttp import web
+    # Принудительно используем IPv4 для обхода проблем с SSL Handshake (60s timeout)
+    # В aiogram 3 параметры коннектора передаются через _connector_init
+    session = AiohttpSession(timeout=40.0)
+    session._connector_init = {"family": socket.AF_INET}
+    bot = Bot(token=API_TOKEN, session=session)
 
-        BOT_PORT = int(os.getenv("BOT_PORT", "8443"))
+    try:
+        if WEBHOOK_URL:
+            # Webhook режим
+            from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+            from aiohttp import web
 
-        async def on_startup(app):
-            target = f"{WEBHOOK_URL.rstrip('/')}{WEBHOOK_PATH}"
-            info = await bot.get_webhook_info()
-            if info.url != target:
-                await bot.set_webhook(url=target, secret_token=WEBHOOK_SECRET or None,
-                                      drop_pending_updates=True)
-                logger.info(f"✅ Webhook: {target}")
+            BOT_PORT = int(os.getenv("BOT_PORT", "8443"))
 
-        async def on_shutdown(app):
-            await bot.delete_webhook()
-            await shutdown()
+            async def on_startup(app):
+                target = f"{WEBHOOK_URL.rstrip('/')}{WEBHOOK_PATH}"
+                info = await bot.get_webhook_info()
+                if info.url != target:
+                    await bot.set_webhook(url=target, secret_token=WEBHOOK_SECRET or None,
+                                          drop_pending_updates=True)
+                    logger.info(f"✅ Webhook set to: {target}")
 
-        app = web.Application()
-        app.on_startup.append(on_startup)
-        app.on_shutdown.append(on_shutdown)
+            async def on_shutdown(app):
+                await bot.delete_webhook()
 
-        async def health(req):
-            return web.json_response({"status": "ok", "mode": "webhook"})
-        app.router.add_get("/health", health)
+            app = web.Application()
+            app.on_startup.append(on_startup)
+            app.on_shutdown.append(on_shutdown)
 
-        SimpleRequestHandler(dispatcher=dp, bot=bot,
-                             secret_token=WEBHOOK_SECRET or None).register(app, path=WEBHOOK_PATH)
-        setup_application(app, dp, bot=bot)
+            async def health(req):
+                return web.json_response({"status": "ok", "mode": "webhook"})
+            app.router.add_get("/health", health)
 
-        runner = web.AppRunner(app)
-        await runner.setup()
-        await web.TCPSite(runner, "0.0.0.0", BOT_PORT).start()
-        logger.info(f"🤖 Bot webhook server on port {BOT_PORT}")
-        try:
-            await asyncio.Event().wait()
-        finally:
-            await runner.cleanup()
-    else:
-        # Polling режим (локально или если WEBHOOK_URL не задан)
-        logger.info("🔄 Bot polling mode")
-        try:
-            await bot.delete_webhook(drop_pending_updates=True)
-            await dp.start_polling(bot)
-        except (KeyboardInterrupt, asyncio.CancelledError):
-            pass
-        finally:
-            await shutdown()
+            SimpleRequestHandler(dispatcher=dp, bot=bot,
+                                 secret_token=WEBHOOK_SECRET or None).register(app, path=WEBHOOK_PATH)
+            setup_application(app, dp, bot=bot)
+
+            runner = web.AppRunner(app)
+            await runner.setup()
+            await web.TCPSite(runner, "0.0.0.0", BOT_PORT).start()
+            logger.info(f"🤖 Bot webhook server on port {BOT_PORT}")
+            try:
+                await asyncio.Event().wait()
+            finally:
+                await runner.cleanup()
+        else:
+            # Polling режим
+            logger.info("🔄 Bot polling mode")
+            try:
+                logger.info("Checking Telegram connection (deleting webhook)...")
+                try:
+                    await asyncio.wait_for(bot.delete_webhook(drop_pending_updates=True), timeout=15.0)
+                    logger.info("✅ Webhook deleted successfully")
+                except Exception as e:
+                    logger.warning(f"⚠️ Could not delete webhook: {e}. Attempting to start polling anyway...")
+                
+                await dp.start_polling(bot)
+            except Exception as e:
+                logger.error(f"❌ Critical polling error: {e}")
+                await asyncio.sleep(5)
+    finally:
+        await perform_shutdown(bot)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass

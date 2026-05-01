@@ -3,8 +3,6 @@ import logging
 import os
 import uuid
 import base64
-import tempfile
-import subprocess
 from io import BytesIO
 
 from huggingface_hub import HfApi
@@ -79,52 +77,6 @@ def _optimize_image_bytes(filename: str, content: bytes) -> tuple[str, bytes, bo
     except UnidentifiedImageError:
         return filename, content, False
 
-async def _compress_video_bytes(filename: str, content: bytes) -> tuple[str, bytes, bool]:
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in {".mp4", ".mov", ".webm", ".avi", ".mkv"}:
-        return filename, content, False
-
-    if len(content) <= 48 * 1024 * 1024:
-        return filename, content, False
-
-    logger.info(f"Video {filename} is > 48MB. Starting automatic compression via ffmpeg...")
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tf_in:
-        tf_in.write(content)
-        temp_in = tf_in.name
-    
-    temp_out = tempfile.mktemp(suffix=".mp4")
-    
-    try:
-        cmd = [
-            "ffmpeg", "-y", "-i", temp_in, 
-            "-vf", "scale='min(1280,iw)':-2",
-            "-vcodec", "libx264", "-crf", "28", "-preset", "veryfast", 
-            "-b:a", "128k", temp_out
-        ]
-        # Используем асинхронный процесс для сжатия
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
-        )
-        await process.wait()
-        
-        if os.path.exists(temp_out):
-            with open(temp_out, "rb") as tf_out:
-                compressed = tf_out.read()
-                
-            if len(compressed) < len(content):
-                logger.info(f"Compression success: {len(content)//1024//1024}MB -> {len(compressed)//1024//1024}MB")
-                stem = os.path.splitext(filename)[0]
-                return f"{stem}.mp4", compressed, True
-    except Exception as e:
-        logger.error(f"Video compression failed: {e}")
-    finally:
-        if os.path.exists(temp_in):
-            os.remove(temp_in)
-        if os.path.exists(temp_out):
-            os.remove(temp_out)
-            
-    return filename, content, False
 
 async def upload_file(file: UploadFile, folder: str = "guides") -> str:
     """
@@ -141,8 +93,6 @@ async def upload_file(file: UploadFile, folder: str = "guides") -> str:
     
     # Optimization
     optimized_name, content, optimized = _optimize_image_bytes(source_name, content)
-    if not optimized:
-        optimized_name, content, optimized = await _compress_video_bytes(optimized_name or source_name, content)
 
     # Generate unique filename
     ext = os.path.splitext(optimized_name)[1] if optimized_name else os.path.splitext(source_name)[1]

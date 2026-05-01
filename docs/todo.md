@@ -4,6 +4,8 @@
 - [x] Verify Admin Panel stability (fixed stats/analytics and missing view_logs table).
 - [x] Implement Backend Proxy for Discord Media (bypass CORS policy).
 - [x] Implement/Fix Guide deletion logic.
+- [x] Simplify Backend Storage (Remove CPU-heavy video compression).
+- [x] Optimize Frontend (Remove complex animations and universal transitions).
 
 ## 🛠️ Features & Improvements
 - [x] Clean up redundant Graphify files (Verified removed).

@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,7 +13,7 @@ class Settings(BaseSettings):
     MINIAPP_URL: str = "https://nihronick.github.io/blackrose"
 
     # URL бэкенда — localhost т.к. бот и API в одном контейнере
-    API_URL: str = "http://localhost:8080"
+    API_URL: str = f"http://localhost:{os.getenv('PORT', '7860')}"
 
     # Webhook — если пустой, бот работает в polling-режиме
     WEBHOOK_URL:    str = ""

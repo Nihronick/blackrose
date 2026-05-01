@@ -388,6 +388,7 @@ These mistakes have already been made. **Do NOT repeat them.**
 | 7 | `entrypoint.sh` saved with CRLF (Windows line endings) | Shell scripts for Linux/Docker MUST use LF. Add `.gitattributes` rule |
 | 8 | `print(error_msg)` used in `admin.py` instead of logger | Production code uses `logger`, never `print()` |
 | 9 | `from pydantic import BaseModel` placed mid-file (line 60 of admin.py) | All imports go at the top of the file |
+| 10 | Leaving heavy video compression on free-tier backend | Do not process heavy media on the API server. Use direct upload or offload. |
 
 ---
 
@@ -471,30 +472,21 @@ git diff HEAD
 - ✅ Added manual media deletion to Admin Library UI.
 - ✅ Migrated `storage.py` to async `ffmpeg` execution.
 
-### Bug Fix Round (2026-05-01, Session 2) — DONE ✅
-- ✅ **BUG-1:** `password_hash` column extended to `256` characters (Alembic Migration `0005` applied).
-- ✅ **BUG-2:** Frontend auth endpoint corrected to `/api/auth/web-login`.
-- ✅ **BUG-3:** Fixed `FormData` uploads by removing incorrect `Content-Type` header.
-- ✅ **BUG-4:** Reorder categories/guides fixed (correct body schema).
-- ✅ **BUG-5:** Admin login response parsing fixed.
-- ✅ **BUG-6:** `IconsGroupedResponse` types aligned with backend.
-- ✅ **BUG-7:** Tags loading fixed via `selectinload`.
-- ✅ **BUG-12:** Game icons restored using GitHub Pages branch as CDN.
-- ✅ **BUG-13:** Discord Lab media fields corrected (`filename`, `content_type`).
-- ✅ **Discord Lab Import:** Full rewrite completed. Direct DB saving, `slugify` for clean keys, and category selection added.
-
-### Tests Updated (Session 2)
-- ✅ All regression tests pass locally and in contract suite.
+### Simplification Round (2026-05-02, Session 1) — DONE ✅
+- ✅ **Backend Storage**: Removed `ffmpeg` compression. Uploads are now direct and safe for free-tier resources.
+- ✅ **Dockerfile**: Cleaned from heavy media dependencies.
+- ✅ **Frontend UX**: Simplified Framer Motion transitions (only opacity).
+- ✅ **Performance**: Removed universal `* { transition-colors }` from CSS.
+- ✅ **TMA Fix**: Added support for Telegram stable viewport height.
 
 ### Known Issues
 - `reorder_categories/guides` — N+1 UPDATE queries (low priority).
 - Discord CDN links expire quickly — user should import within 5-10 mins of "Prepare".
 
-### Status: STABLE 🚀
-- **Backend:** Deployed to HF Spaces with automated migrations.
-- **Frontend:** Deployed to GitHub Pages with all latest fixes.
-- **Database:** Schema up to date (Migration 0005).
+### Status: OPTIMIZED ⚡
+- **Backend:** Simplified storage, no FFmpeg risk.
+- **Frontend:** High-performance CSS, smooth transitions.
 
 ---
 
-<!-- Last agent: Gemini Antigravity | Session: 2026-05-01 23:25 | Status: All Fixes Deployed -->
+<!-- Last agent: @nerdzao-elite (Antigravity) | Session: 2026-05-02 00:40 | Status: Architecture Simplified -->
