@@ -191,6 +191,7 @@ function normalizeDiscordMarkdown(text: string, iconResolver: (name: string) => 
 // ── DOMPurify конфиг ──────────────────────────────────────────
 
 const PURIFY_CONFIG = {
+  ALLOWED_TAGS: [
     'div',
     'strong',
     'em',
