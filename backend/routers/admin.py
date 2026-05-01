@@ -629,63 +629,47 @@ async def admin_upload_media(
 
 @router.get("/media/list")
 async def admin_media_list(user=Depends(require_admin)):
-    """Получить сгруппированный список всех медиа файлов из assets."""
-    import os
-    from pathlib import Path
+    """Получить список всех медиа файлов напрямую из Hugging Face Dataset."""
+    from storage import HF_DATASET_REPO, HF_TOKEN, _public_media_url
+    from huggingface_hub import HfApi
+    
+    if not HF_DATASET_REPO:
+        return {"groups": [], "total": 0}
 
-    folders = [
-        {"path": Path("assets/media/guides"), "label": "📁 Гайды (Media)"},
-        {"path": Path("assets/images/slayerpedia"), "label": "📖 Slayerpedia"},
-    ]
-    
-    grouped = []
-    
-    for folder_config in folders:
-        base_path = folder_config["path"]
-        if not base_path.exists():
-            continue
-            
-        # Находим все подпапки (первого уровня)
-        subfolders = [d for d in base_path.iterdir() if d.is_dir()]
+    try:
+        api = HfApi(token=HF_TOKEN)
+        # Получаем все файлы из папки uploads
+        all_files = api.list_repo_files(repo_id=HF_DATASET_REPO, repo_type="dataset")
         
-        # Если в корне тоже есть файлы, добавим их в группу "Прочее"
-        root_files = [f for f in base_path.iterdir() if f.is_file()]
-        if root_files:
-            grouped.append({
-                "id": f"{base_path.name}_root",
-                "label": f"{folder_config['label']} / Корень",
-                "items": [
-                    {
-                        "name": f.name,
-                        "url": f"https://cdn.jsdelivr.net/gh/Nihronick/blackrose@main/{str(f.relative_to(Path('.'))).replace(os.sep, '/')}",
-                        "type": "video" if any(ext in f.name.lower() for ext in [".mp4", ".webm", ".mov"]) else "image"
-                    }
-                    for f in root_files
-                ]
+        # Фильтруем только те, что в папке uploads/
+        media_files = [f for f in all_files if f.startswith("uploads/")]
+        
+        # Группируем по папкам (напр. uploads/guides/..., uploads/imported/...)
+        groups_dict = {}
+        for f in media_files:
+            parts = f.split("/")
+            if len(parts) < 3: continue # Пропускаем файлы в корне uploads
+            
+            folder_name = parts[1]
+            if folder_name not in groups_dict:
+                groups_dict[folder_name] = []
+                
+            groups_dict[folder_name].append({
+                "name": parts[-1],
+                "url": _public_media_url(f),
+                "type": "video" if any(ext in f.lower() for ext in [".mp4", ".webm", ".mov"]) else "image",
+                "path": f
             })
 
-        for sub in sorted(subfolders):
-            files = [f for f in sub.rglob("*") if f.is_file()]
-            if not files:
-                continue
-            
-            # Group ID from sub path
-            sub_id = str(sub.relative_to(Path("assets"))).replace(os.sep, "_")
-            
-            grouped.append({
-                "id": sub_id,
-                "label": f"{folder_config['label']} / {sub.name}",
-                "items": [
-                    {
-                        "name": f.name,
-                        "url": f"https://cdn.jsdelivr.net/gh/Nihronick/blackrose@main/{str(f.relative_to(Path('.'))).replace(os.sep, '/')}",
-                        "type": "video" if any(ext in f.name.lower() for ext in [".mp4", ".webm", ".mov"]) else "image"
-                    }
-                    for f in sorted(files)
-                ]
-            })
-
-    return {"groups": grouped, "total": sum(len(g["items"]) for g in grouped)}
+        grouped = [
+            {"id": name, "label": f"📁 {name.capitalize()}", "items": items}
+            for name, items in groups_dict.items()
+        ]
+        
+        return {"groups": grouped, "total": len(media_files)}
+    except Exception as e:
+        logger.error(f"Failed to list HF media: {e}")
+        return {"groups": [], "total": 0, "error": str(e)}
 
 
 @router.get("/media/preview")
@@ -693,26 +677,14 @@ async def admin_media_preview(
     path: str,
     user=Depends(require_admin),
 ):
-    """Получить превью медиа файла."""
-    from pathlib import Path
+    """Получить данные и ссылку на медиа файл из облака."""
+    from storage import _public_media_url
     import mimetypes
     
-    # Security: validate path doesn't escape assets directory
-    safe_path = Path("assets") / path
-    real_path = safe_path.resolve()
-    base_path = Path("assets").resolve()
-    
-    if not str(real_path).startswith(str(base_path)):
-        raise HTTPException(status_code=403, detail="Доступ запрещён")
-    
-    if not real_path.exists():
-        raise HTTPException(status_code=404, detail="Файл не найден")
-    
-    mime_type, _ = mimetypes.guess_type(str(real_path))
+    mime_type, _ = mimetypes.guess_type(path)
     
     return {
-        "filename": real_path.name,
-        "size": real_path.stat().st_size,
+        "filename": path.split("/")[-1],
         "mime_type": mime_type or "application/octet-stream",
-        "url": f"https://cdn.jsdelivr.net/gh/Nihronick/blackrose@gh-pages/assets/media/guides/{path}",
+        "url": _public_media_url(path),
     }
