@@ -1,14 +1,15 @@
 /**
  * BlackRose - Game Icons Registry
- * Ported from backend/icons.py
+ * Synced with backend/icons.py — uses HuggingFace datasets CDN
  */
 
-const BASE_URL = "https://cdn.jsdelivr.net/gh/Nihronick/blackrose@main/frontend/public/assets/images/icons";
+const BASE_URL = "https://huggingface.co/datasets/Nihronick/blackrose-media/resolve/main/icons";
 const WSRV = "https://wsrv.nl/?url=";
 const WSRV_OPT = "&output=webp&n=-1";
 
 const _url = (path: string) => {
-  const encoded = encodeURIComponent(path);
+  // Encode each path segment separately (same as backend _url())
+  const encoded = path.split("/").map(p => encodeURIComponent(p)).join("/");
   const raw = `${BASE_URL}/${encoded}`;
   if (path.endsWith(".gif")) return raw;
   return `${WSRV}${raw}${WSRV_OPT}`;
