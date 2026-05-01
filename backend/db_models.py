@@ -26,7 +26,7 @@ class Category(Base):
     key: Mapped[str] = mapped_column(Text, primary_key=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     icon_url: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sort_order: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
+    sort_order: Mapped[int] = mapped_column(Integer, server_default="0", default=0, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()")
     )
@@ -57,14 +57,14 @@ class Guide(Base):
         ARRAY(Text), server_default="{}", default=list
     )
 
-    sort_order: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
+    sort_order: Mapped[int] = mapped_column(Integer, server_default="0", default=0, index=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=sa_text("NOW()")
+        DateTime(timezone=True), server_default=sa_text("NOW()"), index=True
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=sa_text("NOW()"), onupdate=sa_text("NOW()")
+        DateTime(timezone=True), server_default=sa_text("NOW()"), onupdate=sa_text("NOW()"), index=True
     )
-    views: Mapped[int] = mapped_column(BigInteger, server_default="0", default=0)
+    views: Mapped[int] = mapped_column(BigInteger, server_default="0", default=0, index=True)
 
     search_vec = mapped_column(TSVECTOR, nullable=True)
 

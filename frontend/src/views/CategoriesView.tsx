@@ -115,7 +115,11 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
                       Категории
                     </h3>
                   </div>
-                  <CategoryList categories={categories} onSelectCategory={onSelectCategory} />
+                  <CategoryList 
+                    categories={categories} 
+                    onSelectCategory={onSelectCategory} 
+                    isLoading={!categoriesData && !categories.length}
+                  />
                 </div>
               </div>
             )}

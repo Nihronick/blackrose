@@ -132,7 +132,7 @@ _ALLOWED_ATTRS: dict[str, set[str]] = {
         "data-guide-title",
         "data-guide-icon",
     },
-    "img": {"src", "alt", "width", "height", "class", "style", "loading"},
+    "img": {"src", "alt", "width", "height", "class", "style", "loading", "onload"},
     "svg": {
         "viewBox",
         "width",
@@ -312,7 +312,7 @@ def format_guide_text(text: str, guide_links: dict | None = None) -> str:
         if is_video:
             return f'<div class="guide-inline-video my-6"><video src="{url}" controls class="w-full rounded-2xl border border-border/50 shadow-2xl" preload="none" playsinline></video>{caption}</div>'
         else:
-            return f'<div class="my-6"><img src="{url}" alt="{alt}" class="guide-img rounded-2xl border border-border/30 shadow-xl" loading="lazy" referrerpolicy="no-referrer">{caption}</div>'
+            return f'<div class="my-6 skeleton rounded-2xl overflow-hidden shadow-xl border border-border/30"><img src="{url}" alt="{alt}" class="guide-img w-full block transition-opacity duration-500" loading="lazy" referrerpolicy="no-referrer" onload="this.parentElement.classList.remove(\'skeleton\')">{caption}</div>'
 
     result = re.sub(
         r"!\[(.*?)\]\((https?://[^\)]+)\)",

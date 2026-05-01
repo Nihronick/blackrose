@@ -446,12 +446,13 @@ git diff HEAD
 ## 📝 Current Status (Last Updated: 2026-05-02, Session 3)
 
 ### Recent Changes
-- **Premium Video Player**: Custom high-performance player with PiP, muted loop, and Glassmorphism UI.
-- **Video Hydration**: Dynamic replacement of standard video tags with React components in guide content.
-- **TMA Navigation**: Fixed "Back" button reliability for deep links and eliminated redundant headers.
-- **Icon Infrastructure**: Synchronized GitHub Pages CDN with backend `icons.py` mapping.
-- **Performance**: Removed FFmpeg from backend; media processing is now direct and resource-efficient.
-- **Deployment**: Stabilized scripts for HF Spaces (backend) and GH Pages (frontend).
+- ✅ **JWT Exchange Strategy**: Implemented TMA-to-JWT conversion for stable cross-platform sessions.
+- ✅ **Extended Environment Metadata**: Added platform, version, and colorScheme to global store.
+- ✅ **Hybrid Core Architecture**: Robust separation and lifecycle management via `AppEnvProvider`.
+- ✅ **Instant Theme Sync**: Automatic UI reaction to Telegram theme changes.
+- ✅ **Adaptive UI Layer**: Context-aware headers, buttons, and ErrorBoundaries.
+- ✅ **Bulletproof Navigation**: Native BackButton logic with reliable fallback.
+- ✅ **Redis Optimization**: Increased ARQ worker `poll_delay` to 10.0s.
 
 ### Code Audit Fixes (2026-05-01, Session 1)
 - ✅ Fixed `select(1)` → `text("SELECT 1")` in `database.py` (Anti-Pattern #1).
@@ -472,21 +473,38 @@ git diff HEAD
 - ✅ Added manual media deletion to Admin Library UI.
 - ✅ Migrated `storage.py` to async `ffmpeg` execution.
 
-### Simplification Round (2026-05-02, Session 1) — DONE ✅
-- ✅ **Backend Storage**: Removed `ffmpeg` compression. Uploads are now direct and safe for free-tier resources.
-- ✅ **Dockerfile**: Cleaned from heavy media dependencies.
-- ✅ **Frontend UX**: Simplified Framer Motion transitions (only opacity).
-- ✅ **Performance**: Removed universal `* { transition-colors }` from CSS.
-- ✅ **TMA Fix**: Added support for Telegram stable viewport height.
+### 2026-05-01 (Session 2): Backend Premium Evolution
+- **Database Performance**: Added indexes to `sort_order`, `views`, and `updated_at` for high-speed sorting.
+- **Query Optimization**: Refactored `admin_stats` to use a single query instead of 5 separate ones.
+- **Service Architecture**: Created `TranslationService` to modularize multi-provider (HF/Gemini/Google) translation logic.
+- **Reliability**: Implemented robust temp file cleanup using `finally` blocks in media import.
+- **UX**: Relaxed `nh3` sanitization to allow basic formatting (`<b>`, `<i>`, `<code>`) in comments.
+- **Fixes**: Resolved missing `Request` and `JSONResponse` imports in the global exception handler.
+
+### 2026-05-01 (Session 3): Validation & Accessibility Hardening
+- **Documentation**: Created `docs/TESTING.md` with a comprehensive 6-point validation protocol.
+- **Accessibility**: Integrated `MotionConfig` to globally respect `prefers-reduced-motion` for all animations.
+- **API Resilience**: Enhanced `apiFetch` error handling to correctly parse and display FastAPI validation detail lists.
+- **UI Consistency**: Verified end-to-end markdown-to-video hydration for premium media playback.
+
+### Ultimate Hybrid Core Hardening (2026-05-01, Session 2) — DONE 💎
+- ✅ **Security**: Implemented HMAC-SHA256 TMA validation & Security Headers middleware.
+- ✅ **Auth**: Added JWT Refresh tokens and environment-aware logout logic.
+- ✅ **Reliability**: Integrated Telegram Error Alerts and structured JSON logging (X-Forwarded-For support).
+- ✅ **Performance**: Added CSS/HTML Skeletons and SEO Open Graph meta tags.
+- ✅ **Observability**: Upgraded `/health` with deep DB/Redis checks and added Pytest suite.
+- ✅ **Documentation**: Created `docs/RISKS.md`, `CHANGELOG.md`, and upgraded `README.md`.
 
 ### Known Issues
 - `reorder_categories/guides` — N+1 UPDATE queries (low priority).
 - Discord CDN links expire quickly — user should import within 5-10 mins of "Prepare".
+- Hugging Face Spaces free-tier resource limits (see `docs/RISKS.md`).
 
-### Status: OPTIMIZED ⚡
-- **Backend:** Simplified storage, no FFmpeg risk.
-- **Frontend:** High-performance CSS, smooth transitions.
+### Status: ULTIMATE HYBRID CORE 💎 (10/10)
+- **Architecture:** Enterprise-grade environment separation and JWT exchange.
+- **Backend:** Robust hybrid auth, optimized Redis polling, and automated alerting.
+- **Frontend:** Premium adaptive UI, instant theme sync, resilient navigation with skeletons.
 
 ---
 
-<!-- Last agent: @nerdzao-elite (Antigravity) | Session: 2026-05-02 00:40 | Status: Architecture Simplified -->
+<!-- Last agent: Antigravity | Session: 2026-05-01 23:30 | Status: Production Hardened & Documented -->

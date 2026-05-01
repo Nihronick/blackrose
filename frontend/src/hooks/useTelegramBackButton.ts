@@ -1,5 +1,5 @@
-import { haptic } from '@/lib/haptic'
 import { tgApp } from '@/lib/theme'
+import { useAppEnv } from '@/hooks/useAppEnv'
 import { useCallback, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -8,32 +8,40 @@ export const useTelegramBackButton = () => {
   const location = useLocation()
   const lastPathname = useRef(location.pathname)
 
+  const { isTMA, tg } = useAppEnv()
+
   const handleBack = useCallback(() => {
-    haptic.light()
+    try {
+      if (tg?.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('light')
+      }
+    } catch (e) {}
     
-    // Если мы на главной, кнопка назад (если она вдруг видна) закрывает приложение
     if (location.pathname === '/') {
-      tgApp?.close?.()
+      tg?.close?.()
       return
     }
 
-    // Проверяем, есть ли куда возвращаться в истории именно нашего приложения
-    // В React Router v6 navigate(-1) может не сработать, если нет истории
-    // Мы пробуем вернуться назад, но если мы зашли по прямой ссылке, идем на главную
-    if (window.history.state && window.history.state.idx > 0) {
-      navigate(-1)
-    } else {
-      navigate('/', { replace: true })
-    }
-  }, [location.pathname, navigate])
+    // Если в истории только одна запись, history.back() ничего не сделает.
+    // Поэтому запоминаем текущий путь и проверяем через таймаут.
+    const currentPath = window.location.hash
+    window.history.back()
+
+    setTimeout(() => {
+      // Если хеш не изменился - значит истории не было, идем на главную принудительно
+      if (window.location.hash === currentPath) {
+        navigate('/', { replace: true })
+      }
+    }, 150)
+  }, [location.pathname, navigate, tg])
 
   useEffect(() => {
     const isHome = location.pathname === '/'
-    const backBtn = tgApp?.BackButton
+    const backBtn = tg?.BackButton
 
     if (!backBtn) return
 
-    if (isHome) {
+    if (isHome || !isTMA) {
       backBtn.hide()
     } else {
       backBtn.show()

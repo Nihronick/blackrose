@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import { ChevronLeft } from '@/lib/icons'
+import { useAppEnv } from '@/hooks/useAppEnv'
 import type { AppLanguage } from '@/store'
 import type React from 'react'
 
@@ -10,9 +11,12 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, onBack }) => {
+  const { isTMA } = useAppEnv()
+  const showBackButton = onBack && !isTMA
+
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-xl transition-all">
-      {onBack ? (
+      {showBackButton && (
         <Button
           variant="ghost"
           size="icon"
@@ -25,8 +29,6 @@ export const Header: React.FC<HeaderProps> = ({ title, onBack }) => {
         >
           <ChevronLeft className="size-5" />
         </Button>
-      ) : (
-        <img src="logo.png" alt="" className="size-9 shrink-0 rounded-xl shadow-md" />
       )}
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg font-bold tracking-tight text-foreground transition-all">

@@ -64,10 +64,15 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
         request.state.request_id = request_id
 
+        # Get Real IP (Hugging Face / Cloudflare support)
+        x_forwarded_for = request.headers.get("X-Forwarded-For")
+        real_ip = x_forwarded_for.split(",")[0].strip() if x_forwarded_for else request.client.host if request.client else "unknown"
+
         log = get_logger("blackrose.http").bind(
             request_id=request_id,
             method=request.method,
             path=request.url.path,
+            ip=real_ip,
         )
 
         t0 = time.perf_counter()

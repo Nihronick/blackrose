@@ -11,6 +11,10 @@ export interface AppState {
   cats: Category[]
   theme: Theme
   language: AppLanguage
+  isTMA: boolean
+  platform: string
+  version: string
+  colorScheme: 'light' | 'dark'
 
   setAccessMsg: (accessMsg: string | null) => void
   setIsAdmin: (isAdmin: boolean) => void
@@ -19,6 +23,8 @@ export interface AppState {
   setAccessDenied: (msg: string) => void
   setTheme: (theme: Theme) => void
   setLanguage: (language: AppLanguage) => void
+  setIsTMA: (isTMA: boolean) => void
+  setEnvData: (data: { platform: string; version: string; colorScheme: 'light' | 'dark' }) => void
 }
 
 const VALID_THEMES: Theme[] = ['light', 'dark', 'system']
@@ -49,6 +55,10 @@ export const useAppStore = create<AppState>((set) => ({
   cats: [],
   theme: getStoredTheme(),
   language: getStoredLanguage(),
+  isTMA: false,
+  platform: 'web',
+  version: '0.0',
+  colorScheme: 'light',
 
   setAccessMsg: (accessMsg) => set({ accessMsg }),
   setIsAdmin: (isAdmin) => set({ isAdmin }),
@@ -78,4 +88,6 @@ export const useAppStore = create<AppState>((set) => ({
     localStorage.setItem('br_lang', language)
     set({ language })
   },
+  setIsTMA: (isTMA) => set({ isTMA }),
+  setEnvData: (data) => set({ ...data }),
 }))

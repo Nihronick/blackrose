@@ -45,9 +45,26 @@ async def _invalidate_guide_cache_key(key: str):
 @router.get("/health")
 async def health():
     from database import is_db_ready
-    if not is_db_ready():
-        return {"status": "starting", "database": "initializing", "version": "3.3.0"}
-    return {"status": "ok", "database": "connected", "version": "3.3.0"}
+    from cache import get_redis
+    
+    db_ok = is_db_ready()
+    
+    redis_ok = False
+    try:
+        redis = get_redis()
+        if redis:
+            await redis.ping()
+            redis_ok = True
+    except Exception:
+        pass
+        
+    status = "ok" if db_ok and redis_ok else "degraded"
+    return {
+        "status": status,
+        "database": "connected" if db_ok else "disconnected",
+        "cache": "connected" if redis_ok else "disconnected",
+        "version": "3.3.0"
+    }
 
 
 @router.get("/auth")
@@ -317,6 +334,7 @@ async def unsubscribe_category(category_key: str, user=Depends(require_public_us
 
 
 @router.post("/auth/web-login")
+@limiter.limit("5/minute")
 async def web_login(request: Request):
     """
     Принимает данные от Telegram Login Widget, верифицирует,
@@ -343,7 +361,48 @@ async def web_login(request: Request):
     payload = {
         **user,
         "is_admin": is_admin,
+        "source": "web",
         "exp": int(time.time()) + 86400 * 30,  # 30 дней
+    }
+    token = _jwt_encode(payload)
+    return {
+        "token": token,
+        "user_id": uid,
+        "first_name": user.get("first_name", ""),
+        "is_admin": is_admin,
+    }
+
+
+@router.post("/auth/tma-login")
+@limiter.limit("10/minute")
+async def tma_login(request: Request):
+    """
+    Обменивает Telegram initData на JWT.
+    Позволяет TMA пользователям получить полноценную сессию.
+    """
+    from dependencies import (
+        get_admin_users,
+        verify_telegram_init_data,
+    )
+
+    init_data = request.headers.get("X-Telegram-Init-Data")
+    if not init_data:
+        raise HTTPException(status_code=400, detail="Отсутствуют данные Telegram")
+
+    user = verify_telegram_init_data(init_data)
+    if not user:
+        raise HTTPException(status_code=403, detail="Неверные данные Telegram")
+
+    uid = user["id"]
+    admins = await get_admin_users()
+    is_admin = uid in admins
+    import time
+
+    payload = {
+        **user,
+        "is_admin": is_admin,
+        "source": "tma",
+        "exp": int(time.time()) + 86400 * 30,
     }
     token = _jwt_encode(payload)
     return {
@@ -367,6 +426,36 @@ async def web_check(user=Depends(require_public_user)):
         "first_name": user.get("first_name", "") if user else "",
         "is_admin": uid in admins or user.get("is_local_admin", False),
         "is_guest": user.get("is_guest", False) if user else True,
+        "source": user.get("source", "web") if user else "web",
+    }
+
+
+@router.post("/auth/refresh")
+async def refresh_token(user=Depends(require_public_user)):
+    """
+    Обновляет JWT сессию. Доступно только для авторизованных пользователей.
+    """
+    if user.get("is_guest"):
+        raise HTTPException(status_code=401, detail="Невозможно обновить гостевую сессию")
+
+    uid = user["id"]
+    from dependencies import get_admin_users
+
+    admins = await get_admin_users()
+    is_admin = uid in admins
+    import time
+
+    payload = {
+        **user,
+        "is_admin": is_admin,
+        "exp": int(time.time()) + 86400 * 30,  # Продлеваем еще на 30 дней
+    }
+    token = _jwt_encode(payload)
+    return {
+        "token": token,
+        "user_id": uid,
+        "first_name": user.get("first_name", ""),
+        "is_admin": is_admin,
     }
 
 

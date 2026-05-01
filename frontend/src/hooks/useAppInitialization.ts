@@ -6,9 +6,11 @@ import {
   getTelegramInitData,
   hasTelegramWebApp,
   isTelegram,
+  setStoredToken,
 } from '@/lib/auth'
 import { applyLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
+import { useAppEnv } from '@/hooks/useAppEnv'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
 import { useEffect } from 'react'
@@ -31,13 +33,30 @@ export const useAppInitialization = () => {
       retryTimer = window.setTimeout(doAuth, 450)
     }
 
-    const doAuth = () => {
+    const doAuth = async () => {
       if (isCancelled) return
 
       const mode = getMode()
+      const initData = getTelegramInitData()
 
-      // Веб-режим: сразу применяем сохранённый токен
-      if (mode === 'web') {
+      // 1. Если в TMA — обмениваем данные на JWT (Exchange Strategy)
+      if (initData) {
+        try {
+          const data = await apiFetch<any>('/api/auth/tma-login', { method: 'POST' })
+          if (data?.token && !isCancelled) {
+            setStoredToken(data.token, {
+              id: data.user_id,
+              first_name: data.first_name,
+              is_admin: data.is_admin,
+            })
+            if (data.is_admin) setIsAdmin(true)
+          }
+        } catch (e) {
+          console.warn('TMA JWT Exchange failed, falling back to initData only:', e)
+        }
+      } 
+      // 2. Веб-режим: сразу применяем сохранённый токен
+      else if (mode === 'web') {
         pipe(
           getStoredUser(),
           O.map((user) => {
@@ -46,7 +65,7 @@ export const useAppInitialization = () => {
         )
       }
 
-      // Тихая проверка на бэкенде
+      // Тихая проверка актуальности на бэкенде
       apiFetch<{ is_admin?: boolean }>('/api/auth/web-check')
         .then((data) => {
           if (isCancelled) return

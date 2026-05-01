@@ -28,7 +28,8 @@ export function getMode(): AuthMode {
 }
 
 export function isTelegram(): boolean {
-  return !!getTelegramInitData()
+  const initData = getTelegramInitData()
+  return !!initData && initData.length > 0
 }
 
 export function getStoredToken(): string {
@@ -53,6 +54,17 @@ export function clearStoredToken(): void {
   } catch {}
 }
 
+export function logout(): void {
+  clearStoredToken()
+  if (window.Telegram?.WebApp) {
+    // В TMA выход = закрытие приложения
+    window.Telegram.WebApp.close()
+  } else {
+    // В вебе просто рефреш для сброса стейта
+    window.location.href = '/'
+  }
+}
+
 export function getStoredUser(): O.Option<User> {
   try {
     const raw = localStorage.getItem(USER_KEY)
@@ -65,13 +77,19 @@ export function getStoredUser(): O.Option<User> {
 export function getAuthHeaders() {
   const headers: Record<string, string> = {}
   const initData = getTelegramInitData()
+  
+  // Приоритет 1: Мы в Telegram Mini App
   if (initData) {
     headers['X-Telegram-Init-Data'] = initData
+    return headers
   }
+  
+  // Приоритет 2: Мы в обычном браузере с JWT
   const token = getStoredToken()
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
+  
   return headers
 }
 interface TelegramUser {

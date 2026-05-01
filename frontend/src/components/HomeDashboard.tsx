@@ -51,27 +51,45 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) =
   )
   const recentComments = recentCommentsData?.comments || []
 
+  const queryClient = useQueryClient()
+  const prefetchTimer = useRef<NodeJS.Timeout | null>(null)
+
+  const prefetchGuide = (key: string) => {
+    if (prefetchTimer.current) clearTimeout(prefetchTimer.current)
+    prefetchTimer.current = setTimeout(() => {
+      queryClient.prefetchQuery({
+        queryKey: ['guide', key],
+        queryFn: () => apiFetch(`/api/guide/${key}`),
+        staleTime: 60_000,
+      })
+    }, 150)
+  }
+
   return (
     <div className="flex flex-col gap-8 pb-4 animate-in fade-in duration-700">
       {/* 1. Hero Welcome */}
       <section className="px-5 pt-2">
-        <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-primary/20 via-primary/5 to-transparent p-6 border border-primary/10 shadow-xl shadow-primary/5">
+        <div className="relative overflow-hidden rounded-[32px] mesh-bg p-7 border border-primary/10 shadow-2xl shadow-primary/5">
+          {/* Animated background pulse */}
+          <div className="absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
+          <div className="absolute -left-10 -bottom-10 size-32 rounded-full bg-primary/10 blur-[60px]" />
+          
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="size-4 text-primary animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">
-                Добро пожаловать
+            <div className="flex items-center gap-2 mb-3">
+              <div className="size-2 rounded-full bg-primary animate-ping" />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+                Live Updates
               </span>
             </div>
-            <h1 className="text-3xl font-black tracking-tighter text-foreground mb-1">
-              Привет, {userName}!
+            <h1 className="text-4xl font-black tracking-tight text-foreground mb-2 leading-none">
+              Привет, <span className="text-primary">{userName}!</span>
             </h1>
-            <p className="text-sm font-medium text-muted-foreground/80 leading-relaxed max-w-[240px]">
-              Сегодня отличный день, чтобы стать сильнее. С чего начнем?
+            <p className="text-[15px] font-medium text-muted-foreground/80 leading-snug max-w-[260px]">
+              {recentGuides.length > 0 
+                ? `У нас появилось ${recentGuides.length} новых гайдов. Пора стать сильнее!` 
+                : "Сегодня отличный день, чтобы изучить что-то новое."}
             </p>
           </div>
-          {/* Decorative element */}
-          <div className="absolute -right-8 -top-8 size-40 rounded-full bg-primary/10 blur-3xl" />
         </div>
       </section>
 
@@ -86,7 +104,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) =
           </div>
         </div>
 
-        <div className="flex gap-4 overflow-x-auto px-5 no-scrollbar pb-2">
+        <div className="flex gap-4 overflow-x-auto px-5 scrollbar-premium pb-4">
           {topLoading
             ? [...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="h-44 w-36 shrink-0 rounded-[24px] bg-muted/40" />
@@ -96,12 +114,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) =
                   key={g.key}
                   whileTap={{ scale: 0.96 }}
                   className="w-36 shrink-0 cursor-pointer"
+                  onMouseEnter={() => prefetchGuide(g.key)}
+                  onTouchStart={() => prefetchGuide(g.key)}
                   onClick={() => {
                     haptic.light()
                     onSelectGuide(g.key, g.title, g.icon_url)
                   }}
                 >
-                  <Card className="h-full border-border/10 glass-card rounded-[24px] overflow-hidden flex flex-col">
+                  <Card className="h-full border-border/10 glass-card rounded-[24px] overflow-hidden flex flex-col transition-all duration-300 hover:shadow-glow hover:border-primary/20">
                     <div className="relative aspect-square p-4 bg-muted/20 flex items-center justify-center">
                       <div className="size-16 rounded-2xl bg-background shadow-lg flex items-center justify-center p-2">
                         {g.icon_url ? (
@@ -149,7 +169,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) =
                 <motion.div
                   key={g.key}
                   whileTap={{ scale: 0.98 }}
-                  className="group cursor-pointer rounded-2xl border border-border/5 bg-muted/20 p-4 transition-all hover:bg-muted/30"
+                  className="group cursor-pointer rounded-2xl border border-border/5 bg-muted/20 p-4 transition-all hover:bg-muted/30 hover:border-primary/10 hover:shadow-soft"
+                  onMouseEnter={() => prefetchGuide(g.key)}
+                  onTouchStart={() => prefetchGuide(g.key)}
                   onClick={() => {
                     haptic.light()
                     onSelectGuide(g.key, g.title, g.icon_url)
@@ -194,7 +216,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) =
         </div>
 
         <div className="px-5">
-          <div className="rounded-[28px] border border-border/10 bg-muted/10 p-5">
+          <div className="rounded-[32px] border border-border/10 bg-muted/10 p-6 shadow-soft">
             {commentsLoading ? (
               <Skeleton className="h-32 w-full rounded-2xl bg-muted/40" />
             ) : recentComments.length === 0 ? (

@@ -66,6 +66,8 @@ async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
     from fastapi import UploadFile
     from urllib.parse import urlparse
     
+    tmp_path = None
+    temp_compressed_path = None
     try:
         # Determine filename from URL
         parsed = urlparse(body.url)
@@ -89,8 +91,6 @@ async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
                         async for chunk in resp.content.iter_chunked(1024 * 1024):
                             tmp.write(chunk)
                     
-                    # Если файл больше 48МБ, пытаемся сжать его для экономии места в R2
-                    # НО: на бесплатных хостингах типа Render (512MB RAM) ffmpeg может уронить сервер (OOM Kill)
                     temp_compressed_path = tmp_path + "_comp.mp4"
                     final_path = tmp_path
                     
@@ -127,9 +127,6 @@ async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
                             headers={"content-type": content_type}
                         )
                         url = await upload_file(upload_file_obj, folder=body.folder)
-                    
-                    if os.path.exists(tmp_path): os.remove(tmp_path)
-                    if os.path.exists(temp_compressed_path): os.remove(temp_compressed_path)
                 else:
                     # Изображения обычно небольшие, качаем в память
                     content = await resp.read()
@@ -144,6 +141,9 @@ async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
     except Exception as e:
         logger.error("Failed to import media: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Ошибка импорта медиа: {e}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path): os.remove(tmp_path)
+        if temp_compressed_path and os.path.exists(temp_compressed_path): os.remove(temp_compressed_path)
 
 
 @router.get("/media/proxy")
@@ -228,22 +228,25 @@ async def admin_stats(
 ):
     from db_models import Guide, GuideComment, Category, Member
     from sqlalchemy import func, select
-    import asyncio
 
     try:
-        # SQLAlchemy AsyncSession не потокобезопасна для конкурентных запросов
-        cat_res = await session.execute(select(func.count(Category.key)))
-        guide_res = await session.execute(select(func.count(Guide.key)))
-        member_res = await session.execute(select(func.count(Member.user_id)))
-        views_res = await session.execute(select(func.sum(Guide.views)))
-        comments_res = await session.execute(select(func.count(GuideComment.id)))
+        # Optimized: Single query for all stats
+        stmt = select(
+            select(func.count(Category.key)).scalar_subquery(),
+            select(func.count(Guide.key)).scalar_subquery(),
+            select(func.count(Member.user_id)).scalar_subquery(),
+            select(func.sum(Guide.views)).scalar_subquery(),
+            select(func.count(GuideComment.id)).scalar_subquery(),
+        )
+        res = await session.execute(stmt)
+        row = res.fetchone()
 
         return {
-            "categories": int(cat_res.scalar_one_or_none() or 0),
-            "guides": int(guide_res.scalar_one_or_none() or 0),
-            "members": int(member_res.scalar_one_or_none() or 0),
-            "views": int(views_res.scalar_one_or_none() or 0),
-            "comments": int(comments_res.scalar_one_or_none() or 0),
+            "categories": int(row[0] or 0),
+            "guides": int(row[1] or 0),
+            "members": int(row[2] or 0),
+            "views": int(row[3] or 0),
+            "comments": int(row[4] or 0),
         }
     except Exception as e:
         logger.error("Error in admin_stats: %s", e, exc_info=True)
@@ -426,17 +429,7 @@ async def admin_import(request: Request, user=Depends(require_admin)):
 
 @router.post("/translate")
 async def admin_translate(request: Request, user=Depends(require_admin)):
-    import os
-    import aiohttp
-    
-    # Пытаемся импортировать библиотеку для фоллбека
-    try:
-        from deep_translator import GoogleTranslator
-    except ImportError:
-        GoogleTranslator = None
-    
-    api_key = os.getenv("GEMINI_API_KEY")
-    hf_token = os.getenv("HF_TOKEN")
+    from services.translation_service import TranslationService
     
     try:
         body = await request.json()
@@ -444,69 +437,6 @@ async def admin_translate(request: Request, user=Depends(require_admin)):
         if not text:
             return {"translated": ""}
             
-        # --- ШАГ 1: Пытаемся использовать Hugging Face (Qwen 2.5) ---
-        if hf_token:
-            try:
-                hf_model = "Qwen/Qwen2.5-72B-Instruct"
-                url = f"https://api-inference.huggingface.co/models/{hf_model}"
-                headers = {"Authorization": f"Bearer {hf_token}"}
-                
-                prompt = (
-                    f"<|im_start|>system\nТы — профессиональный переводчик игровых гайдов. Переводи с английского на русский.\n"
-                    "ПРАВИЛА:\n"
-                    "1. НЕ ПЕРЕВОДИ теги в квадратных скобках: ![video], ![image] — оставляй их как есть.\n"
-                    "2. Сохраняй эмодзи Discord (<:name:id>) и ссылки без изменений.\n"
-                    "3. Используй игровой сленг (например, 'билд', 'скиллы', 'статы').<|im_end|>\n"
-                    f"<|im_start|>user\nПереведи этот текст:\n{text}<|im_end|>\n"
-                    "<|im_start|>assistant\n"
-                )
-                
-                payload = {
-                    "inputs": prompt,
-                    "parameters": {"max_new_tokens": 2048, "temperature": 0.1}
-                }
-                
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, json=payload, headers=headers, timeout=30) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
-                            full_text = ""
-                            if isinstance(data, list) and len(data) > 0:
-                                full_text = data[0].get("generated_text", "")
-                            elif isinstance(data, dict):
-                                full_text = data.get("generated_text", "")
-                            
-                            if full_text:
-                                translated = full_text.split("<|im_start|>assistant\n")[-1].strip()
-                                # Пост-исправление тегов
-                                translated = translated.replace("![видео]", "![video]").replace("![изображение]", "![image]")
-                                return {"translated": translated}
-            except Exception as hf_e:
-                logger.warning(f"Hugging Face translation failed (status: {getattr(hf_e, 'response', {}).get('status_code', 'error')})")
-
-        # --- ШАГ 2: Пытаемся использовать Gemini (fallback) ---
-        if api_key:
-            try:
-                models_to_try = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"]
-                async with aiohttp.ClientSession() as session:
-                    for model_name in models_to_try:
-                        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                        prompt = (
-                            "Переведи следующий текст гайда Slayer Legend на русский язык.\n"
-                            "ВАЖНО: Оставляй теги ![video] и ![image] БЕЗ ИЗМЕНЕНИЙ. Не переводи слова внутри скобок [] для этих тегов.\n"
-                            "Сохрани ссылки и эмодзи Discord.\n\n"
-                            f"Текст:\n{text}"
-                        )
-                        payload = {"contents": [{"parts": [{"text": prompt}]}]}
-                        async with session.post(gemini_url, json=payload, timeout=20) as resp:
-                            if resp.status == 200:
-                                g_data = await resp.json()
-                                translated = g_data["candidates"][0]["content"]["parts"][0]["text"]
-                                # Пост-исправление тегов
-                                translated = translated.replace("![видео]", "![video]").replace("![изображение]", "![image]")
-                                return {"translated": translated}
-            except Exception as gem_e:
-                logger.warning("Gemini translation fallback failed")
 
         # --- ШАГ 3: Безотказный вариант (Google Translate без ключей) ---
         if GoogleTranslator:
@@ -716,3 +646,14 @@ async def admin_delete_media(url: str, user=Depends(require_admin)):
         raise HTTPException(status_code=500, detail="Не удалось удалить файл")
         
     return {"ok": True}
+
+
+@router.post("/cache/clear")
+async def admin_clear_cache(user=Depends(require_admin)):
+    """Полная очистка Redis кэша (категории + гайды)."""
+    try:
+        await invalidate_all()
+        return {"ok": True, "message": "Cache cleared successfully"}
+    except Exception as e:
+        logger.error(f"Failed to clear cache: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка очистки кэша: {e}")

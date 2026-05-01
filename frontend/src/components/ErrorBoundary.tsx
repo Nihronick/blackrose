@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { AlertCircle, RefreshCw } from '@/lib/icons'
+import { AlertCircle, RefreshCw, XCircle } from '@/lib/icons'
 import Honeybadger from '@honeybadger-io/js'
 import type React from 'react'
 import { Component, type ReactNode } from 'react'
@@ -48,13 +48,26 @@ export class ErrorBoundary extends Component<Props, State> {
             в бот.
           </p>
 
-          <Button
-            className="mt-8 h-12 rounded-2xl px-8 font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCw className="mr-2 size-4" />
-            Обновить страницу
-          </Button>
+          <div className="flex flex-col gap-3 w-full max-w-[240px] mt-8">
+            <Button
+              className="h-12 rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all w-full"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="mr-2 size-4" />
+              Обновить
+            </Button>
+            
+            {((window as any).Telegram?.WebApp?.version) && (
+              <Button
+                variant="outline"
+                className="h-12 rounded-2xl font-bold active:scale-95 transition-all w-full border-border/40"
+                onClick={() => (window as any).Telegram.WebApp.close?.()}
+              >
+                <XCircle className="mr-2 size-4" />
+                Закрыть бота
+              </Button>
+            )}
+          </div>
 
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <pre className="mt-8 max-w-full overflow-auto rounded-xl bg-muted p-4 text-left text-[10px] text-muted-foreground leading-tight">

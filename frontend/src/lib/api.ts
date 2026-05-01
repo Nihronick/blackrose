@@ -13,13 +13,20 @@ export interface ApiError extends Error {
 function throwHttpError(res: Response, data: ApiResponse<unknown>): never {
   if (res.status === 403) {
     const err: ApiError = new Error('ACCESS_DENIED')
-    err.detail = typeof data === 'object' && data && 'detail' in data ? data.detail : undefined
+    err.detail = typeof data === 'object' && data && 'detail' in data ? (Array.isArray(data.detail) ? data.detail.join(', ') : String(data.detail)) : undefined
     throw err
   }
-  const detail =
-    typeof data === 'object' && data && 'detail' in data && data.detail != null
-      ? String(data.detail)
-      : null
+  
+  let detail: string | null = null
+  if (typeof data === 'object' && data && 'detail' in data && data.detail != null) {
+    if (Array.isArray(data.detail)) {
+      // Handle FastAPI validation error lists
+      detail = data.detail.map(d => typeof d === 'object' ? (d.msg || JSON.stringify(d)) : String(d)).join(', ')
+    } else {
+      detail = String(data.detail)
+    }
+  }
+  
   throw new Error(detail ?? `Ошибка ${res.status}`)
 }
 

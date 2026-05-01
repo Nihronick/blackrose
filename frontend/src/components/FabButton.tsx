@@ -1,5 +1,6 @@
 import { haptic } from '@/lib/haptic'
 import { ArrowLeft, Menu } from '@/lib/icons'
+import { useAppEnv } from '@/hooks/useAppEnv'
 import { cn } from '@/lib/utils'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -19,6 +20,7 @@ interface FabButtonProps {
  * Design is optimized for thumb-reachability on mobile devices.
  */
 export const FabButton: React.FC<FabButtonProps> = ({ visible, label, onBack, onHoldComplete }) => {
+  const { isTMA } = useAppEnv()
   const [holding, setHolding] = useState(false)
   const [progress, setProgress] = useState(0)
   const timer = useRef<NodeJS.Timeout | null>(null)
@@ -74,7 +76,12 @@ export const FabButton: React.FC<FabButtonProps> = ({ visible, label, onBack, on
       cancel()
       if (!triggered.current) {
         haptic.medium?.()
-        onBack?.()
+        // В телеге тап сразу открывает меню, так как "Назад" уже есть нативный
+        if (isTMA) {
+          onHoldComplete?.()
+        } else {
+          onBack?.()
+        }
       }
     }
   }
@@ -104,8 +111,8 @@ export const FabButton: React.FC<FabButtonProps> = ({ visible, label, onBack, on
         onPointerCancel={cancel}
         onContextMenu={(e) => e.preventDefault()}
         style={{ touchAction: 'none' }}
+        aria-label={isTMA ? 'Открыть меню навигации' : `Вернуться назад к ${label}`}
       >
-        {/* Progress Overlay */}
         <div
           className="absolute inset-0 bg-white/20 transition-opacity"
           style={{
@@ -114,8 +121,12 @@ export const FabButton: React.FC<FabButtonProps> = ({ visible, label, onBack, on
           }}
         />
 
-        <ArrowLeft className={cn('size-4 transition-transform', holding && '-translate-x-1')} />
-        <span className="tracking-tight">{label}</span>
+        {isTMA ? (
+          <Menu className={cn('size-4 transition-transform', holding && 'scale-110')} />
+        ) : (
+          <ArrowLeft className={cn('size-4 transition-transform', holding && '-translate-x-1')} />
+        )}
+        <span className="tracking-tight">{isTMA ? 'Меню' : label}</span>
 
         {/* Subtle hint that fades in on hover (wide screens) or long-press start */}
         <span

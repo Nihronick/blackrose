@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
+import { AppEnvProvider } from './hooks/useAppEnv'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { initTheme } from './lib/theme'
 import './index.css'
@@ -59,7 +60,9 @@ if (rootElement) {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <HashRouter>
-            <App />
+            <AppEnvProvider>
+              <App />
+            </AppEnvProvider>
           </HashRouter>
         </QueryClientProvider>
       </ErrorBoundary>

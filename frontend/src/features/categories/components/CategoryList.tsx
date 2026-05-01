@@ -4,17 +4,44 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useSubscriptions } from '@/hooks/useSubscriptions'
 import { haptic } from '@/lib/haptic'
 import { Bell, ChevronRight } from '@/lib/icons'
+import { apiFetch } from '@/lib/api'
 import { normalizeUrl, pluralize } from '@/lib/utils'
+import { useQueryClient } from '@tanstack/react-query'
 import type React from 'react'
 import type { Category } from '../types'
 
 interface CategoryListProps {
   categories: Category[]
   onSelectCategory: (category: Category) => void
+  isLoading?: boolean
 }
 
-export const CategoryList: React.FC<CategoryListProps> = ({ categories, onSelectCategory }) => {
+export const CategoryList: React.FC<CategoryListProps> = ({ categories, onSelectCategory, isLoading }) => {
   const { isSubscribed, toggle } = useSubscriptions()
+  const queryClient = useQueryClient()
+
+  const prefetchTimer = React.useRef<NodeJS.Timeout | null>(null)
+
+  const prefetchCategory = (key: string) => {
+    if (prefetchTimer.current) clearTimeout(prefetchTimer.current)
+    prefetchTimer.current = setTimeout(() => {
+      queryClient.prefetchQuery({
+        queryKey: ['category', key],
+        queryFn: () => apiFetch<{ items: any }>(`/api/category/${key}`).then((r) => r.items),
+        staleTime: 60_000,
+      })
+    }, 150) // Small delay to avoid prefetching on accidental hover/scroll
+  }
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-5 px-5 pb-32 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-[104px] rounded-[32px] border border-border/10 skeleton" />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 gap-5 px-5 pb-32 pt-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -31,7 +58,9 @@ export const CategoryList: React.FC<CategoryListProps> = ({ categories, onSelect
           return (
             <Card
               key={item.key}
-              className="group relative cursor-pointer overflow-hidden border-border/20 glass-card transition-all duration-300 hover:-translate-y-1 hover:brightness-105 active:scale-[0.97]"
+              className="group relative cursor-pointer overflow-hidden border-border/20 glass-card transition-all duration-500 hover:-translate-y-1.5 hover:shadow-glow hover:border-primary/30 active:scale-[0.97]"
+              onMouseEnter={() => prefetchCategory(item.key)}
+              onTouchStart={() => prefetchCategory(item.key)}
               onClick={() => {
                 haptic.light()
                 onSelectCategory(item)

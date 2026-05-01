@@ -94,11 +94,17 @@ export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }
 
   return (
     <div
-      className="group relative my-8 overflow-hidden rounded-[2rem] border border-border/10 bg-black shadow-2xl"
+      className={`group relative my-8 overflow-hidden rounded-[2rem] border transition-all duration-700 bg-black shadow-2xl ${
+        !isPlaying && !isLoading ? 'border-primary/40 shadow-glow' : 'border-border/10'
+      }`}
       onMouseMove={handleInteraction}
       onTouchStart={handleInteraction}
       onClick={togglePlay}
     >
+      {/* Shimmer overlay for paused state */}
+      {!isPlaying && !isLoading && (
+        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none skeleton" />
+      )}
       {/* Loading Spinner */}
       {isLoading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">

@@ -6,15 +6,21 @@
 - [x] Implement/Fix Guide deletion logic.
 - [x] Simplify Backend Storage (Remove CPU-heavy video compression).
 - [x] Optimize Frontend (Remove complex animations and universal transitions).
-- [x] **Stabilize TMA Navigation** (Fixed Back button and double header).
+- [x] **Stabilize TMA Navigation** (Fixed Back button, double header, and redundant FAB).
 - [x] **Premium Video Player** (Custom UI, PiP, Looping, Hydration).
+- [x] **Fix Frontend Rendering** (Height calculation & Card import error).
 
 ## 🛠️ Features & Improvements
 - [x] Clean up redundant Graphify files (Verified removed).
+- [x] Add `/health` endpoint to FastAPI for monitoring.
 - [ ] Implement automated icon downloader for Discord Lab.
-- [ ] Add `/health` endpoint to FastAPI for monitoring.
 
-## ✅ Completed
+## 🛡️ Reliability & Maintenance (Based on RISKS.md)
+- [ ] **Load Testing**: Perform stress tests (k6/locust) for 200+ concurrent users on HF Spaces.
+- [ ] **Backup Verification**: Verify Neon.tech automated backup frequency and perform a manual SQL dump.
+- [ ] **Media Offloading**: Research Cloudflare R2 / Backblaze B2 as a backup for HF Datasets if latency increases.
+- [ ] **Redis Migration**: Move from in-memory cache to external Redis (Upstash) to survive HF Space restarts.
+- [ ] **Logging Audit**: Review structured logs for `X-Forwarded-For` parsing accuracy after 1 week of production.
 - [x] Implement **Home Dashboard** (Hero section, Horizontal scrolls, Activity feed).
 - [x] Add **Subscription UI** (Notifications toggle on category cards).
 - [x] Implement **Reading Progress** & **Table of Contents** for guides.
@@ -38,6 +44,7 @@
 - [x] **Migrated Media & Icons to Hugging Face Datasets.**
 - [x] **Performed deep repository cleanup (removed 5GB of legacy history/assets).**
 - [x] **Established separate deployment pipelines (PowerShell scripts).**
+- [x] **Implemented Hybrid Core Architecture (Environment separation).**
 
 ### 🧪 Experiments & Integration
 - [ ] Test Discord Lab with raw JSON from Slayerpedia forum threads.

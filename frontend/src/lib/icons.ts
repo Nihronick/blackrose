@@ -80,6 +80,7 @@ export {
   Maximize,
   Minimize,
   X,
+  XCircle,
   XIcon,
   ZoomIn,
 } from 'lucide-react'

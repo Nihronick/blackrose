@@ -259,23 +259,33 @@ export const GuideView: React.FC<GuideViewProps> = ({
           <div className="flex flex-col gap-8 mb-10">
             <div className="flex flex-col gap-6">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex size-20 shrink-0 items-center justify-center rounded-[28px] glass-card p-1 shadow-2xl shadow-primary/10">
-                  <div className="flex size-full items-center justify-center rounded-[24px] bg-primary/5 shadow-inner">
-                    {guide.icon || guide.icon_url ? (
-                      <motion.img
-                        layoutId={`guide-icon-${guide.key}`}
-                        src={normalizeUrl(guide.icon || guide.icon_url)}
-                        alt=""
-                        className="size-14 object-contain animate-float drop-shadow-md"
-                        onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                          e.currentTarget.style.display = 'none'
-                        }}
-                      />
-                    ) : (
-                      <motion.span layoutId={`guide-icon-${guide.key}`} className="text-3xl">
-                        📄
-                      </motion.span>
-                    )}
+                <div className="flex size-20 shrink-0 items-center justify-center rounded-[28px] glass-card p-1 shadow-2xl shadow-primary/10 transition-transform duration-500 hover:scale-105">
+                  <div className="flex size-full items-center justify-center rounded-[24px] bg-primary/5 shadow-inner overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      {guide.icon || guide.icon_url ? (
+                        <motion.img
+                          key={guide.key}
+                          layoutId={`guide-icon-${guide.key}`}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 1.2 }}
+                          src={normalizeUrl(guide.icon || guide.icon_url)}
+                          alt=""
+                          className="size-14 object-contain animate-float drop-shadow-md"
+                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <motion.span 
+                          key="fallback"
+                          layoutId={`guide-icon-${guide.key}`} 
+                          className="text-3xl"
+                        >
+                          📄
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 

@@ -93,7 +93,8 @@ class CommentIn(BaseModel):
             raise ValueError("Комментарий не может быть пустым")
         if len(v) > 1000:
             raise ValueError("Комментарий слишком длинный (макс. 1000 символов)")
-        return nh3.clean(v, tags=set())
+        # Allow basic safe tags for formatting
+        return nh3.clean(v, tags={"b", "i", "u", "code", "strong", "em"})
 
 
 class TagsIn(BaseModel):

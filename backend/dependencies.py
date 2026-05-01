@@ -252,6 +252,8 @@ async def require_telegram_user(request: Request) -> dict:
         token = auth_header[7:]
         payload = _jwt_decode(token)
         if payload:
+            from logging_config import get_logger
+            get_logger().bind(user_id=payload.get("user_id") or payload.get("id"))
             return payload
         # Если токен есть, но неверный/протухший — кидаем 401
         raise HTTPException(status_code=401, detail="Сессия истекла, войдите снова")
@@ -261,6 +263,8 @@ async def require_telegram_user(request: Request) -> dict:
     if init_data:
         user = verify_telegram_init_data(init_data)
         if user:
+            from logging_config import get_logger
+            get_logger().bind(user_id=user.get("id"))
             return user
         raise HTTPException(
             status_code=403, detail="Неверные данные авторизации Telegram"

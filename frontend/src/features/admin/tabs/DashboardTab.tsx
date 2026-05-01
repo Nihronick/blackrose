@@ -1,6 +1,7 @@
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { apiFetch } from '@/lib/api'
-import { ChevronRight, Eye, FileText, LayoutGrid, MessageSquare, TrendingUp } from '@/lib/icons'
+import { ChevronRight, Eye, FileText, LayoutGrid, MessageSquare, RefreshCw, TrendingUp } from '@/lib/icons'
 import type { AdminStats, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -18,6 +19,7 @@ export const DashboardTab: React.FC = () => {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [guides, setGuides] = useState<Guide[]>([])
   const [analytics, setAnalytics] = useState<any[]>([])
+  const [clearing, setClearing] = useState(false)
 
   useEffect(() => {
     apiFetch<AdminStats>('/api/admin/stats')
@@ -30,6 +32,20 @@ export const DashboardTab: React.FC = () => {
       .then((res) => setAnalytics(res.chart))
       .catch(() => {})
   }, [])
+
+  const handleClearCache = async () => {
+    if (!window.confirm('Вы уверены, что хотите полностью очистить кэш? Это может временно замедлить работу приложения.')) return
+    
+    setClearing(true)
+    try {
+      await apiFetch('/api/admin/cache/clear', { method: 'POST' })
+      alert('Кэш успешно очищен')
+    } catch (e) {
+      alert('Ошибка при очистке кэша: ' + (e instanceof Error ? e.message : 'Unknown error'))
+    } finally {
+      setClearing(false)
+    }
+  }
 
   const chartData = (analytics || []).map(d => ({
     name: new Date(d.day).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
@@ -176,6 +192,36 @@ export const DashboardTab: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* System Maintenance */}
+      <div className="space-y-4 pt-8 border-t border-border/10">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="size-4 text-primary" />
+          <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">
+            Обслуживание системы
+          </h3>
+        </div>
+        <Card className="p-6 border-none bg-card/40 backdrop-blur-sm shadow-sm ring-1 ring-border/5">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <div className="text-sm font-bold text-foreground">Очистка кэша Redis</div>
+              <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed max-w-md">
+                Принудительно удаляет все сохраненные категории и данные гайдов из оперативной памяти. 
+                Полезно, если данные в приложении не обновляются или отображаются некорректно.
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              className="rounded-xl h-12 px-6 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all active:scale-95 shrink-0"
+              onClick={handleClearCache}
+              disabled={clearing}
+            >
+              <RefreshCw className={cn("size-4", clearing && "animate-spin")} />
+              <span>{clearing ? 'Очистка...' : 'Очистить кэш'}</span>
+            </Button>
+          </div>
+        </Card>
       </div>
     </div>
   )

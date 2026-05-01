@@ -5,8 +5,9 @@ BlackRose Mini App API v3.3
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from cache import close_redis
@@ -137,6 +138,22 @@ async def seed_initial_admin() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup: Cleanup stale temp files
+    try:
+        import shutil
+        import tempfile
+        temp_dir = tempfile.gettempdir()
+        logger.info(f"Checking for stale BlackRose temp files in {temp_dir}")
+        for item in os.listdir(temp_dir):
+            if item.startswith("blackrose_") or "_comp.mp4" in item:
+                path = os.path.join(temp_dir, item)
+                try:
+                    if os.path.isfile(path): os.remove(path)
+                    elif os.path.isdir(path): shutil.rmtree(path)
+                except Exception: pass
+    except Exception as e:
+        logger.error(f"Startup cleanup failed: {e}")
+
     await init_db()
     logger.info("=" * 50)
     logger.info(f"BlackRose Mini App API v{app.version}")
@@ -150,10 +167,38 @@ async def lifespan(app: FastAPI):
     await close_redis()
 
 
-app = FastAPI(title="BlackRose API", version="3.3.0", lifespan=lifespan)
+app = FastAPI(
+    title="BlackRose API",
+    description="Backend API for Slayer Legend Community Knowledge Base. Handles guide management, hybrid authentication, and Discord synchronization.",
+    version="3.3.0",
+    lifespan=lifespan,
+    contact={
+        "name": "Nihronick",
+        "url": "https://github.com/Nihronick",
+    },
+)
 
 # Setup integrations
 setup_honeybadger(app)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    from alerts import notify_error
+    from logging_config import get_logger
+    
+    logger = get_logger("blackrose.global")
+    request_id = getattr(request.state, "request_id", "unknown")
+    
+    error_msg = f"Unhandled exception: {exc}\nPath: {request.url.path}\nRequest ID: {request_id}"
+    logger.error("unhandled_error", error=str(exc), path=request.url.path, request_id=request_id)
+    
+    # Notify admins
+    notify_error(error_msg)
+    
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Внутренняя ошибка сервера. Админы уже уведомлены.", "request_id": request_id},
+    )
 
 # Rate limiting
 app.state.limiter = limiter
@@ -162,6 +207,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Middlewares (added in reverse order of execution)
 setup_cors(app)
 app.add_middleware(RequestContextMiddleware)
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 # Routers
 app.include_router(public_router, prefix="/api", tags=["public"])
