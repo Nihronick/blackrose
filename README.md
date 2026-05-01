@@ -1,55 +1,85 @@
 # 🌹 BlackRose: The Ultimate Slayer Legend Guide Platform
 
-![BlackRose Banner](https://huggingface.co/datasets/Nihronick/blackrose-media/resolve/main/icons/promotion/Ether.png)
+[![Website](https://img.shields.io/badge/Website-blackrosesl.me-blueviolet?style=for-the-badge&logo=react)](https://blackrosesl.me)
+[![Backend](https://img.shields.io/badge/Backend-Hugging_Face-orange?style=for-the-badge&logo=fastapi)](https://huggingface.co/spaces/Nihronick/blackrose-backend)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-BlackRose is a high-performance, AI-powered knowledge base for **Slayer Legend** players. It features automated guide synthesis from Discord, multi-language support, and a sleek, mobile-first design.
-
----
-
-## 🏗️ Hybrid Architecture
-
-This project is distributed across multiple cloud services to ensure zero-cost hosting and high reliability:
-
-- **Frontend:** [React 18 + Tailwind 4] Hosted on **GitHub Pages**.
-- **Backend:** [FastAPI + Docker] Hosted on **Hugging Face Spaces**.
-- **Database:** [PostgreSQL] Serverless on **Neon**.
-- **Media Storage:** [HF Datasets] Persistent storage for icons, images, and videos.
-- **AI Engine:** [Google Gemini] Automates guide translation and synthesis.
+> **BlackRose** is a high-performance, community-driven knowledge base for the **Slayer Legend** ecosystem. It bridges the gap between fragmented Discord guides and players by providing a centralized, AI-powered, and mobile-first experience.
 
 ---
 
-## 📂 Repository Structure
+## 🌟 The Vision
 
-- `/frontend` - React source code and web assets.
-- `/backend` - FastAPI server, Telegram bot, and database models.
-- `/scripts` - Automation tools for maintenance and migration.
-- `/docs` - Project documentation, specifications, and architecture plans.
-
----
-
-## 🚀 Development & Deployment
-
-### Local Setup
-
-1. **Frontend:** `cd frontend && npm install && npm run dev`
-2. **Backend:** `cd backend && pip install -r requirements.txt && uvicorn main:app --reload`
-
-### Deployment
-
-We use a separate deployment pipeline for each component:
-- **Backend:** Use `.\deploy-backend.ps1` to push to Hugging Face Spaces.
-- **Frontend:** Use `.\deploy-frontend.ps1` to update GitHub Pages.
+In modern gaming communities, the best guides are often buried in Discord channels, difficult to search, and inaccessible to non-English speakers. **BlackRose** solves this by:
+- **Automated Synthesis:** Extracting and structuring raw guide data from Discord "Lab" channels.
+- **AI-Powered Localization:** Using LLMs (Gemini/HF) to translate complex game mechanics while preserving context.
+- **Extreme Portability:** Designed as a Telegram Mini App for instant access during gameplay.
 
 ---
 
-## 🛡️ Security
+## 🏗️ Technical Architecture
 
-All sensitive data (tokens, DB strings) is managed via **Environment Secrets** on Hugging Face. Local `.env` files are ignored by Git to prevent leaks.
+This project demonstrates a **Cloud-Native Hybrid Architecture** designed for high scalability with zero operational costs.
 
-## 🤝 Community & Support
+### 🌐 Frontend (The Web Interface)
+- **Tech Stack:** React 18, TypeScript, Tailwind CSS 4, Zustand.
+- **Optimization:** Vite-powered static build with code-splitting for fast initial loads.
+- **Hosting:** Deployed on **GitHub Pages** with a custom domain and automated SSL.
 
-Developed for the Slayer Legend community. For updates and support, follow our Telegram Bot integration.
+### ⚙️ Backend (The Engine)
+- **Tech Stack:** FastAPI (Python 3.11+), SQLAlchemy 2.0 (Async), Pydantic v2.
+- **Deployment:** Containerized via **Docker**, hosted on **Hugging Face Spaces**.
+- **Security:** JWT-based authentication, hardened CORS policies, and secure Telegram InitData verification.
+
+### 🗄️ Infrastructure & Storage
+- **Database:** Serverless PostgreSQL on **Neon.tech**.
+- **Media Storage:** Leverages **Hugging Face Datasets** as a cloud-native file system, avoiding costly S3 alternatives while maintaining high-speed delivery.
+- **Media Processing:** On-the-fly video compression using **FFmpeg** (asynchronous subprocesses) to ensure mobile compatibility.
 
 ---
 
-*Created by [Nihronick](https://github.com/Nihronick)*
+## 📂 Project Structure
+
+```text
+├── frontend/               # React Application (Client-side)
+│   ├── src/features/       # Domain-driven feature modules (Admin, Guides, Search)
+│   ├── src/components/     # Reusable UI primitives
+│   └── public/             # Static assets & CNAME
+├── backend/                # FastAPI Application (Server-side)
+│   ├── bot/                # Telegram Bot handlers & middleware
+│   ├── routers/            # API endpoints (Admin, Public, Auth)
+│   ├── services/           # Business logic (Notification, Translation)
+│   └── storage.py          # Cloud-native HF Dataset integration
+├── scripts/                # Deployment and maintenance automation
+└── docs/                   # ADRs, Schema diagrams, and Technical Specs
+```
+
+---
+
+## 🚀 Key Technical Features
+
+1. **Intelligent Caching:** Multi-layer cache invalidation strategy for guide content.
+2. **Dynamic Media Management:** Automated upload/delete lifecycle synced between the database and HF Datasets.
+3. **Glossary-Aware Translation:** A custom translation pipeline that respects game-specific terminology.
+4. **Mobile-First UX:** Tailored specifically for the Telegram Mini App environment with native-feeling interactions.
+
+---
+
+## 🛠️ Development & Deployment
+
+The project is designed with a **"GitOps-lite"** workflow:
+- All changes are merged into `main`.
+- **Backend Deploy:** `.\deploy-backend.ps1` automates Docker builds and pushes to HF.
+- **Frontend Deploy:** `.\deploy-frontend.ps1` builds the production bundle and updates GH Pages.
+
+---
+
+## 👤 Author
+
+**Maksim Morozov (Nihronick)**
+- **GitHub:** [@Nihronick](https://github.com/Nihronick)
+- **Project Goal:** To build the most robust community tool for Slayer Legend fans while mastering modern full-stack patterns.
+
+---
+
+*This project is a testament to building professional-grade software using modern tools and creative infrastructure choices.*
