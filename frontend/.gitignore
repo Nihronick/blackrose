@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-web/
+.env
+.env.local
+.env.*.local
+.vite/
+package-lock.json.tmp*

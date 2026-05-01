@@ -1,110 +1,23 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.bak
-.Python
-*.egg-info/
-dist/
-build/
-.eggs/
-venv/
-backend/venv/
-.venv/
-.env
-.env.*
-!.env.example
-
-# Dependencies
-node_modules/
-.vite/
-package-lock.json.tmp*
-# IDEs
+# IDEs & System
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
 *.swp
 *.swo
-# AI & Local Skills
+
+# AI & Skills (Excluded from Git)
 .agents/
-.gemini/
-.agent/
-.vscode/
-.venv/
-__pycache__/
-*.pyc
-
-# Local Assets (Moved to HF Dataset)
-assets/media/
-unused_assets.txt
-
-# Build Artifacts
-frontend/dist/
-frontend/node_modules/
-backend/node_modules/
-e2e/node_modules/
-
-# Environment
-.env
-backend/.env
-frontend/.env
-backend/bot/.env
-*.log
-logs/
-# Env / Secrets
-.env
-.env.*
-!.env.example
-*publish-profile.xml
-# Platforms
-android/
-ios/
-*.apk
-*.aab
-*.ipa
-.capacitor/
-# AI / Agent session files
 .agent/
 .gemini/
-docs/SESSION_SUMMARY.md
-# Data / Scratch
+
+# Scratch & Temp (Global)
 scratch/
-temp_media/
-output_media/
-output_neon/
-slayerpedia/
-ops/
-guides/
+temp/
 *.tmp
 *.temp
-backend/final_import*.json
-# Auto-generated utility / dev-only files (never commit these)
-icon_manager*.html
-icon_manager*.js
-media_manager*.html
-generate_*.py
-analyze_*.py
-export_icons*.py
-test_icons*.py
-ICON_CLEANUP_SUMMARY.md
-# E2E Test artifacts
-e2e/playwright-report/
-e2e/test-results/
-e2e/results.xml
-PHASE_*.md
 
-# Python caches
-__pycache__/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-*.py[cod]
-
-# Databases
-*.db
-*.sqlite
-*.sqlite3
-
-# Build / Temp
-dist-web/
-graphify-out/
-temp/
+# Deploy Scripts (Exclude if sensitive, but keep here as they are public helpers)
+# !deploy-backend.ps1
+# !deploy-frontend.ps1
