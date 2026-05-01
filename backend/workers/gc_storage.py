@@ -32,41 +32,98 @@ async def run_storage_gc():
     try:
         # 1. Собираем все файлы, на которые ссылается БД
         db_files = set()
+        import re
+        
+        # Регулярка для поиска URL-ов нашего хранилища
+        # Ищем как в Markdown ![...](url), так и просто в тексте
+        url_pattern = re.compile(r'https://huggingface\.co/datasets/[^/]+/[^/]+/resolve/main/([^"\'\s)>]+)')
+        blob_pattern = re.compile(r'https://huggingface\.co/datasets/[^/]+/[^/]+/blob/main/([^"\'\s)>]+)')
+
         async with get_sessionmaker()() as session:
             # Гайды
             guides_result = await session.execute(select(Guide))
             for g in guides_result.scalars():
+                # Проверяем иконку
                 if g.icon_url: db_files.add(g.icon_url)
+                
+                # Проверяем массивы
                 if g.photo: db_files.update(g.photo)
                 if g.video: db_files.update(g.video)
                 if g.document: db_files.update(g.document)
-            
+                
+                # ВНИМАНИЕ: Парсим основной текст гайда!
+                if g.text:
+                    # Ищем все вхождения путей в тексте
+                    found_paths = url_pattern.findall(g.text)
+                    for p in found_paths:
+                        db_files.add(p) # Добавляем путь (без префикса)
+                    
+                    found_blob_paths = blob_pattern.findall(g.text)
+                    for p in found_blob_paths:
+                        db_files.add(p)
+
             # Категории
             cats_result = await session.execute(select(Category))
             for c in cats_result.scalars():
                 if c.icon_url: db_files.add(c.icon_url)
 
-        logger.info(f"DB references {len(db_files)} files.")
+        # Нормализуем db_files: оставляем только относительные пути (от корня репозитория)
+        # Это защитит нас от разницы в доменах/протоколах
+        normalized_db_paths = set()
+        for item in db_files:
+            if not isinstance(item, str): continue
+            
+            # Если это полный URL
+            if "resolve/main/" in item:
+                normalized_db_paths.add(item.split("resolve/main/")[1])
+            elif "blob/main/" in item:
+                normalized_db_paths.add(item.split("blob/main/")[1])
+            else:
+                # Если это уже путь
+                normalized_db_paths.add(item)
+
+        logger.info(f"DB references {len(normalized_db_paths)} unique files.")
 
         # 2. Получаем список всех файлов в репозитории HF
         try:
-            repo_files = hf_api.list_repo_files(repo_id=HF_DATASET_REPO, repo_type="dataset")
-            # Фильтруем только те, что в нашей папке uploads
-            storage_files = [f for f in repo_files if f.startswith(HF_PATH)]
-            logger.info(f"Storage contains {len(storage_files)} files in '{HF_PATH}' folder.")
+            # Используем расширенный метод для получения метаданных (нужно время создания)
+            repo_files_iter = hf_api.list_repo_tree(
+                repo_id=HF_DATASET_REPO, 
+                repo_type="dataset", 
+                path_in_repo=HF_PATH,
+                recursive=True
+            )
+            
+            # Собираем файлы и фильтруем по времени (Grace Period: 24 часа)
+            now = datetime.now()
+            storage_files = []
+            grace_period_count = 0
+            
+            for f in repo_files_iter:
+                # Нам нужны только файлы
+                if f.type != "file": continue
+                
+                # Проверяем "возраст" файла (если API отдает дату изменения)
+                # У list_repo_tree есть поле 'last_modified' (если доступно)
+                if hasattr(f, 'last_commit') and f.last_commit:
+                    commit_date = f.last_commit.created_at
+                    # Если файлу меньше 24 часов - не трогаем его
+                    if (now.replace(tzinfo=commit_date.tzinfo) - commit_date).total_seconds() < 24 * 3600:
+                        grace_period_count += 1
+                        continue
+                
+                storage_files.append(f.path)
+                
+            logger.info(f"Storage contains {len(storage_files)} mature files. (Skipped {grace_period_count} new files via grace period)")
         except Exception as e:
             logger.error(f"Failed to list HF repo files: {e}")
             return
 
         # 3. Сравниваем
-        # Превращаем пути из сторейджа в полные URL для сравнения с БД
-        prefix = f"https://huggingface.co/datasets/{HF_DATASET_REPO}/resolve/main/"
-        
         orphaned_paths = []
         for path in storage_files:
-            full_url = prefix + path
-            if full_url not in db_files:
-                # Проверка: не удаляем .gitkeep или другие важные файлы
+            if path not in normalized_db_paths:
+                # Проверка: не удаляем .gitkeep или README
                 if path.endswith(".gitkeep") or path.endswith("README.md"):
                     continue
                 orphaned_paths.append(path)
@@ -77,14 +134,14 @@ async def run_storage_gc():
 
         logger.info(f"♻️ Found {len(orphaned_paths)} orphaned files. Deleting...")
         
-        # Удаляем пачками по 10, чтобы не забивать API
+        # Удаляем пачками по 10
         batch_size = 10
         deleted_count = 0
         for i in range(0, len(orphaned_paths), batch_size):
             batch = orphaned_paths[i:i + batch_size]
             deleted_count += await delete_files(batch)
             logger.info(f"Progress: {deleted_count}/{len(orphaned_paths)}")
-            await asyncio.sleep(1) # Небольшая пауза между пачками
+            await asyncio.sleep(1)
 
         logger.info(f"✨ GC finished. Deleted {deleted_count} files.")
 
