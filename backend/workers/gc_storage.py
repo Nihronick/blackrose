@@ -104,7 +104,6 @@ async def run_storage_gc():
                 if f.type != "file": continue
                 
                 # Проверяем "возраст" файла (если API отдает дату изменения)
-                # У list_repo_tree есть поле 'last_modified' (если доступно)
                 if hasattr(f, 'last_commit') and f.last_commit:
                     commit_date = f.last_commit.created_at
                     # Если файлу меньше 24 часов - не трогаем его
@@ -116,6 +115,10 @@ async def run_storage_gc():
                 
             logger.info(f"Storage contains {len(storage_files)} mature files. (Skipped {grace_period_count} new files via grace period)")
         except Exception as e:
+            # Если папка не найдена (404), значит она пустая - это не ошибка
+            if "404" in str(e) or "Entry Not Found" in str(e):
+                logger.info(f"📂 Folder '{HF_PATH}' is empty or does not exist. Nothing to clean.")
+                return
             logger.error(f"Failed to list HF repo files: {e}")
             return
 
