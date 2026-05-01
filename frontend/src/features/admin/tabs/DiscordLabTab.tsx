@@ -100,11 +100,9 @@ export const DiscordLabTab: React.FC = () => {
         setImportProgress(prev => ({ ...prev, current: i + 1, status: `Загрузка: ${file.filename || 'файл'}` }))
         
         try {
-          // Вызываем наш новый эндпоинт, который скачивает файл сервером (в обход CORS) и загружает в хранилище
           const uploadRes: any = await apiImportMedia(file.url, `imported/discord/${Date.now()}`)
           
           if (uploadRes && uploadRes.url) {
-            // Заменяем временную ссылку Discord на постоянную в тексте
             finalContent = finalContent.replace(file.url, uploadRes.url)
             
             if (file.content_type?.startsWith('video')) {
@@ -120,7 +118,9 @@ export const DiscordLabTab: React.FC = () => {
       
       setImportProgress(prev => ({ ...prev, status: 'Завершение...' }))
       
-      // Генерируем событие для открытия редактора
+      // Сначала выключаем состояние загрузки, потом шлем событие
+      setIsImporting(false)
+
       const event = new CustomEvent('blackrose:import:guide', {
         detail: {
           guide: {
@@ -137,7 +137,6 @@ export const DiscordLabTab: React.FC = () => {
       
     } catch (e) {
       alert("Ошибка при импорте. Попробуйте вручную.")
-    } finally {
       setIsImporting(false)
     }
   }
@@ -146,16 +145,11 @@ export const DiscordLabTab: React.FC = () => {
     if (!result) return
     setIsTranslating(true)
     
-    // 1. Извлекаем все медиа-теги, эмодзи и прямые ссылки, чтобы ИИ их не сломал
     const mediaMap = new Map<string, string>()
     let placeholderIndex = 0
-    
-    // Регулярное выражение для поиска всего, что нужно защитить:
-    // ![image](...), ![video](...), <a:name:id>, <:name:id>, и голые ссылки discord
     const protectedRegex = /(!\[(?:image|video)\]\(.*?\)|<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/[^\s]+)/g
     
     const safeTextForAi = result.content.replace(protectedRegex, (match: string) => {
-      // Используем непереводимый токен без букв, имеющих смысл, чтобы ИИ его не трогал
       const placeholder = `%%___M_TKN_${placeholderIndex}___%%`
       mediaMap.set(placeholder, match)
       placeholderIndex++
@@ -167,8 +161,6 @@ export const DiscordLabTab: React.FC = () => {
       
       if (res && res.translated) {
         let finalTranslated = res.translated
-        
-        // 2. Восстанавливаем оригинальные нетронутые медиа и эмодзи на свои места
         mediaMap.forEach((originalMedia, placeholder) => {
           finalTranslated = finalTranslated.replace(placeholder, originalMedia)
         })
@@ -186,99 +178,105 @@ export const DiscordLabTab: React.FC = () => {
     }
   }
 
-  // Компонент для отрисовки контента с иконками
-  const FormattedContent = ({ text }: { text: string }) => {
-    const parts = useMemo(() => {
-      // Ищем <a:name:id>, <:name:id>, :name:, ![type](url), и прямые ссылки Discord
-      return text.split(/(<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|!\[(?:image|video)\]\(.*?\)|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/attachments\/\d+\/\d+\/[\w.-]+(?:\?[\w=&.%-]+)?)/g)
-    }, [text])
-
-    return (
-      <div className="text-sm leading-relaxed whitespace-pre-wrap opacity-90">
-        {parts.map((part, i) => {
-          // 1. Обработка Discord эмодзи
-          const emojiMatch = part.match(/<(a?):([a-zA-Z0-9_]+):(\d+)>/) || part.match(/^:([a-zA-Z0-9_]+):$/)
-          if (emojiMatch) {
-            let name = ''
-            let url = null
-            
-            if (emojiMatch.length === 4) {
-              const isAnimated = emojiMatch[1] === 'a'
-              name = emojiMatch[2]
-              const id = emojiMatch[3]
-              url = getGameIconUrl(name)
-              if (!url) {
-                url = apiGetProxyUrl(`https://cdn.discordapp.com/emojis/${id}.${isAnimated ? 'gif' : 'webp'}?size=48`)
-              }
-            } else {
-              name = emojiMatch[1]
-              url = getGameIconUrl(name)
-            }
-
-            if (url) {
-              return (
-                <img 
-                  key={i} 
-                  src={url} 
-                  alt={name} 
-                  className="inline-block size-5 mx-0.5 -mt-1 rounded-sm align-middle hover:scale-150 transition-transform cursor-help object-contain"
-                  title={name}
-                />
-              )
-            }
-          }
-
-          // 2. Обработка тегов ![image](url) или ![video](url)
-          const mediaMatch = part.match(/!\[(image|video)\]\((.*?)\)/)
-          if (mediaMatch) {
-            const type = mediaMatch[1]
-            const rawUrl = mediaMatch[2]
-            const proxiedUrl = apiGetProxyUrl(rawUrl)
-            
-            return type === 'image' ? (
-              <img 
-                key={i} 
-                src={proxiedUrl} 
-                alt="Preview" 
-                className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10" 
-              />
-            ) : (
-              <video 
-                key={i} 
-                src={proxiedUrl} 
-                controls 
-                className="my-4 rounded-2xl w-full shadow-lg border border-white/10" 
-              />
-            )
-          }
-
-          // 3. Обработка прямых ссылок Discord (если они не попали в теги)
-          if (part.startsWith('http') && (part.includes('discordapp.com') || part.includes('discordapp.net'))) {
-            const proxiedUrl = apiGetProxyUrl(part)
-            const isVideo = part.toLowerCase().split('?')[0].endsWith('.mp4') || part.toLowerCase().split('?')[0].endsWith('.mov')
-            
-            return isVideo ? (
-              <video 
-                key={i} 
-                src={proxiedUrl} 
-                controls 
-                className="my-4 rounded-2xl w-full shadow-lg border border-white/10" 
-              />
-            ) : (
-              <img 
-                key={i} 
-                src={proxiedUrl} 
-                alt="Direct link preview" 
-                className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10" 
-              />
-            )
-          }
-
-          return <span key={i}>{part}</span>
-        })}
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <Beaker className="size-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black tracking-tight uppercase">Discord Sync Lab</h2>
+            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+              Тестовая площадка для импорта из Slayerpedia
+            </p>
+          </div>
+        </div>
       </div>
-    )
-  }
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        <Card className="xl:col-span-5 p-8 border-none bg-card/40 backdrop-blur-sm space-y-6 shadow-2xl ring-1 ring-white/5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">
+              Ввод: JSON из Discord
+            </h3>
+            <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] uppercase font-bold hover:bg-destructive/10 hover:text-destructive" onClick={() => setJsonInput('')}>
+              Очистить
+            </Button>
+          </div>
+          <Textarea 
+            className="min-h-[550px] font-mono text-[11px] bg-muted/20 border-none focus-visible:ring-primary/20 p-6 rounded-2xl no-scrollbar"
+            placeholder='[{"content": "Hello :fire:", "author": {"username": "HalfSquirrel"}}, ...]'
+            value={jsonInput}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setJsonInput(e.target.value)}
+          />
+          <Button 
+            className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 text-xs"
+            onClick={runTest}
+            disabled={loading}
+          >
+            {loading ? <RefreshCcw className="size-5 animate-spin" /> : <Send className="size-5" />}
+            Запустить синтез
+          </Button>
+        </Card>
+
+        <Card className="xl:col-span-7 p-8 border-none bg-card/40 backdrop-blur-sm space-y-8 shadow-2xl ring-1 ring-white/5 min-h-[710px] flex flex-col">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">
+            Результат синтеза и перевода
+          </h3>
+          
+          {result ? (
+            <div className="space-y-6 animate-in zoom-in-95 duration-500 flex-1 flex flex-col">
+              {/* Настройки импорта */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-primary/5 rounded-[24px] border border-primary/10 shadow-inner">
+                <div className="space-y-2">
+                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Целевой гайд</div>
+                  <select 
+                    className="w-full h-11 bg-background/50 border-none rounded-xl px-3 text-xs font-bold focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                    value={selectedGuideKey}
+                    onChange={(e) => setSelectedGuideKey(e.target.value)}
+                  >
+                    <option value="new">+ Создать новый гайд</option>
+                    <optgroup label="Существующие гайды (Заменить)">
+                      {allGuides.map(g => (
+                        <option key={g.key} value={g.key}>{g.title}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Название гайда</div>
+                  <Input 
+                    className="h-11 bg-background/50 border-none font-bold text-sm focus-visible:ring-primary/20 rounded-xl"
+                    value={editableTitle}
+                    onChange={(e) => setEditableTitle(e.target.value)}
+                    placeholder="Введите название..."
+                  />
+                </div>
+                
+                <div className="col-span-full pt-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Database className="size-3 text-primary/40" />
+                    <span className="text-[9px] font-bold text-muted-foreground/40 uppercase">
+                      {selectedGuideKey === 'new' ? 'Будет создан новый объект в базе' : `Обновит контент гайда: ${selectedGuideKey}`}
+                    </span>
+                  </div>
+                  <div className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-[9px] font-black uppercase tracking-widest">
+                    {result.status}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 p-8 bg-muted/20 rounded-[32px] border border-white/5 space-y-4 shadow-inner relative overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">Содержимое гайда</div>
+                  <div className="px-3 py-1 bg-muted/40 rounded-full text-[9px] font-bold text-primary/60 border border-primary/5">{result.media_count} медиа-файлов</div>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto no-scrollbar pr-2">
+                  <FormattedContent text={result.content} />
+                </div>
+              </div>
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -460,6 +458,100 @@ export const DiscordLabTab: React.FC = () => {
           )}
         </Card>
       </div>
+    </div>
+  )
+}
+
+// Компонент для отрисовки контента с иконками вынесен наружу для стабильности хуков
+const FormattedContent = ({ text }: { text: string }) => {
+  const parts = useMemo(() => {
+    // Ищем <a:name:id>, <:name:id>, :name:, ![type](url), и прямые ссылки Discord
+    return text.split(/(<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|!\[(?:image|video)\]\(.*?\)|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/attachments\/\d+\/\d+\/[\w.-]+(?:\?[\w=&.%-]+)?)/g)
+  }, [text])
+
+  return (
+    <div className="text-sm leading-relaxed whitespace-pre-wrap opacity-90">
+      {parts.map((part, i) => {
+        // 1. Обработка Discord эмодзи
+        const emojiMatch = part.match(/<(a?):([a-zA-Z0-9_]+):(\d+)>/) || part.match(/^:([a-zA-Z0-9_]+):$/)
+        if (emojiMatch) {
+          let name = ''
+          let url = null
+          
+          if (emojiMatch.length === 4) {
+            const isAnimated = emojiMatch[1] === 'a'
+            name = emojiMatch[2]
+            const id = emojiMatch[3]
+            url = getGameIconUrl(name)
+            if (!url) {
+              url = apiGetProxyUrl(`https://cdn.discordapp.com/emojis/${id}.${isAnimated ? 'gif' : 'webp'}?size=48`)
+            }
+          } else {
+            name = emojiMatch[1]
+            url = getGameIconUrl(name)
+          }
+
+          if (url) {
+            return (
+              <img 
+                key={i} 
+                src={url} 
+                alt={name} 
+                className="inline-block size-5 mx-0.5 -mt-1 rounded-sm align-middle hover:scale-150 transition-transform cursor-help object-contain"
+                title={name}
+              />
+            )
+          }
+        }
+
+        // 2. Обработка тегов ![image](url) или ![video](url)
+        const mediaMatch = part.match(/!\[(image|video)\]\((.*?)\)/)
+        if (mediaMatch) {
+          const type = mediaMatch[1]
+          const rawUrl = mediaMatch[2]
+          const proxiedUrl = apiGetProxyUrl(rawUrl)
+          
+          return type === 'image' ? (
+            <img 
+              key={i} 
+              src={proxiedUrl} 
+              alt="Preview" 
+              className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10" 
+            />
+          ) : (
+            <video 
+              key={i} 
+              src={proxiedUrl} 
+              controls 
+              className="my-4 rounded-2xl w-full shadow-lg border border-white/10" 
+            />
+          )
+        }
+
+        // 3. Обработка прямых ссылок Discord (если они не попали в теги)
+        if (part.startsWith('http') && (part.includes('discordapp.com') || part.includes('discordapp.net'))) {
+          const proxiedUrl = apiGetProxyUrl(part)
+          const isVideo = part.toLowerCase().split('?')[0].endsWith('.mp4') || part.toLowerCase().split('?')[0].endsWith('.mov')
+          
+          return isVideo ? (
+            <video 
+              key={i} 
+              src={proxiedUrl} 
+              controls 
+              className="my-4 rounded-2xl w-full shadow-lg border border-white/10" 
+            />
+          ) : (
+            <img 
+              key={i} 
+              src={proxiedUrl} 
+              alt="Direct link preview" 
+              className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10" 
+            />
+          )
+        }
+
+        return <span key={i}>{part}</span>
+      })}
     </div>
   )
 }
