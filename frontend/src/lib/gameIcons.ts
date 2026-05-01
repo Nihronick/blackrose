@@ -3,16 +3,14 @@
  * Synced with backend/icons.py — uses HuggingFace datasets CDN
  */
 
-const BASE_URL = "https://huggingface.co/datasets/Nihronick/blackrose-media/resolve/main/icons";
+const BASE_URL = "https://raw.githubusercontent.com/Nihronick/blackrose/gh-pages/assets/images/icons";
 const WSRV = "https://wsrv.nl/?url=";
 const WSRV_OPT = "&output=webp&n=-1";
 
 const _url = (path: string) => {
-  // Encode each path segment separately (same as backend _url())
+  // Encode each path segment separately
   const encoded = path.split("/").map(p => encodeURIComponent(p)).join("/");
-  const raw = `${BASE_URL}/${encoded}`;
-  if (path.endsWith(".gif")) return raw;
-  return `${WSRV}${raw}${WSRV_OPT}`;
+  return `${BASE_URL}/${encoded}`;
 };
 
 // Сокращенный список из backend/icons.py (основные категории)

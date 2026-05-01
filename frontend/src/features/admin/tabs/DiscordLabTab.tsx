@@ -127,7 +127,20 @@ export const DiscordLabTab: React.FC = () => {
       setImportProgress(prev => ({ ...prev, status: 'Сохранение гайда в базу...' }))
       
       // Сохраняем гайд в БД через API
-      const guideKey = selectedGuideKey === 'new' ? `imported_${Date.now()}` : selectedGuideKey
+      const slugify = (text: string) => {
+        return text
+          .toString()
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '_')           // Пробелы в _
+          .replace(/[^\w-]+/g, '')        // Удаляем всё кроме букв, цифр, - и _
+          .replace(/--+/g, '_')           // Двойные -- в _
+          .substring(0, 60);              // Лимит бэкенда 64 символа
+      }
+
+      const guideKey = selectedGuideKey === 'new' 
+        ? `${slugify(editableTitle)}_${Date.now().toString().slice(-4)}` 
+        : selectedGuideKey
       
       // Определяем category_key
       let categoryKey = selectedCategory || 'general'
