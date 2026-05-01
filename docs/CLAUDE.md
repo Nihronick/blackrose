@@ -442,7 +442,7 @@ git diff HEAD
 
 ---
 
-## 📝 Current Status (Last Updated: 2026-05-01)
+## 📝 Current Status (Last Updated: 2026-05-01, Session 2)
 
 ### Recent Changes
 - Migrated from Render to Hugging Face Spaces (Docker).
@@ -452,7 +452,7 @@ git diff HEAD
 - Admin media management uses HF API instead of local filesystem.
 - CLAUDE.md fully rebuilt: file map, env vars, skills, anti-patterns, ADR.
 
-### Code Audit Fixes (2026-05-01)
+### Code Audit Fixes (2026-05-01, Session 1)
 - ✅ Fixed `select(1)` → `text("SELECT 1")` in `database.py` (Anti-Pattern #1).
 - ✅ Fixed `entrypoint.sh` CRLF → LF line endings (Anti-Pattern #7).
 - ✅ Created `.gitattributes` with `*.sh text eol=lf`.
@@ -471,15 +471,36 @@ git diff HEAD
 - ✅ Added manual media deletion to Admin Library UI.
 - ✅ Migrated `storage.py` to async `ffmpeg` execution.
 
+### Bug Fix Round (2026-05-01, Session 2)
+- ✅ **BUG-1:** `password_hash` column `String(128)` → `String(256)` in `db_models.py`.
+- ✅ **BUG-2:** Frontend auth endpoint `/api/auth/telegram` → `/api/auth/web-login` in `auth.ts`.
+- ✅ **BUG-3:** Removed `Content-Type: application/json` from `getAuthHeaders()` — was breaking FormData uploads.
+- ✅ **BUG-4:** Reorder body `{ items }` → `{ order: items }` in `api.ts` to match `ReorderIn` schema.
+- ✅ **BUG-5:** Login response parsing fixed — flat object instead of `result.user`.
+- ✅ **BUG-6:** `IconsGroupedResponse` type corrected — array, not `{ data: [...] }` wrapper.
+- ✅ **BUG-7:** Added `selectinload(Guide.tags)` to `get_all_guides()` in `database.py`.
+- ✅ **BUG-10:** Removed 3x dead `import traceback` from `admin.py`.
+- ✅ **BUG-11:** Removed 100 lines of duplicate JSX return block in `DiscordLabTab.tsx`.
+- ✅ **BUG-12:** Game icons CDN: jsDelivr → HuggingFace datasets URL in `gameIcons.ts`.
+- ✅ **BUG-13:** Discord Lab media display: `f.name`→`f.filename`, `f.type`→`f.content_type`.
+- ✅ **Discord Lab Import Flow (MAJOR):** `handleCreateGuide` rewritten — now calls `apiPut` directly to save guide to DB instead of dispatching a `CustomEvent` that did nothing. Added category selection dropdown, failed media counter, and proper error messages.
+
+### Tests Updated (Session 2)
+- `auth.test.ts` — BUG-3 assertion: `Content-Type` should be `undefined`.
+- `api.test.ts` — BUG-3 mock fixed, FormData upload test expects correct behavior.
+- `test_contracts.py` — BUG-2/3/4 regression guards updated to verify fixes pass.
+
 ### Known Issues
-- `password_hash` column is `String(128)` — should be `String(256)` or `Text` (needs migration).
+- `password_hash` column change needs **Alembic migration** to apply in production DB.
 - `reorder_categories/guides` — N+1 UPDATE queries (low priority, small data).
+- Discord CDN links expire quickly — media import may fail if user waits too long before clicking Import.
 
 ### Next Steps
-1. **Alembic Migration:** Implement the migration for `password_hash` length.
-2. **Verify Production:** Perform a final test of the new deletion logic in the live environment.
-3. **Frontend Re-deploy:** Ensure the frontend is re-deployed to sync with the new API endpoints.
+1. **Alembic Migration:** Create migration for `password_hash` `String(128)` → `String(256)`.
+2. **Deploy Backend:** Run `deploy-backend.ps1` to push all fixes to HF Space.
+3. **Deploy Frontend:** Run `deploy-frontend.ps1` to push UI fixes to GitHub Pages.
+4. **Smoke Test:** Verify Discord Lab full import flow in production.
 
 ---
 
-<!-- Last agent: Claude Opus 4.6 | Session: 2026-05-01 -->
+<!-- Last agent: Gemini Antigravity | Session: 2026-05-01 20:14 -->
