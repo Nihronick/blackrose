@@ -1,0 +1,39 @@
+{
+  "name": "BlackRose Guides",
+  "short_name": "BlackRose",
+  "description": "Справочник гильдии BlackRose — гайды, категории, поиск",
+  "start_url": "/blackrose/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1c1c1e",
+  "theme_color": "#1c1c1e",
+  "lang": "ru",
+  "categories": ["games", "reference"],
+  "icons": [
+    {
+      "src": "/blackrose/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/blackrose/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/blackrose/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Поиск гайдов",
+      "url": "/blackrose/?action=search",
+      "description": "Быстрый поиск по гайдам"
+    }
+  ]
+}

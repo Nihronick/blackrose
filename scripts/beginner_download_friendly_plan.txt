@@ -1,0 +1,26 @@
+=== Path_Of_Suggested_Progression.md ===
+folder: assets/media/guides/Beginner-guide/path_of_suggested_progression
+001. eventspending_guide_updated.png
+    https://cdn.discordapp.com/attachments/1266503499009753110/1380060518189891604/eventspending_guide_updated.png?ex=69e1c983&is=69e07803&hm=8eb66a01e9af73f631293565df7b76e393bf08c6715208d9d200920f8ec4e1e9&
+002. 1349197221496885309.webp
+    https://cdn.discordapp.com/emojis/1349197221496885309.webp?size=48&animated=true&name=orr24&lossless=true
+
+=== Rage_+_Rave_(Early),_Late_Game_Rotation_(Late).md ===
+folder: assets/media/guides/Beginner-guide/rage_rave_early_late_game_rotation_late
+001. video15.mp4
+    https://cdn.discordapp.com/attachments/1266502911324721335/1266503160097406986/video15.mp4?ex=69e1f93b&is=69e0a7bb&hm=37419433dcdc26c9b7fc73f9b14a48a728098ead77778b2bed7cb1aa45f11aff&
+002. WoGRaveWG.mp4
+    https://cdn.discordapp.com/attachments/1266502911324721335/1266503189138505728/WoGRaveWG.mp4?ex=69e1f942&is=69e0a7c2&hm=8607657b54d6bbc2ca325510b77c813bafd1dfeee54c766cb220186f05cc8242&
+003. RRF_-_Made_with_Clipchamp.mp4
+    https://cdn.discordapp.com/attachments/1266502911324721335/1350263616565149706/RRF_-_Made_with_Clipchamp.mp4?ex=69e226bc&is=69e0d53c&hm=8caa132b62e7b539e38adabb97bfbab27c60e29ceb8dbf2c4a8477753d21343e&
+004. 3x_DH_into_Rave_-_Made_with_Clipchamp.mp4
+    https://cdn.discordapp.com/attachments/1266502911324721335/1414463709320839229/3x_DH_into_Rave_-_Made_with_Clipchamp.mp4?ex=69e25c3b&is=69e10abb&hm=6d63661bbd2af2e944e49798608d4c69ef04a86445f11d46ea64b7aad87a5ab4&
+005. Dancing_-_Made_with_Clipchamp.mp4
+    https://cdn.discordapp.com/attachments/1266502911324721335/1414464776553369681/Dancing_-_Made_with_Clipchamp.mp4?ex=69e25d3a&is=69e10bba&hm=633393db2d38e30b91100310707af685619bfecbb4aefd0b5bf4f07295bedcde&
+006. Beast_with_Rave_-_Made_with_Clipchamp.mp4
+    https://cdn.discordapp.com/attachments/1266502911324721335/1455018174004330566/Beast_with_Rave_-_Made_with_Clipchamp.mp4?ex=69e23d85&is=69e0ec05&hm=7c9f6d1b6348be76116857bd8e9af03ef792bc1b6dbc5c85977e0cc13072e863&
+
+=== TLDR_version_of_Path_for_Promo.md ===
+folder: assets/media/guides/Beginner-guide/tldr_version_of_path_for_promo
+001. 1349197221496885309.webp
+    https://cdn.discordapp.com/emojis/1349197221496885309.webp?size=48&animated=true&name=orr24&lossless=true
