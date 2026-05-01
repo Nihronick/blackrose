@@ -162,9 +162,10 @@ export const GuideView: React.FC<GuideViewProps> = ({
       placeholders.forEach((p) => {
         const placeholder = p as HTMLElement
         const url = placeholder.dataset.videoUrl
+        const alt = placeholder.dataset.videoAlt
         if (url) {
           const root = createRoot(placeholder)
-          root.render(<VideoBlock url={url} />)
+          root.render(<VideoBlock url={url} alt={alt} />)
           roots.push(root)
         }
       })

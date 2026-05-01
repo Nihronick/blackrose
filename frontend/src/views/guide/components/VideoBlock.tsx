@@ -11,7 +11,7 @@ import { normalizeUrl, parseVideo } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import React, { useEffect, useRef, useState } from 'react'
 
-export const VideoBlock: React.FC<{ url: string }> = ({ url }) => {
+export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }) => {
   const v = parseVideo(normalizeUrl(url))
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -19,7 +19,7 @@ export const VideoBlock: React.FC<{ url: string }> = ({ url }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [progress, setProgress] = useState(0)
   const [showControls, setShowControls] = useState(true)
-  const controlsTimeout = useRef<NodeJS.Timeout>()
+  const controlsTimeout = useRef<any>()
 
   if (!v) return null
   const normalizedUrl = normalizeUrl(url)
@@ -159,6 +159,13 @@ export const VideoBlock: React.FC<{ url: string }> = ({ url }) => {
 
             {/* Bottom Controls */}
             <div className="space-y-4 pointer-events-auto">
+              {/* Caption if provided */}
+              {alt && (
+                <div className="text-[11px] font-bold text-white/90 text-center drop-shadow-md px-2">
+                  {alt}
+                </div>
+              )}
+
               {/* Progress Bar */}
               <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/20">
                 <motion.div

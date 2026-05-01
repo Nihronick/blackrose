@@ -125,3 +125,36 @@
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+.premium-video-placeholder {
+  min-height: 200px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.guide-spoiler {
+  background: rgba(var(--primary-rgb), 0.1);
+  color: transparent;
+  filter: blur(8px);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.guide-spoiler:hover {
+  background: rgba(var(--primary-rgb), 0.2);
+}
+
+.guide-spoiler.revealed {
+  color: inherit;
+  filter: none;
+  background: transparent;
+  cursor: text;
+  user-select: text;
+}
