@@ -15,10 +15,11 @@ Desktop.ini
 # Scratch & Temp (Global)
 scratch/
 temp/
-.deploy_temp/
+.deploy_temp_*/
 *.tmp
 *.temp
 
-# Deploy Scripts (Exclude if sensitive, but keep here as they are public helpers)
-# !deploy-backend.ps1
-# !deploy-frontend.ps1
+# Local Env
+.env
+frontend/.env
+backend/.env
