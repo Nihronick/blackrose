@@ -3,10 +3,10 @@
 ## 🚀 Priority: High
 - [x] Verify Admin Panel stability (fixed stats/analytics and missing view_logs table).
 - [x] Implement Backend Proxy for Discord Media (bypass CORS policy).
-- [ ] Implement/Fix Guide deletion logic.
+- [x] Implement/Fix Guide deletion logic.
 
 ## 🛠️ Features & Improvements
-- [ ] Clean up redundant Graphify files.
+- [x] Clean up redundant Graphify files (Verified removed).
 
 ## ✅ Completed
 - [x] Implement **Home Dashboard** (Hero section, Horizontal scrolls, Activity feed).

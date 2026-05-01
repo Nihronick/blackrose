@@ -463,18 +463,22 @@ git diff HEAD
 - ✅ Moved `ImportMediaIn` from mid-file to `models.py` (Anti-Pattern #9).
 - ✅ Updated `.env.example` — removed R2/Cloudflare, added HF_TOKEN/HF_DATASET_REPO.
 - ✅ Removed unused deps: `aioboto3`, `psycopg2-binary`, `sqlalchemy-utils`.
-- ✅ Hardened CORS regex: `*.github.io` → `nihronick.github.io` only.
+- ✅ Hardened CORS regex: `nihronick.github.io` only.
+- ✅ Fixed token leakage in `storage.py` and `admin.py` error logs.
+- ✅ Added config diagnostics for `HF_DATASET_REPO` (token detection).
+- ✅ Improved `deploy-backend.ps1` with `HF_TOKEN` auth support.
+- ✅ Implemented comprehensive Guide & Media deletion logic (cleanup in HF Dataset).
+- ✅ Added manual media deletion to Admin Library UI.
+- ✅ Migrated `storage.py` to async `ffmpeg` execution.
 
 ### Known Issues
 - `password_hash` column is `String(128)` — should be `String(256)` or `Text` (needs migration).
-- `storage.py` uses blocking `subprocess.run()` for ffmpeg — should use `asyncio.create_subprocess_exec`.
 - `reorder_categories/guides` — N+1 UPDATE queries (low priority, small data).
 
 ### Next Steps
-1. Verify DATABASE_URL secret format in HF Space settings.
-2. Redeploy backend and confirm "Database connection verified" in logs.
-3. Create Alembic migration for `password_hash` column width.
-4. Convert `subprocess.run()` to async in `storage.py`.
+1. **Alembic Migration:** Implement the migration for `password_hash` length.
+2. **Verify Production:** Perform a final test of the new deletion logic in the live environment.
+3. **Frontend Re-deploy:** Ensure the frontend is re-deployed to sync with the new API endpoints.
 
 ---
 

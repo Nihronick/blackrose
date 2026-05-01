@@ -26,7 +26,16 @@ git init -b main
 git config user.email "deploy@blackrose.ai"
 git config user.name "BlackRose Deployer"
 
-git remote add origin https://huggingface.co/spaces/Nihronick/blackrose-backend
+$hfToken = $env:HF_TOKEN
+if ($hfToken) {
+    Write-Host "Using HF_TOKEN for authentication..."
+    $remoteUrl = "https://Nihronick:$($hfToken)@huggingface.co/spaces/Nihronick/blackrose-backend"
+} else {
+    Write-Host "Warning: HF_TOKEN not set. Git may prompt for credentials."
+    $remoteUrl = "https://huggingface.co/spaces/Nihronick/blackrose-backend"
+}
+
+git remote add origin $remoteUrl
 git add .
 git commit -m "Deploy: Clean backend build"
 

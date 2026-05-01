@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import uuid
@@ -7,6 +8,7 @@ import subprocess
 from io import BytesIO
 
 from huggingface_hub import HfApi
+from huggingface_hub.utils import RepositoryNotFoundError, HfHubHTTPError
 from fastapi import UploadFile
 from PIL import Image, UnidentifiedImageError
 
@@ -21,6 +23,14 @@ MEDIA_MAX_IMAGE_WIDTH = int(os.getenv("MEDIA_MAX_IMAGE_WIDTH", "1920"))
 
 # Initialize HF API
 hf_api = HfApi(token=HF_TOKEN)
+
+def _is_token_like(value: str | None) -> bool:
+    """Checks if a string looks like a Hugging Face token."""
+    if not value: return False
+    return value.startswith("hf_") or len(value) > 32 and "-" not in value
+
+if _is_token_like(HF_DATASET_REPO):
+    logger.error("CRITICAL CONFIG ERROR: HF_DATASET_REPO contains a token instead of a repository ID!")
 
 def _public_media_url(path: str) -> str:
     """
@@ -69,7 +79,7 @@ def _optimize_image_bytes(filename: str, content: bytes) -> tuple[str, bytes, bo
     except UnidentifiedImageError:
         return filename, content, False
 
-def _compress_video_bytes(filename: str, content: bytes) -> tuple[str, bytes, bool]:
+async def _compress_video_bytes(filename: str, content: bytes) -> tuple[str, bytes, bool]:
     ext = os.path.splitext(filename)[1].lower()
     if ext not in {".mp4", ".mov", ".webm", ".avi", ".mkv"}:
         return filename, content, False
@@ -92,15 +102,20 @@ def _compress_video_bytes(filename: str, content: bytes) -> tuple[str, bytes, bo
             "-vcodec", "libx264", "-crf", "28", "-preset", "veryfast", 
             "-b:a", "128k", temp_out
         ]
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Используем асинхронный процесс для сжатия
+        process = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+        )
+        await process.wait()
         
-        with open(temp_out, "rb") as tf_out:
-            compressed = tf_out.read()
-            
-        if len(compressed) < len(content):
-            logger.info(f"Compression success: {len(content)//1024//1024}MB -> {len(compressed)//1024//1024}MB")
-            stem = os.path.splitext(filename)[0]
-            return f"{stem}.mp4", compressed, True
+        if os.path.exists(temp_out):
+            with open(temp_out, "rb") as tf_out:
+                compressed = tf_out.read()
+                
+            if len(compressed) < len(content):
+                logger.info(f"Compression success: {len(content)//1024//1024}MB -> {len(compressed)//1024//1024}MB")
+                stem = os.path.splitext(filename)[0]
+                return f"{stem}.mp4", compressed, True
     except Exception as e:
         logger.error(f"Video compression failed: {e}")
     finally:
@@ -127,7 +142,7 @@ async def upload_file(file: UploadFile, folder: str = "guides") -> str:
     # Optimization
     optimized_name, content, optimized = _optimize_image_bytes(source_name, content)
     if not optimized:
-        optimized_name, content, optimized = _compress_video_bytes(optimized_name or source_name, content)
+        optimized_name, content, optimized = await _compress_video_bytes(optimized_name or source_name, content)
 
     # Generate unique filename
     ext = os.path.splitext(optimized_name)[1] if optimized_name else os.path.splitext(source_name)[1]
@@ -148,11 +163,63 @@ async def upload_file(file: UploadFile, folder: str = "guides") -> str:
         )
         logger.info(f"File uploaded to Hugging Face: {full_path}")
         return _public_media_url(full_path)
+    except RepositoryNotFoundError:
+        error_msg = f"Repository '{HF_DATASET_REPO}' not found. Check HF_DATASET_REPO secret."
+        if _is_token_like(HF_DATASET_REPO):
+            error_msg = "HF_DATASET_REPO appears to be a token instead of a repository ID. Check Space secrets."
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+    except HfHubHTTPError as e:
+        # Sanitize error to avoid leaking token/URL
+        status_code = getattr(e.response, "status_code", "Unknown")
+        logger.error(f"HF Hub API error ({status_code}): {e}")
+        raise RuntimeError(f"Hugging Face API error: {status_code}")
     except Exception as e:
         logger.error(f"Failed to upload file to Hugging Face: {e}")
-        raise
+        raise RuntimeError(f"Internal storage error: {str(e).split('?')[0]}") # Strip potential query params with tokens
     finally:
         await file.close()
         import gc
         del content
         gc.collect()
+
+def _get_hf_path_from_url(url: str) -> str | None:
+    """Извлекает путь файла в репозитории из публичного URL."""
+    if not HF_DATASET_REPO or HF_DATASET_REPO not in url:
+        return None
+    
+    # URL format: https://huggingface.co/datasets/Nihronick/blackrose-media/resolve/main/uploads/guides/xxx.webp
+    marker = "/resolve/main/"
+    if marker in url:
+        return url.split(marker)[1]
+    return None
+
+async def delete_file(path_or_url: str) -> bool:
+    """Удаляет файл из Hugging Face Dataset по пути или URL."""
+    if not HF_TOKEN or not HF_DATASET_REPO:
+        return False
+        
+    path = _get_hf_path_from_url(path_or_url) if "http" in path_or_url else path_or_url
+    if not path:
+        return False
+
+    try:
+        hf_api.delete_file(
+            path_in_repo=path,
+            repo_id=HF_DATASET_REPO,
+            repo_type="dataset",
+            commit_message=f"Admin: Delete {path}"
+        )
+        logger.info(f"File deleted from HF: {path}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to delete file from HF {path}: {e}")
+        return False
+
+async def delete_files(paths_or_urls: list[str]) -> int:
+    """Массовое удаление файлов."""
+    count = 0
+    for p in paths_or_urls:
+        if await delete_file(p):
+            count += 1
+    return count

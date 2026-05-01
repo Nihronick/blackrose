@@ -30,8 +30,9 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from models import CategoryIn, GuideIn, ImportMediaIn, ReorderIn, TagsIn
 from pydantic import BaseModel
-from storage import upload_file
+from storage import delete_file, delete_files, upload_file
 from utils import _notify_new_guide, normalize_icon_syntax
+import re
 
 router = APIRouter()
 logger = logging.getLogger("blackrose.admin")
@@ -342,11 +343,36 @@ async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin
 
 @router.delete("/guide/{key}")
 async def admin_delete_guide_endpoint(key: str, user=Depends(require_admin)):
-    if not await get_guide(key):
+    # 1. Находим гайд перед удалением, чтобы получить список файлов
+    snapshot = await delete_guide(key, changed_by=user.get("id"))
+    if not snapshot:
         raise HTTPException(status_code=404, detail="Гайд не найден")
-    await delete_guide(key, changed_by=user.get("id"))
+    
+    # 2. Собираем все ссылки на медиа в этом гайде
+    urls_to_delete = set()
+    
+    # Ссылки из массивов
+    for field in ["photo", "video", "document"]:
+        for url in snapshot.get(field, []):
+            if "huggingface.co" in url:
+                urls_to_delete.add(url)
+    
+    # Ссылки из иконки
+    if snapshot.get("icon_url") and "huggingface.co" in snapshot["icon_url"]:
+        urls_to_delete.add(snapshot["icon_url"])
+        
+    # Ссылки из текста (регуляркой)
+    content_text = snapshot.get("text", "")
+    hf_links = re.findall(r"https://huggingface\.co/datasets/[^/]+/[^/]+/resolve/main/uploads/[^\"'\s\)]+", content_text)
+    urls_to_delete.update(hf_links)
+    
+    # 3. Удаляем файлы из облака в фоне (чтобы не задерживать ответ)
+    if urls_to_delete:
+        logger.info(f"Deleting {len(urls_to_delete)} media files for guide {key}")
+        asyncio.create_task(delete_files(list(urls_to_delete)))
+        
     await _invalidate_cache()
-    return {"ok": True}
+    return {"ok": True, "deleted_media": len(urls_to_delete)}
 
 
 @router.post("/reorder/guides")
@@ -459,7 +485,7 @@ async def admin_translate(request: Request, user=Depends(require_admin)):
                                 translated = translated.replace("![видео]", "![video]").replace("![изображение]", "![image]")
                                 return {"translated": translated}
             except Exception as hf_e:
-                logger.warning(f"Hugging Face translation failed, trying Gemini: {hf_e}")
+                logger.warning(f"Hugging Face translation failed (status: {getattr(hf_e, 'response', {}).get('status_code', 'error')})")
 
         # --- ШАГ 2: Пытаемся использовать Gemini (fallback) ---
         if api_key:
@@ -483,7 +509,7 @@ async def admin_translate(request: Request, user=Depends(require_admin)):
                                 translated = translated.replace("![видео]", "![video]").replace("![изображение]", "![image]")
                                 return {"translated": translated}
             except Exception as gem_e:
-                logger.warning(f"Gemini fallback failed: {gem_e}")
+                logger.warning("Gemini translation fallback failed")
 
         # --- ШАГ 3: Безотказный вариант (Google Translate без ключей) ---
         if GoogleTranslator:
@@ -682,3 +708,14 @@ async def admin_media_preview(
         "mime_type": mime_type or "application/octet-stream",
         "url": _public_media_url(path),
     }
+@router.delete("/media")
+async def admin_delete_media(url: str, user=Depends(require_admin)):
+    """Удалить файл из Hugging Face Dataset по URL."""
+    if not url:
+        raise HTTPException(status_code=400, detail="URL не указан")
+    
+    success = await delete_file(url)
+    if not success:
+        raise HTTPException(status_code=500, detail="Не удалось удалить файл")
+        
+    return {"ok": True}

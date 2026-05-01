@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card'
-import { apiMediaList } from '@/lib/api'
+import { apiDelete, apiMediaList } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { Copy, Film, Image as ImageIcon, Search } from '@/lib/icons'
+import { Copy, Film, Image as ImageIcon, Search, Trash2 } from '@/lib/icons'
 import { normalizeUrl } from '@/lib/utils'
 import type React from 'react'
 import { useEffect, useState } from 'react'
@@ -12,10 +12,15 @@ export const MediaTab: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true)
     apiMediaList()
       .then(setData)
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
   }, [])
 
   if (loading)
@@ -36,6 +41,20 @@ export const MediaTab: React.FC = () => {
     navigator.clipboard.writeText(url)
     haptic.success()
     toast.success('Ссылка скопирована')
+  }
+
+  const handleDelete = async (e: React.MouseEvent, item: any) => {
+    e.stopPropagation()
+    if (!window.confirm('Удалить этот файл навсегда?')) return
+    
+    try {
+      await apiDelete(`/api/admin/media?url=${encodeURIComponent(item.url)}`)
+      haptic.success()
+      toast.success('Файл удален')
+      load()
+    } catch (err: any) {
+      toast.error(`Ошибка: ${err.message}`)
+    }
   }
 
   return (
@@ -89,10 +108,21 @@ export const MediaTab: React.FC = () => {
                   
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-3 gap-2 backdrop-blur-[2px]">
-                    <div className="size-8 rounded-full bg-white/20 flex items-center justify-center">
-                      <Copy className="size-4 text-white" />
+                    <div className="flex gap-2">
+                      <div 
+                        className="size-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors"
+                        onClick={(e) => { e.stopPropagation(); copyToClipboard(item.url); }}
+                      >
+                        <Copy className="size-4 text-white" />
+                      </div>
+                      <div 
+                        className="size-8 rounded-full bg-destructive/60 hover:bg-destructive flex items-center justify-center transition-colors"
+                        onClick={(e) => handleDelete(e, item)}
+                      >
+                        <Trash2 className="size-4 text-white" />
+                      </div>
                     </div>
-                    <span className="text-[9px] font-bold text-white text-center break-all line-clamp-2 leading-tight">
+                    <span className="text-[9px] font-bold text-white text-center break-all line-clamp-2 leading-tight mt-1">
                       {item.name}
                     </span>
                   </div>

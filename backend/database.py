@@ -13,6 +13,7 @@ from db_models import (
     LocalAdmin,
     Member,
     UserSubscription,
+    ViewLog,
 )
 from sqlalchemy import delete, desc, func, select, text, update
 from sqlalchemy.orm import selectinload
@@ -353,21 +354,27 @@ async def upsert_guide(
         return is_new
 
 
-async def delete_guide(key: str, changed_by: int | None = None):
+async def delete_guide(key: str, changed_by: int | None = None) -> dict | None:
+    """Удаляет гайд и возвращает его данные (snapshot) для очистки файлов."""
     async with get_sessionmaker()() as session:
         g = (
             await session.execute(select(Guide).where(Guide.key == key))
         ).scalar_one_or_none()
-        if g:
-            history = GuideHistory(
-                guide_key=key,
-                action="deleted",
-                changed_by=changed_by,
-                snapshot=_guide_to_dict(g),
-            )
-            session.add(history)
+        
+        if not g:
+            return None
+            
+        snapshot = _guide_to_dict(g)
+        history = GuideHistory(
+            guide_key=key,
+            action="deleted",
+            changed_by=changed_by,
+            snapshot=snapshot,
+        )
+        session.add(history)
         await session.execute(delete(Guide).where(Guide.key == key))
         await session.commit()
+        return snapshot
 
 
 async def reorder_guides(items: list[dict]):

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { apiFetch, apiPut, apiSetGuideTags, apiUpload } from '@/lib/api'
+import { apiDelete, apiFetch, apiPut, apiSetGuideTags, apiUpload } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import {
   ArrowLeft,
@@ -299,6 +299,21 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const setE = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((p) => ({ ...p, [f]: e.target.value }))
 
+  const handleDelete = async () => {
+    if (!window.confirm('Вы уверены, что хотите удалить этот гайд? Все связанные медиа-файлы также будут удалены.')) return
+    setSaving(true)
+    try {
+      await apiDelete(`/api/admin/guide/${form.key}`)
+      haptic.success?.()
+      onSave() // Close and refresh
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      setErr(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!form.key.trim() || !form.title.trim() || !form.category_key) {
       setErr('Key, Title и категория обязательны')
@@ -342,6 +357,20 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
           >
             <ArrowLeft className="size-5" />
           </Button>
+          
+          {!isNew && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+              onClick={handleDelete}
+              disabled={saving}
+              title="Удалить гайд"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
+
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
               {isNew ? 'Новый гайд' : 'Редактирование'}
