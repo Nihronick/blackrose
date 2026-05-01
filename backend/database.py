@@ -293,7 +293,9 @@ async def get_guides_by_category(category_key: str) -> list[dict]:
 async def get_all_guides() -> list[dict]:
     async with get_sessionmaker()() as session:
         result = await session.execute(
-            select(Guide).order_by(Guide.category_key, Guide.sort_order)
+            select(Guide)
+            .options(selectinload(Guide.tags))
+            .order_by(Guide.category_key, Guide.sort_order)
         )
         return [_guide_to_dict(g) for g in result.scalars()]
 

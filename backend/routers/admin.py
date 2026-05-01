@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import tempfile
-import traceback
 import uuid
 from io import BytesIO
 from typing import Any
@@ -231,7 +230,6 @@ async def admin_stats(
     from sqlalchemy import func, select
     import asyncio
 
-    import traceback
     try:
         # SQLAlchemy AsyncSession не потокобезопасна для конкурентных запросов
         cat_res = await session.execute(select(func.count(Category.key)))
@@ -255,7 +253,6 @@ async def admin_stats(
 @router.get("/analytics")
 async def admin_analytics(days: int = 30, user=Depends(require_admin)):
     from database import get_daily_analytics
-    import traceback
     try:
         return {"chart": await get_daily_analytics(days)}
     except Exception as e:

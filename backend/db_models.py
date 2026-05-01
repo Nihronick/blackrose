@@ -151,7 +151,7 @@ class LocalAdmin(Base):
     username: Mapped[str] = mapped_column(
         String(50), unique=True, index=True, nullable=False
     )
-    password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()")
     )
