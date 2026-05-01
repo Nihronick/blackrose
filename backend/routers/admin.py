@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from typing import Any
-import traceback
 import os
-import uuid
 import tempfile
+import traceback
+import uuid
 from io import BytesIO
+from typing import Any
 
 from cache import invalidate_all, invalidate_guide_cache
 from database import (
@@ -28,7 +28,8 @@ from database import (
 from dependencies import require_admin, get_db
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
-from models import CategoryIn, GuideIn, ReorderIn, TagsIn
+from models import CategoryIn, GuideIn, ImportMediaIn, ReorderIn, TagsIn
+from pydantic import BaseModel
 from storage import upload_file
 from utils import _notify_new_guide, normalize_icon_syntax
 
@@ -57,10 +58,7 @@ async def admin_upload(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка загрузки: {e}")
 
-from pydantic import BaseModel
-class ImportMediaIn(BaseModel):
-    url: str
-    folder: str = "imported"
+
 
 @router.post("/media/import")
 async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
@@ -144,8 +142,7 @@ async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
             
         return {"url": url, "filename": filename}
     except Exception as e:
-        logger.error(f"Failed to import media: {e}")
-        traceback.print_exc()
+        logger.error("Failed to import media: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Ошибка импорта медиа: {e}")
 
 
@@ -250,10 +247,8 @@ async def admin_stats(
             "comments": int(comments_res.scalar_one_or_none() or 0),
         }
     except Exception as e:
-        error_msg = f"Error in admin_stats: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg)
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail=error_msg)
+        logger.error("Error in admin_stats: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error in admin_stats: {e}")
 
 
 @router.get("/analytics")
@@ -263,10 +258,8 @@ async def admin_analytics(days: int = 30, user=Depends(require_admin)):
     try:
         return {"chart": await get_daily_analytics(days)}
     except Exception as e:
-        error_msg = f"Error in admin_analytics: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg)
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail=error_msg)
+        logger.error("Error in admin_analytics: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error in admin_analytics: {e}")
 
 
 @router.put("/category/{key}")

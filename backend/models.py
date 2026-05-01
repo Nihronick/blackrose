@@ -105,3 +105,8 @@ class NotifyIn(BaseModel):
     guide_title: str
     category_key: str
     bot_token: str
+
+
+class ImportMediaIn(BaseModel):
+    url: str
+    folder: str = "imported"

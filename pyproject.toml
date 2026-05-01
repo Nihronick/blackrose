@@ -1,0 +1,5 @@
+[tool.pyrefly]
+# Backend modules live in backend/ — tell Pyrefly where to find them
+source_directories = ["backend"]
+search_path = ["backend"]
+python_version = "3.11"

@@ -125,7 +125,7 @@ def _jwt_encode(payload: dict) -> str:
     body = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
     sig_input = f"{header}.{body}".encode()
     sig = hmac.new(
-        JWT_SECRET.encode() or BOT_TOKEN.encode(), sig_input, hashlib.sha256
+        (JWT_SECRET or BOT_TOKEN).encode(), sig_input, hashlib.sha256
     ).digest()
     sig_b64 = base64.urlsafe_b64encode(sig).rstrip(b"=").decode()
     return f"{header}.{body}.{sig_b64}"

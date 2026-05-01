@@ -7,7 +7,7 @@ import { visualizer } from 'rollup-plugin-visualizer'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  base: '/blackrose/',
+  base: '/',
   plugins: [
     react(),
     visualizer({

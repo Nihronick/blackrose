@@ -14,7 +14,7 @@ from db_models import (
     Member,
     UserSubscription,
 )
-from sqlalchemy import delete, desc, func, select, update
+from sqlalchemy import delete, desc, func, select, text, update
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import (
@@ -36,13 +36,32 @@ async def get_pool():
 
 
 def _normalize_db_url(url: str) -> str:
-    """Конвертирует DATABASE_URL в формат asyncpg."""
+    """Конвертирует DATABASE_URL в формат asyncpg и исправляет типичные ошибки."""
+    if not url:
+        return url
+    
+    # Удаляем лишние пробелы и кавычки
+    url = url.strip().strip("'").strip('"')
+    
+    # Если URL подозрительно короткий или не содержит признаков БД, логируем это
+    if len(url) < 10 or ("://" not in url and "@" not in url):
+        logger.warning("DATABASE_URL looks suspicious: %s", url)
+
+    # Принудительно добавляем или исправляем драйвер для asyncpg
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql+psycopg2://"):
         url = url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+    elif not url.startswith("postgresql+asyncpg://"):
+        # Если схемы нет вообще, но есть @ (похоже на user:pass@host)
+        if "://" not in url and "@" in url:
+            url = "postgresql+asyncpg://" + url
+        # Если есть какая-то другая схема
+        elif "://" in url:
+            url = re.sub(r"^[a-zA-Z0-9\+]+://", "postgresql+asyncpg://", url)
+
     # asyncpg использует ssl=require, не sslmode=require
     url = url.replace("sslmode=require", "ssl=require")
     # убираем channel_binding — asyncpg не поддерживает
@@ -54,20 +73,28 @@ def _normalize_db_url(url: str) -> str:
 async def init_db():
     """
     Initializes the global SQLAlchemy engine and sessionmaker.
-    Uses a lock to prevent concurrent initialization.
     """
     global _engine, _sessionmaker
     
     async with _init_lock:
         if _engine is not None:
-            return  # Already initialized
+            return  
             
         raw_url = os.getenv("DATABASE_URL", "")
         if not raw_url:
+            logger.error("DATABASE_URL is missing in environment variables!")
             raise RuntimeError("DATABASE_URL не задан")
+
         url = _normalize_db_url(raw_url)
 
-        logger.info("Connecting to Database: %s", url.split("@")[-1])
+        # Безопасное логирование (скрываем пароль)
+        safe_url = url
+        if "@" in url:
+            prefix = url.split("://")[0] + "://" if "://" in url else ""
+            suffix = url.split("@")[-1]
+            safe_url = f"{prefix}***:***@{suffix}"
+        
+        logger.info("Initializing Database connection to: %s", safe_url)
         
         try:
             _engine = create_async_engine(
@@ -76,11 +103,17 @@ async def init_db():
                 max_overflow=10,
                 pool_recycle=300,
                 pool_pre_ping=True,
+                echo=False,
             )
             _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
-            logger.info("Database initialized successfully.")
+            
+            # Проверка соединения (опционально, но полезно при старте)
+            async with _engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            
+            logger.info("Database connection verified successfully.")
         except Exception as e:
-            logger.error("Failed to initialize database: %s", e)
+            logger.error("CRITICAL: Failed to initialize database: %s", e)
             _engine = None
             _sessionmaker = None
             raise

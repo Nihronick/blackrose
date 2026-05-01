@@ -80,7 +80,7 @@ def setup_cors(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
-        allow_origin_regex=r"https://.*\.github\.io|https://.*\.app\.github\.dev",
+        allow_origin_regex=r"https://(blackrosesl\.me|nihronick\.github\.io)|https://.*\.app\.github\.dev",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=[
