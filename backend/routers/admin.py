@@ -1,6 +1,11 @@
 import asyncio
 import logging
 from typing import Any
+import traceback
+import os
+import uuid
+import tempfile
+from io import BytesIO
 
 from cache import invalidate_all, invalidate_guide_cache
 from database import (
@@ -60,9 +65,6 @@ class ImportMediaIn(BaseModel):
 @router.post("/media/import")
 async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
     import aiohttp
-    import tempfile
-    import uuid
-    import os
     from fastapi import UploadFile
     from urllib.parse import urlparse
     
@@ -84,7 +86,6 @@ async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
                 is_video = "video" in content_type or any(body.url.lower().endswith(ext) for ext in [".mp4", ".mov", ".webm"])
                 
                 if is_video:
-                    import tempfile
                     with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as tmp:
                         tmp_path = tmp.name
                         async for chunk in resp.content.iter_chunked(1024 * 1024):

@@ -30,10 +30,12 @@ This project is distributed across multiple cloud services to ensure zero-cost h
 ## 🚀 Development & Deployment
 
 ### Local Setup
+
 1. **Frontend:** `cd frontend && npm install && npm run dev`
 2. **Backend:** `cd backend && pip install -r requirements.txt && uvicorn main:app --reload`
 
 ### Deployment
+
 We use a separate deployment pipeline for each component:
 - **Backend:** Use `.\deploy-backend.ps1` to push to Hugging Face Spaces.
 - **Frontend:** Use `.\deploy-frontend.ps1` to update GitHub Pages.
@@ -41,10 +43,13 @@ We use a separate deployment pipeline for each component:
 ---
 
 ## 🛡️ Security
+
 All sensitive data (tokens, DB strings) is managed via **Environment Secrets** on Hugging Face. Local `.env` files are ignored by Git to prevent leaks.
 
 ## 🤝 Community & Support
+
 Developed for the Slayer Legend community. For updates and support, follow our Telegram Bot integration.
 
 ---
+
 *Created by [Nihronick](https://github.com/Nihronick)*
