@@ -3,12 +3,34 @@ BlackRose Mini App API v3.3
 """
 
 import os
+import sys
+import socket
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Add bot directory to sys.path to allow relative imports within the bot package
+BOT_DIR = Path(__file__).parent / "bot"
+sys.path.append(str(BOT_DIR))
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
+
+from aiogram import Bot, Dispatcher, types
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.session.aiohttp import AiohttpSession
+
+# Bot configuration and handlers
+try:
+    from bot.config import API_TOKEN, WEBHOOK_PATH, WEBHOOK_SECRET, WEBHOOK_URL
+    from bot.handlers import errors_router, miniapp_router
+    from bot.handlers.admin import admin_router as bot_admin_router
+except ImportError:
+    # Fallback for different path structures
+    from config import API_TOKEN, WEBHOOK_PATH, WEBHOOK_SECRET, WEBHOOK_URL
+    from handlers import errors_router, miniapp_router
+    from handlers.admin import admin_router as bot_admin_router
 
 from cache import close_redis
 from database import close_pool, init_db
@@ -27,6 +49,17 @@ from utils import _telegram_send_new_guide_notifications
 
 configure_logging()
 logger = get_logger("blackrose")
+
+# === Bot Initialization ===
+session = AiohttpSession(timeout=40.0)
+session._connector_init = {"family": socket.AF_INET}
+bot = Bot(token=BOT_TOKEN or API_TOKEN, session=session)
+dp = Dispatcher(storage=MemoryStorage())
+
+# Register bot routers
+dp.include_router(errors_router)
+dp.include_router(miniapp_router)
+dp.include_router(bot_admin_router)
 
 # === Configuration / Setup Helpers ===
 
@@ -155,6 +188,33 @@ async def lifespan(app: FastAPI):
         logger.error(f"Startup cleanup failed: {e}")
 
     await init_db()
+    
+    # === Bot Startup ===
+    # Priority: WEBHOOK_URL env > SPACE_HOST env > bot/config.py
+    webhook_base = os.getenv("WEBHOOK_URL")
+    if not webhook_base:
+        space_host = os.getenv("SPACE_HOST")
+        if space_host:
+            webhook_base = f"https://{space_host}"
+        else:
+            webhook_base = WEBHOOK_URL # Fallback to bot/config.py value
+
+    if webhook_base:
+        webhook_full_url = f"{webhook_base.rstrip('/')}{WEBHOOK_PATH}"
+        logger.info(f"Setting bot webhook to: {webhook_full_url}")
+        try:
+            await bot.set_webhook(
+                url=webhook_full_url,
+                secret_token=WEBHOOK_SECRET or None,
+                drop_pending_updates=True,
+                allowed_updates=dp.resolve_used_update_types()
+            )
+            logger.info("✅ Bot webhook set successfully.")
+        except Exception as e:
+            logger.error(f"❌ Failed to set bot webhook: {e}")
+    else:
+        logger.warning("⚠️ WEBHOOK_URL/SPACE_HOST not set. Bot will NOT receive updates via webhook.")
+
     logger.info("=" * 50)
     logger.info(f"BlackRose Mini App API v{app.version}")
     logger.info(f"  Admins configured: {len(ADMIN_USERS)}")
@@ -163,6 +223,10 @@ async def lifespan(app: FastAPI):
     
     logger.info("=" * 50)
     yield
+    # Shutdown
+    logger.info("Shutting down...")
+    await bot.session.close()
+    await dp.storage.close()
     await close_pool()
     await close_redis()
 
@@ -220,6 +284,26 @@ async def add_security_headers(request: Request, call_next):
 # Routers
 app.include_router(public_router, prefix="/api", tags=["public"])
 app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
+
+
+@app.post(WEBHOOK_PATH, include_in_schema=False)
+async def bot_webhook(request: Request):
+    """Эндпоинт для приема вебхуков от Telegram."""
+    if WEBHOOK_SECRET:
+        secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+        if secret != WEBHOOK_SECRET:
+            logger.warning("Unauthorized webhook request (invalid secret token)")
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        update_data = await request.json()
+        update = types.Update(**update_data)
+        await dp.feed_update(bot, update)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Error processing bot update: {e}", exc_info=True)
+        # Возвращаем 200 даже при ошибке, чтобы Telegram не спамил ретраями
+        return {"status": "error", "detail": str(e)}
 
 
 @app.post("/api/internal/notify")

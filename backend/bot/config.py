@@ -33,13 +33,14 @@ class Settings(BaseSettings):
 
 settings = Settings()  # type: ignore[call-arg]
 
-if not settings.BOT_TOKEN:
-    raise ValueError("BOT_TOKEN не задан!")
-
+# Используем BOT_TOKEN из настроек или env
 API_TOKEN      = settings.BOT_TOKEN
 MINIAPP_URL    = settings.MINIAPP_URL
 API_URL        = settings.API_URL
-WEBHOOK_URL    = settings.WEBHOOK_URL
-WEBHOOK_SECRET = settings.WEBHOOK_SECRET
-WEBHOOK_PATH   = settings.WEBHOOK_PATH
+
+# Webhook configuration - prioritized from env
+WEBHOOK_URL    = os.getenv("WEBHOOK_URL", settings.WEBHOOK_URL)
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", settings.WEBHOOK_SECRET)
+WEBHOOK_PATH   = os.getenv("WEBHOOK_PATH", settings.WEBHOOK_PATH)
+
 ADMIN_USERS    = set(int(x.strip()) for x in settings.ADMIN_USERS.split(",") if x.strip().isdigit())

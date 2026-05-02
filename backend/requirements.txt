@@ -16,3 +16,7 @@ sqlalchemy>=2.0.25
 Pillow>=10.4.0
 deep-translator==1.11.4
 huggingface_hub>=0.20.0
+aiogram>=3.4.0
+loguru>=0.7.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0

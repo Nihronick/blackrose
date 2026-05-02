@@ -8,13 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Backend dependencies
+# Backend dependencies (now includes bot deps)
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Bot dependencies
-COPY bot/requirements.txt ./bot-requirements.txt
-RUN pip install --no-cache-dir -r bot-requirements.txt
 
 # Copy all code
 COPY . .
