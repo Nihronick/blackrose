@@ -6,7 +6,7 @@ import { ChevronRight, Folder, Hash } from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import React from 'react'
+import { FC, useMemo, SyntheticEvent } from 'react'
 
 interface TagResultsItem {
   key: string
@@ -23,7 +23,7 @@ interface TagResultsViewProps {
 /**
  * TagResultsView refactored with TSX, Suspense, and premium shadcn/ui design.
  */
-export const TagResultsView: React.FC<TagResultsViewProps> = ({ tag, onSelectGuide }) => {
+export const TagResultsView: FC<TagResultsViewProps> = ({ tag, onSelectGuide }) => {
   const { data: searchData } = useSuspenseQuery({
     queryKey: ['tag-search', tag],
     queryFn: () => apiSearch(tag),
@@ -31,7 +31,7 @@ export const TagResultsView: React.FC<TagResultsViewProps> = ({ tag, onSelectGui
   const language = useAppStore((state) => state.language)
 
   // Data extraction with safe array fallback
-  const items = React.useMemo<TagResultsItem[]>(
+  const items = useMemo<TagResultsItem[]>(
     () =>
       (Array.isArray(searchData?.results) ? searchData.results : []).filter((item) =>
         isLanguageKey(item.key, language)
@@ -83,7 +83,7 @@ export const TagResultsView: React.FC<TagResultsViewProps> = ({ tag, onSelectGui
                       src={item.icon_url}
                       alt=""
                       className="size-10 object-contain"
-                      onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                      onError={(e: SyntheticEvent<HTMLImageElement>) => {
                         e.currentTarget.style.display = 'none'
                       }}
                     />

@@ -13,7 +13,8 @@
 ## 🛠️ Features & Improvements
 - [x] Clean up redundant Graphify files (Verified removed).
 - [x] Add `/health` endpoint to FastAPI for monitoring.
-- [ ] Implement automated icon downloader for Discord Lab.
+- [x] Implement automated icon downloader for Discord Lab.
+- [x] **Consolidate Processes**: Merged Telegram Bot into FastAPI (Webhooks) for HF stability.
 
 ## 🛡️ Reliability & Maintenance (Based on RISKS.md)
 - [ ] **Load Testing**: Perform stress tests (k6/locust) for 200+ concurrent users on HF Spaces.

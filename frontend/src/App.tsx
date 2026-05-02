@@ -16,8 +16,7 @@ import { applyLanguageKey } from '@/lib/language'
 import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
-import type React from 'react'
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { FC, Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
 
@@ -56,7 +55,7 @@ const ViewLoader = () => (
 
 type AppSheet = { type: 'login' } | { type: 'quickNav' }
 
-export const App: React.FC = () => {
+export const App: FC = () => {
   const { push } = useAppNavigation()
   const location = useLocation()
   const { isTMA, platform, tg } = useAppEnv()

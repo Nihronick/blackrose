@@ -4,8 +4,7 @@ import { apiDelete, apiPut } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { BarChart3, Edit2, Layers, LogIn, Plus, Trash2 } from '@/lib/icons'
 import type { Category } from '@/lib/types'
-import type React from 'react'
-import { useCallback, useState } from 'react'
+import { FC, useCallback, useState } from 'react'
 import { IconPicker } from '../AdminGuideEditor'
 import { IconPreview } from './components/IconPreview'
 
@@ -14,7 +13,7 @@ interface CategoriesTabProps {
   onReload: () => void
 }
 
-export const CategoriesTab: React.FC<CategoriesTabProps> = ({ categories, onReload }) => {
+export const CategoriesTab: FC<CategoriesTabProps> = ({ categories, onReload }) => {
   const [editing, setEditing] = useState<string | null>(null)
   const [form, setForm] = useState({ key: '', title: '', icon_url: '', sort_order: 0 })
   const [saving, setSaving] = useState(false)

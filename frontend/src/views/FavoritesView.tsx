@@ -4,7 +4,7 @@ import { haptic } from '@/lib/haptic'
 import { ChevronRight, Star } from '@/lib/icons'
 import { normalizeUrl } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import type React from 'react'
+import { FC, SyntheticEvent } from 'react'
 
 import type { FavoriteGuide } from '@/hooks/useFavorites'
 
@@ -17,7 +17,7 @@ interface FavoritesViewProps {
 /**
  * FavoritesView refactored with TSX, shadcn/ui and premium visuals.
  */
-export const FavoritesView: React.FC<FavoritesViewProps> = ({
+export const FavoritesView: FC<FavoritesViewProps> = ({
   favorites,
   onSelectGuide,
   onToggle,
@@ -57,7 +57,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
                     src={normalizeUrl(item.icon)}
                     alt=""
                     className="size-10 object-contain"
-                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
                       e.currentTarget.style.display = 'none'
                     }}
                   />

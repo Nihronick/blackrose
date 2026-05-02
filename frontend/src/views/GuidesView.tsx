@@ -9,8 +9,7 @@ import { BookOpen, ChevronRight, Eye } from '@/lib/icons'
 import { normalizeUrl } from '@/lib/utils'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import type React from 'react'
-import { useMemo, useRef } from 'react'
+import { FC, SyntheticEvent, useMemo, useRef } from 'react'
 
 interface GuideItem {
   key: string
@@ -35,7 +34,7 @@ interface GuidesViewProps {
 /**
  * GuidesView refactored with TSX, Suspense, and premium shadcn/ui design.
  */
-export const GuidesView: React.FC<GuidesViewProps> = ({ category, onSelectGuide }) => {
+export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
   const categoryKey = category?.key
 
@@ -90,7 +89,7 @@ export const GuidesView: React.FC<GuidesViewProps> = ({ category, onSelectGuide 
                         src={normalizeUrl(item.icon)}
                         alt=""
                         className="size-10 object-contain"
-                        onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                        onError={(e: SyntheticEvent<HTMLImageElement>) => {
                           e.currentTarget.style.display = 'none'
                         }}
                       />

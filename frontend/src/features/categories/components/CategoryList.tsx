@@ -7,7 +7,7 @@ import { Bell, ChevronRight } from '@/lib/icons'
 import { apiFetch } from '@/lib/api'
 import { normalizeUrl, pluralize } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import type React from 'react'
+import { FC, useRef, SyntheticEvent } from 'react'
 import type { Category } from '../types'
 
 interface CategoryListProps {
@@ -16,11 +16,11 @@ interface CategoryListProps {
   isLoading?: boolean
 }
 
-export const CategoryList: React.FC<CategoryListProps> = ({ categories, onSelectCategory, isLoading }) => {
+export const CategoryList: FC<CategoryListProps> = ({ categories, onSelectCategory, isLoading }) => {
   const { isSubscribed, toggle } = useSubscriptions()
   const queryClient = useQueryClient()
 
-  const prefetchTimer = React.useRef<NodeJS.Timeout | null>(null)
+  const prefetchTimer = useRef<NodeJS.Timeout | null>(null)
 
   const prefetchCategory = (key: string) => {
     if (prefetchTimer.current) clearTimeout(prefetchTimer.current)
@@ -44,7 +44,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({ categories, onSelect
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 px-5 pb-32 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-5 px-5 pb-32 pt-6 sm:grid-cols-2 lg:grid-cols-3 stagger-in">
       {categories.length === 0 ? (
         <div className="col-span-full py-20 text-center opacity-40">
           <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-3xl bg-muted/40">
@@ -58,7 +58,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({ categories, onSelect
           return (
             <Card
               key={item.key}
-              className="group relative cursor-pointer overflow-hidden border-border/20 glass-card transition-all duration-500 hover:-translate-y-1.5 hover:shadow-glow hover:border-primary/30 active:scale-[0.97]"
+              className="group relative cursor-pointer overflow-hidden border-border/20 glass-card transition-all duration-500 hover:-translate-y-1.5 hover:shadow-glow hover:border-primary/30 active:scale-[0.97] animate-in fade-in slide-in-from-bottom-2"
               onMouseEnter={() => prefetchCategory(item.key)}
               onTouchStart={() => prefetchCategory(item.key)}
               onClick={() => {
@@ -73,7 +73,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({ categories, onSelect
                       src={normalizeUrl(item.icon)}
                       alt=""
                       className="size-11 object-contain drop-shadow-md"
-                      onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                      onError={(e: SyntheticEvent<HTMLImageElement>) => {
                         e.currentTarget.style.display = 'none'
                       }}
                     />

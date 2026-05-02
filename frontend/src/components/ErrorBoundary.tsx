@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { AlertCircle, RefreshCw, XCircle } from '@/lib/icons'
 import Honeybadger from '@honeybadger-io/js'
-import type React from 'react'
-import { Component, type ReactNode } from 'react'
+import { Component, type ReactNode, type ErrorInfo } from 'react'
 
 interface Props {
   children: ReactNode
@@ -27,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
+  componentDidCatch(error: Error, info: ErrorInfo) {
     if (import.meta.env.VITE_HONEYBADGER_API_KEY) {
       Honeybadger.notify(error, { context: { react: info.componentStack } })
     }

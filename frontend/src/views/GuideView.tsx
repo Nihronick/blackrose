@@ -10,9 +10,8 @@ import { Eye } from '@/lib/icons'
 import { formatGuideText } from '@/lib/markdown'
 import { normalizeUrl } from '@/lib/utils'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import type React from 'react'
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FC, Suspense, lazy, useEffect, useMemo, useRef, useState, SyntheticEvent } from 'react'
 import { toast } from 'sonner'
 
 import { DocBlock } from './guide/components/DocBlock'
@@ -47,7 +46,7 @@ interface GuideViewProps {
   onTagClick: (tag: string) => void
 }
 
-export const GuideView: React.FC<GuideViewProps> = ({
+export const GuideView: FC<GuideViewProps> = ({
   guideKey,
   isFavorite,
   onToggleFavorite,
@@ -137,14 +136,32 @@ export const GuideView: React.FC<GuideViewProps> = ({
 
       // 2. Guide cyberlinks
       const link = target.closest('a[data-guide-key]') as HTMLElement | null
-      if (!link) return
-      e.preventDefault()
-      haptic.light()
-      setCyberlink({
-        key: link.dataset.guideKey!,
-        title: link.dataset.guideTitle || link.dataset.guideKey!,
-        icon: link.dataset.guideIcon || '',
-      })
+      if (link) {
+        e.preventDefault()
+        haptic.light()
+        setCyberlink({
+          key: link.dataset.guideKey!,
+          title: link.dataset.guideTitle || link.dataset.guideKey!,
+          icon: link.dataset.guideIcon || '',
+        })
+        return
+      }
+
+      // 3. Spoilers
+      const spoiler = target.closest('.guide-spoiler') as HTMLElement | null
+      if (spoiler && !spoiler.classList.contains('revealed')) {
+        haptic.light()
+        spoiler.classList.add('revealed')
+        return
+      }
+
+      // 4. Images in content
+      const img = target.closest('.guide-img') as HTMLImageElement | null
+      if (img) {
+        haptic.light()
+        setLightbox(img.src)
+        return
+      }
     }
     el.addEventListener('click', handleClick)
     return () => el.removeEventListener('click', handleClick)
@@ -272,7 +289,7 @@ export const GuideView: React.FC<GuideViewProps> = ({
                           src={normalizeUrl(guide.icon || guide.icon_url)}
                           alt=""
                           className="size-14 object-contain animate-float drop-shadow-md"
-                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                          onError={(e: SyntheticEvent<HTMLImageElement>) => {
                             e.currentTarget.style.display = 'none'
                           }}
                         />
@@ -332,7 +349,7 @@ export const GuideView: React.FC<GuideViewProps> = ({
                   className="w-full cursor-zoom-in rounded-2xl border border-border/50 shadow-lg transition-transform active:scale-[0.98]"
                   loading="lazy"
                   alt=""
-                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                  onError={(e: SyntheticEvent<HTMLImageElement>) => {
                     e.currentTarget.style.display = 'none'
                   }}
                   onClick={() => {

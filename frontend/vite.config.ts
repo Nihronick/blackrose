@@ -9,7 +9,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   base: '/',
   plugins: [
-    react(),
+    react({
+      jsxRuntime: 'automatic',
+    }),
     visualizer({
       filename: 'dist/stats.html',
       gzipSize: true,
@@ -33,17 +35,13 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: 'hidden',
+    sourcemap: true, // Switched to true for better debugging
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-query': ['@tanstack/react-query', 'zustand'],
-          admin: ['./src/views/AdminView.tsx'],
-        },
+        manualChunks: undefined,
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
   },
   define: {
     'import.meta.env.VITE_RELEASE': JSON.stringify(process.env.RAILWAY_GIT_COMMIT_SHA ?? 'dev'),

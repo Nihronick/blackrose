@@ -3,11 +3,10 @@ import { apiDelete, apiMediaList } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { Copy, Film, Image as ImageIcon, Search, Trash2 } from '@/lib/icons'
 import { normalizeUrl } from '@/lib/utils'
-import type React from 'react'
-import { useEffect, useState } from 'react'
+import { FC, useEffect, useState, MouseEvent } from 'react'
 import { toast } from 'sonner'
 
-export const MediaTab: React.FC = () => {
+export const MediaTab: FC = () => {
   const [data, setData] = useState<{ groups: any[]; total: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -43,7 +42,7 @@ export const MediaTab: React.FC = () => {
     toast.success('Ссылка скопирована')
   }
 
-  const handleDelete = async (e: React.MouseEvent, item: any) => {
+  const handleDelete = async (e: MouseEvent, item: any) => {
     e.stopPropagation()
     if (!window.confirm('Удалить этот файл навсегда?')) return
     

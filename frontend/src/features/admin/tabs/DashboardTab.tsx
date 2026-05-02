@@ -1,11 +1,10 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, apiPost } from '@/lib/api'
 import { ChevronRight, Eye, FileText, LayoutGrid, MessageSquare, RefreshCw, TrendingUp } from '@/lib/icons'
 import type { AdminStats, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import type React from 'react'
-import { useEffect, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import {
   Area,
   AreaChart,
@@ -15,7 +14,7 @@ import {
   YAxis,
 } from 'recharts'
 
-export const DashboardTab: React.FC = () => {
+export const DashboardTab: FC = () => {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [guides, setGuides] = useState<Guide[]>([])
   const [analytics, setAnalytics] = useState<any[]>([])
@@ -38,7 +37,7 @@ export const DashboardTab: React.FC = () => {
     
     setClearing(true)
     try {
-      await apiFetch('/api/admin/cache/clear', { method: 'POST' })
+      await apiPost('/api/admin/cache/clear', {})
       alert('Кэш успешно очищен')
     } catch (e) {
       alert('Ошибка при очистке кэша: ' + (e instanceof Error ? e.message : 'Unknown error'))
@@ -47,10 +46,15 @@ export const DashboardTab: React.FC = () => {
     }
   }
 
-  const chartData = (analytics || []).map(d => ({
-    name: new Date(d.day).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
-    views: d.count
-  }))
+  const chartData = (analytics || []).map(d => {
+    const date = new Date(d.day)
+    return {
+      name: isNaN(date.getTime()) 
+        ? '???' 
+        : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
+      views: d.count
+    }
+  })
 
   if (!stats) {
     return (
@@ -119,8 +123,8 @@ export const DashboardTab: React.FC = () => {
             Тренд просмотров (30д)
           </h3>
         </div>
-        <Card className="p-6 border-none bg-card/40 backdrop-blur-sm shadow-sm ring-1 ring-border/5 h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <Card className="p-6 border-none bg-card/40 backdrop-blur-sm shadow-sm ring-1 ring-border/5 h-[300px] min-h-[300px] overflow-hidden">
+          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">

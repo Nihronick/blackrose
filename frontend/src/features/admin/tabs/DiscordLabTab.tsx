@@ -3,13 +3,12 @@ import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Beaker, Copy, Globe, RefreshCcw, Send, Settings, Database } from '@/lib/icons'
-import type React from 'react'
-import { useState, useMemo, useEffect } from 'react'
+import { FC, useState, useMemo, useEffect, ChangeEvent } from 'react'
 import { getGameIconUrl } from '@/lib/gameIcons'
 import { apiFetch, apiPost, apiPut, apiImportMedia, apiGetProxyUrl } from '@/lib/api'
 import type { Guide, Category } from '@/lib/types'
 
-export const DiscordLabTab: React.FC = () => {
+export const DiscordLabTab: FC = () => {
   const [jsonInput, setJsonInput] = useState('')
   const [result, setResult] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -250,7 +249,7 @@ export const DiscordLabTab: React.FC = () => {
             className="min-h-[550px] font-mono text-[11px] bg-muted/20 border-none focus-visible:ring-primary/20 p-6 rounded-2xl no-scrollbar"
             placeholder='[{"content": "Hello :fire:", "author": {"username": "HalfSquirrel"}}, ...]'
             value={jsonInput}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setJsonInput(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setJsonInput(e.target.value)}
           />
           <Button 
             className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 text-xs"

@@ -29,19 +29,18 @@ import {
 } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { cn, normalizeUrl } from '@/lib/utils'
-import type React from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { FC, ReactNode, ChangeEvent, useEffect, useRef, useState } from 'react'
 import { RichEditor } from './AdminRichEditor'
 import { IC } from './adminIcons'
 
 interface FieldProps {
   label: string
   hint?: string
-  children: React.ReactNode
-  icon?: React.ReactNode
+  children: ReactNode
+  icon?: ReactNode
 }
 
-const Field: React.FC<FieldProps> = ({ label, hint, children, icon }) => (
+const Field: FC<FieldProps> = ({ label, hint, children, icon }) => (
   <div className="space-y-2">
     <div className="flex items-center justify-between">
       <Label className="text-[13px] font-bold text-foreground/70 flex items-center gap-2">
@@ -58,7 +57,7 @@ const Field: React.FC<FieldProps> = ({ label, hint, children, icon }) => (
   </div>
 )
 
-const IconPreview: React.FC<{ url: string }> = ({ url }) => {
+const IconPreview: FC<{ url: string }> = ({ url }) => {
   if (!url)
     return (
       <div className="flex size-9 items-center justify-center rounded-xl bg-muted text-[10px] font-bold text-muted-foreground/40">
@@ -84,11 +83,11 @@ interface FileUploaderProps {
   folder?: string
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ onUpload, folder = 'guides' }) => {
+const FileUploader: FC<FileUploaderProps> = ({ onUpload, folder = 'guides' }) => {
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setLoading(true)
@@ -134,7 +133,7 @@ interface IconPickerProps {
   onChange: (val: string) => void
 }
 
-export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange }) => {
+export const IconPicker: FC<IconPickerProps> = ({ value, onChange }) => {
   const [icons, setIcons] = useState<Array<{ key: string; url: string }>>([])
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState('')
@@ -218,7 +217,7 @@ interface UrlListEditorProps {
   icon?: React.ReactNode
 }
 
-const UrlListEditor: React.FC<UrlListEditorProps> = ({ label, value, onChange, hint, icon }) => {
+const UrlListEditor: FC<UrlListEditorProps> = ({ label, value, onChange, hint, icon }) => {
   const safeValue = Array.isArray(value) ? value : []
   const add = () => onChange([...safeValue, ''])
   const upd = (i: number, v: string) => {
@@ -273,7 +272,7 @@ interface GuideEditorProps {
   onCancel: () => void
 }
 
-export const GuideEditor: React.FC<GuideEditorProps> = ({
+export const GuideEditor: FC<GuideEditorProps> = ({
   guide,
   categories,
   onSave,
@@ -296,7 +295,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const [err, setErr] = useState<string | null>(null)
 
   const setVal = (f: string) => (v: unknown) => setForm((p) => ({ ...p, [f]: v }))
-  const setE = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+  const setE = (f: string) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((p) => ({ ...p, [f]: e.target.value }))
 
   const handleDelete = async () => {

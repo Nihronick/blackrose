@@ -4,7 +4,7 @@ import { haptic } from '@/lib/haptic'
 import { ChevronRight, Clock } from '@/lib/icons'
 import { normalizeUrl } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import type React from 'react'
+import { FC, SyntheticEvent } from 'react'
 
 import type { HistoryItem } from '@/hooks/useHistory'
 
@@ -16,7 +16,7 @@ interface HistoryViewProps {
 /**
  * HistoryView refactored with TSX, shadcn/ui and premium visuals.
  */
-export const HistoryView: React.FC<HistoryViewProps> = ({ history, onSelectGuide }) => {
+export const HistoryView: FC<HistoryViewProps> = ({ history, onSelectGuide }) => {
   if (!history || history.length === 0) {
     return (
       <div className="flex h-[80vh] flex-col items-center justify-center px-10 text-center animate-in fade-in zoom-in duration-500">
@@ -52,7 +52,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onSelectGuide
                     src={normalizeUrl(item.icon)}
                     alt=""
                     className="size-10 object-contain"
-                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
                       e.currentTarget.style.display = 'none'
                     }}
                   />

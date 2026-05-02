@@ -31,8 +31,7 @@ import {
   X,
 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import type React from 'react'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { FC, Suspense, useCallback, useEffect, useState } from 'react'
 
 interface AdminViewProps {
   onClose: () => void
@@ -59,7 +58,7 @@ function TabSpinner() {
   )
 }
 
-export const AdminView: React.FC<AdminViewProps> = ({ onClose }) => {
+export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
   const [tab, setTab] = useState<TabId>('dash')
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)

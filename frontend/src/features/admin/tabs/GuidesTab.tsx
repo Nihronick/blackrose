@@ -6,8 +6,7 @@ import { haptic } from '@/lib/haptic'
 import { Edit2, LayoutGrid, Plus, Search, Trash2 } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import type React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { FC, ChangeEvent, useCallback, useEffect, useState } from 'react'
 import { GuideEditor } from '../AdminGuideEditor'
 import { IconPreview } from './components/IconPreview'
 
@@ -17,7 +16,7 @@ interface GuidesTabProps {
   onImportProcessed?: () => void
 }
 
-export const GuidesTab: React.FC<GuidesTabProps> = ({ categories, importedGuide, onImportProcessed }) => {
+export const GuidesTab: FC<GuidesTabProps> = ({ categories, importedGuide, onImportProcessed }) => {
   const [guides, setGuides] = useState<Guide[]>([])
   const [catFilter, setCatFilter] = useState('')
   const [search, setSearch] = useState('')
@@ -76,7 +75,7 @@ export const GuidesTab: React.FC<GuidesTabProps> = ({ categories, importedGuide,
     }
   }, [])
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }, [])
 

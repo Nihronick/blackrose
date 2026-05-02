@@ -453,6 +453,10 @@ git diff HEAD
 - ✅ **Adaptive UI Layer**: Context-aware headers, buttons, and ErrorBoundaries.
 - ✅ **Bulletproof Navigation**: Native BackButton logic with reliable fallback.
 - ✅ **Redis Optimization**: Increased ARQ worker `poll_delay` to 10.0s.
+- ✅ **Adaptive UI Layer**: Context-aware headers, buttons, and ErrorBoundaries.
+- ✅ **Process Consolidation**: Integrated Telegram Bot (aiogram) into FastAPI lifespan.
+- ✅ **Stable Webhooks**: Configured automated webhook setup with secret token validation for HF Spaces.
+- ✅ **Unified Requirements**: Merged backend and bot dependencies for cleaner Docker builds.
 
 ### Code Audit Fixes (2026-05-01, Session 1)
 - ✅ Fixed `select(1)` → `text("SELECT 1")` in `database.py` (Anti-Pattern #1).

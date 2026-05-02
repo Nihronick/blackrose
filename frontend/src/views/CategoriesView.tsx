@@ -11,8 +11,7 @@ import { LayoutGrid, Search, X } from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
 import { useQueryClient } from '@tanstack/react-query'
-import type React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { FC, useEffect, useMemo, useRef, useState } from 'react'
 
 interface CategoriesViewProps {
   onSelectCategory: (category: Category) => void
@@ -24,7 +23,7 @@ interface CategoriesViewProps {
 /**
  * CategoriesView refactored with HIG patterns and premium PTR.
  */
-export const CategoriesView: React.FC<CategoriesViewProps> = ({
+export const CategoriesView: FC<CategoriesViewProps> = ({
   onSelectCategory,
   onSelectGuide,
   onCategoriesLoaded,

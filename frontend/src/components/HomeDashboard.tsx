@@ -15,15 +15,16 @@ import {
 import { isLanguageKey } from '@/lib/language'
 import { normalizeUrl } from '@/lib/utils'
 import { useAppStore } from '@/store'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import type React from 'react'
+import { FC, useRef } from 'react'
+import { apiFetch } from '@/lib/api'
 
 interface HomeDashboardProps {
   onSelectGuide: (key: string, title?: string, icon?: string) => void
 }
 
-export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) => {
+export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide }) => {
   const language = useAppStore((state) => state.language)
   const userName = window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Слеер'
 
@@ -66,10 +67,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) =
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-4 animate-in fade-in duration-700">
+    <div className="flex flex-col gap-8 pb-4 stagger-in">
       {/* 1. Hero Welcome */}
       <section className="px-5 pt-2">
-        <div className="relative overflow-hidden rounded-[32px] mesh-bg p-7 border border-primary/10 shadow-2xl shadow-primary/5">
+        <div className="relative overflow-hidden rounded-[40px] mesh-bg p-8 border border-primary/20 shadow-2xl shadow-primary/10 transition-transform duration-500 hover:scale-[1.01]">
           {/* Animated background pulse */}
           <div className="absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
           <div className="absolute -left-10 -bottom-10 size-32 rounded-full bg-primary/10 blur-[60px]" />
@@ -194,7 +195,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onSelectGuide }) =
                         {g.title}
                       </h4>
                       <p className="mt-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-                        Обновлено: {new Date(g.updated_at || '').toLocaleDateString()}
+                        {g.updated_at && !isNaN(new Date(g.updated_at).getTime())
+                          ? `Обновлено: ${new Date(g.updated_at).toLocaleDateString()}`
+                          : 'Недавно'}
                       </p>
                     </div>
                     <ChevronRight className="size-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
