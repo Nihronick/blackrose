@@ -1,5 +1,4 @@
 import base64
-from typing import Optional
 from core.config import settings
 from core.http import http_client
 from core.logging import get_logger

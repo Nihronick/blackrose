@@ -1,17 +1,19 @@
-from sqlalchemy import select, update, delete, desc, func, case, text
+from sqlalchemy import select, update, desc, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert
 import asyncio
 from core.db import get_sessionmaker
 from models.db_models import Guide, GuideHistory, GuideComment, Category, Member
 from core.logging import get_logger
+from services.common.utils import _strip_markdown
 
 logger = get_logger("blackrose.services.guides")
 
 class GuideService:
     @staticmethod
     def _to_dict(g: Guide) -> dict:
-        if not g: return {}
+        if not g:
+            return {}
         return {
             "key": g.key,
             "category_key": g.category_key,
@@ -24,8 +26,12 @@ class GuideService:
             "sort_order": g.sort_order,
             "created_at": g.created_at,
             "updated_at": g.updated_at,
-            "views": g.views,
+            "views": g.views or 0,
             "tags": [t.tag for t in g.tags] if hasattr(g, "tags") and g.tags else [],
+            "preview": _strip_markdown(g.text)[:200],
+            "has_photo": bool(g.photo),
+            "has_video": bool(g.video),
+            "has_document": bool(g.document),
         }
 
     @classmethod
@@ -39,7 +45,8 @@ class GuideService:
 
     @classmethod
     async def search(cls, query: str) -> list[dict]:
-        if not query or len(query) < 2: return []
+        if not query or len(query) < 2:
+            return []
         async with get_sessionmaker()() as session:
             # We use plainto_tsquery for natural language search
             # and rank the results by relevance
@@ -56,7 +63,7 @@ class GuideService:
     @classmethod
     async def get_all(cls, category_key: str | None = None) -> list[dict]:
         async with get_sessionmaker()() as session:
-            stmt = select(Guide).order_by(Guide.sort_order)
+            stmt = select(Guide).options(selectinload(Guide.tags)).order_by(Guide.sort_order)
             if category_key:
                 stmt = stmt.where(Guide.category_key == category_key)
             result = await session.execute(stmt)
@@ -106,7 +113,8 @@ class GuideService:
         async with get_sessionmaker()() as session:
             result = await session.execute(select(Guide).where(Guide.key == key))
             g = result.scalar_one_or_none()
-            if not g: return None
+            if not g:
+                return None
             
             snapshot = cls._to_dict(g)
             history = GuideHistory(guide_key=key, action="deleted", changed_by=changed_by, snapshot=snapshot)
@@ -173,7 +181,8 @@ class CategoryService:
         async with get_sessionmaker()() as session:
             result = await session.execute(select(Category).where(Category.key == key))
             c = result.scalar_one_or_none()
-            if not c: return False
+            if not c:
+                return False
             await session.delete(c)
             await session.commit()
             return True

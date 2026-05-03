@@ -5,12 +5,17 @@ from fastapi.responses import JSONResponse
 
 from core.config import settings
 from core.logging import configure_logging, RequestContextMiddleware, get_logger
-from core.db import init_db, is_db_ready
+from services.common.setup import seed_initial_admin
+import inngest.fast_api
+from core.inngest_client import inngest_client
+from functions.discord_import import discord_import_guide
+from functions.test_job import test_job
+from services.cache.redis_cache import cache_service
+from core.db import init_db, close_pool
 from core.middleware import setup_cors, add_security_headers, setup_honeybadger
 from api import admin, public, bot
 from services.notifications.bot_service import bot_service
 from core.http import http_client
-from services.common.setup import seed_initial_admin
 
 
 logger = get_logger("blackrose.main")
@@ -50,9 +55,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down system...")
     await bot_service.close()
-    from services.cache.redis_cache import cache_service
     await cache_service.close()
-    from core.db import close_pool
     await close_pool()
     await http_client.close()
 
@@ -75,10 +78,6 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(bot.router)
 
 # Inngest Background Tasks
-import inngest.fast_api
-from core.inngest_client import inngest_client
-from functions.discord_import import discord_import_guide
-from functions.test_job import test_job
 
 inngest.fast_api.serve(
     app,

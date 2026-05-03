@@ -1,4 +1,5 @@
-from sqlalchemy import select, update
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert
 from core.db import get_sessionmaker
 from models.db_models import Member
 
@@ -22,7 +23,6 @@ class MemberService:
     @classmethod
     async def upsert(cls, user_id: int, username: str, first_name: str, role: str, added_by: int | None = None):
         async with get_sessionmaker()() as session:
-            from sqlalchemy.dialects.postgresql import insert
             stmt = insert(Member).values(
                 user_id=user_id, username=username, first_name=first_name, role=role, added_by=added_by
             )

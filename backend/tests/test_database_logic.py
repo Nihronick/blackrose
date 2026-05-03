@@ -15,8 +15,6 @@ import sys
 import types
 import unittest.mock as mock
 
-import pytest
-
 # ── Stubs ──────────────────────────────────────────────────────
 # database.py imports db_models and sqlalchemy — we need to stub them
 # minimally so that _normalize_db_url and helpers can be tested.
@@ -39,7 +37,10 @@ os.environ.setdefault("BOT_TOKEN", "test:token")
 os.environ.setdefault("DATABASE_URL", "postgresql://test/test")
 os.environ.setdefault("ADMIN_USERS", "")
 
-from core.db import _normalize_db_url, _strip_html, _strip_markdown
+from core.db import _normalize_db_url # noqa: E402
+from services.common.utils import _strip_html, _strip_markdown # noqa: E402
+from services.guides.service import GuideService # noqa: E402
+_guide_to_dict = GuideService._to_dict # noqa: E402
 
 
 # ── _normalize_db_url ──────────────────────────────────────────
@@ -163,7 +164,6 @@ class TestGuideToDictContract:
 
     def test_required_fields(self):
         """Dict должен содержать все поля, которые фронтенд ожидает."""
-        from core.db import _guide_to_dict
 
         # Создаём mock объект Guide
         guide = mock.MagicMock()
@@ -208,7 +208,6 @@ class TestGuideToDictContract:
 
     def test_none_media_becomes_empty_list(self):
         """photo=None, video=None, document=None → пустые списки."""
-        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"
@@ -232,7 +231,6 @@ class TestGuideToDictContract:
 
     def test_preview_strips_markdown(self):
         """Preview не должен содержать markdown-разметку."""
-        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"
@@ -255,7 +253,6 @@ class TestGuideToDictContract:
 
     def test_tags_from_relationship(self):
         """Теги должны извлекаться из relationship."""
-        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"
@@ -281,7 +278,6 @@ class TestGuideToDictContract:
 
     def test_tags_lazy_load_failure_returns_empty(self):
         """Если tags relationship не загружен — возвращаем []."""
-        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"

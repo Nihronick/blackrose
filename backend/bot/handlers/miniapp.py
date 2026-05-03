@@ -3,9 +3,7 @@ Bot handlers v2.2
 Вход — только через inline-кнопку в одном сообщении.
 Reply-клавиатура полностью убрана (не передаёт initData, визуальный мусор).
 """
-import urllib.parse
 
-import aiohttp
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import (
@@ -18,8 +16,9 @@ from aiogram.types import (
     ReplyKeyboardRemove,
     WebAppInfo,
 )
-from bot.config import ADMIN_USERS, API_URL, MINIAPP_URL
+from bot.config import ADMIN_USERS, MINIAPP_URL
 from loguru import logger
+from bot.lib.api_client import api_client
 
 miniapp_router = Router()
 
@@ -46,7 +45,7 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
         )
     ]])
 
-from bot.lib.api_client import api_client
+
 
 
 def guide_url(key: str) -> str:

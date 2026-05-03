@@ -5,8 +5,10 @@ import logging
 import secrets
 import time
 from urllib.parse import parse_qs
-import base64
+
 from fastapi import HTTPException, Request
+import jwt
+
 from core.config import settings
 from core.db import get_sessionmaker
 
@@ -36,13 +38,15 @@ def verify_telegram_init_data(init_data: str) -> dict | None:
     try:
         parsed = parse_qs(init_data, keep_blank_values=True)
         hash_val = parsed.get("hash", [None])[0]
-        if not hash_val: return None
+        if not hash_val:
+            return None
         check_string = "\n".join(
             f"{k}={v[0]}" for k, v in sorted(parsed.items()) if k != "hash"
         )
         secret_key = hmac.new(b"WebAppData", settings.BOT_TOKEN.encode(), hashlib.sha256).digest()
         expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, hash_val): return None
+        if not hmac.compare_digest(expected, hash_val):
+            return None
         
         auth_date = int(parsed.get("auth_date", ["0"])[0])
         if settings.INIT_DATA_MAX_AGE > 0 and (time.time() - auth_date) > settings.INIT_DATA_MAX_AGE:
@@ -54,7 +58,7 @@ def verify_telegram_init_data(init_data: str) -> dict | None:
         logger.error(f"verify_telegram_init_data error: {e}")
         return None
 
-import jwt
+
 
 def jwt_encode(payload: dict) -> str:
     secret = (settings.JWT_SECRET or settings.BOT_TOKEN)
@@ -80,13 +84,15 @@ async def require_telegram_user(request: Request) -> dict:
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         payload = jwt_decode(auth_header[7:])
-        if payload: return payload
+        if payload:
+            return payload
         raise HTTPException(status_code=401, detail="Сессия истекла")
 
     init_data = request.headers.get("X-Telegram-Init-Data", "")
     if init_data:
         user = verify_telegram_init_data(init_data)
-        if user: return user
+        if user:
+            return user
         raise HTTPException(status_code=403, detail="Неверные данные Telegram")
 
     raise HTTPException(status_code=403, detail="Требуется авторизация")
@@ -96,7 +102,8 @@ require_public_user = require_telegram_user
 
 async def require_admin(request: Request) -> dict:
     user = await require_telegram_user(request)
-    if user.get("is_local_admin"): return user
+    if user.get("is_local_admin"):
+        return user
     
     user_id = user.get("id", 0)
     
@@ -116,7 +123,8 @@ def verify_telegram_login_widget(data: dict) -> bool:
     """Verifies data from Telegram Login Widget."""
     try:
         check_hash = data.get("hash")
-        if not check_hash: return False
+        if not check_hash:
+            return False
         
         check_list = []
         for k, v in sorted(data.items()):

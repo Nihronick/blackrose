@@ -1,5 +1,3 @@
-import logging
-import aiohttp
 import json
 import os
 from core.config import settings
@@ -29,18 +27,21 @@ class TranslationService:
 
     @staticmethod
     async def translate_text(text: str) -> str:
-        if not text: return ""
+        if not text:
+            return ""
 
         # Cascade: HF -> Gemini -> Google
         if settings.HF_TOKEN:
             res = await TranslationService._translate_hf(text, settings.HF_TOKEN)
-            if res: return res
+            if res:
+                return res
 
         # Check for GEMINI_API_KEY from environment or settings
         gemini_key = os.getenv("GEMINI_API_KEY") or settings.GEMINI_API_KEY
         if gemini_key:
             res = await TranslationService._translate_gemini(text, gemini_key)
-            if res: return res
+            if res:
+                return res
 
         return await TranslationService._translate_google(text)
 
@@ -102,7 +103,8 @@ class TranslationService:
         try:
             from deep_translator import GoogleTranslator
             return TranslationService._post_process(GoogleTranslator(source='auto', target='ru').translate(text))
-        except: return text
+        except Exception:
+            return text
 
     @staticmethod
     def _post_process(text: str) -> str:

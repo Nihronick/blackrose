@@ -1,8 +1,6 @@
-import asyncio
 import os
 import uuid
 import tempfile
-import aiohttp
 import hmac
 import hashlib
 import base64
@@ -23,8 +21,8 @@ class MediaService:
         
         session = await http_client.get_session()
         async with session.get(url, timeout=60) as resp:
-                if resp.status != 200:
-                    raise Exception(f"Failed to fetch {url}: {resp.status}")
+            if resp.status != 200:
+                raise Exception(f"Failed to fetch {url}: {resp.status}")
                 
                 # Use a temp file to avoid large memory usage
                 with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as tmp:
@@ -33,12 +31,9 @@ class MediaService:
                     tmp_path = tmp.name
 
                 try:
-                    # Create a mock file-like object for our storage service
-                    with open(tmp_path, "rb") as f:
-                        # storage_service.upload expects an UploadFile or similar
-                        # We'll need to adapt it or add a method for direct file upload
-                        url = await storage_service.upload_local_file(tmp_path, filename, folder)
-                        return url
+                    # upload_local_file expects a path string
+                    url = await storage_service.upload_local_file(tmp_path, filename, folder)
+                    return url
                 finally:
                     if os.path.exists(tmp_path):
                         os.remove(tmp_path)

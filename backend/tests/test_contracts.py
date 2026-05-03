@@ -11,11 +11,9 @@
     pytest tests/test_contracts.py -v
 """
 
-import ast
 import os
 import re
 import sys
-import types
 import unittest.mock as mock
 
 import pytest

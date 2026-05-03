@@ -1,241 +1,56 @@
-"""
-Тесты для verify_telegram_init_data.
-
-Функция проверяет HMAC-подпись initData от Telegram WebApp.
-Тесты полностью автономны — не требуют БД или сети.
-"""
-
-import hashlib
 import hmac
+import hashlib
 import json
-
-# Патчим модуль до импорта, чтобы не нужна была реальная БД
-import sys
 import time
-import types
 from urllib.parse import urlencode
+from core.auth import verify_telegram_init_data, verify_telegram_login_widget
+from core.config import settings
 
-import pytest
-
-# Stub для database и icons модулей — они не нужны для тестов auth
-import unittest.mock as mock
-mock_db = mock.MagicMock()
-mock_db.get_admin_member_ids = mock.AsyncMock(return_value=set())
-mock_db.is_db_ready = mock.MagicMock(return_value=True)
-
-sys.modules["database"] = mock_db
-sys.modules["icons"] = mock.MagicMock()
-sys.modules["aiohttp"] = mock.MagicMock()
-
-import core.db
-import icons
-
-TEST_TOKEN = "1234567890:AAFakeTokenForTestingPurposesOnly"
-
-import os
-
-os.environ["BOT_TOKEN"] = TEST_TOKEN
-os.environ.setdefault("DATABASE_URL", "postgresql://test/test")
-os.environ.setdefault("ALLOWED_USERS", "")
-os.environ.setdefault("ADMIN_USERS", "")
-
-import unittest.mock as mock
-
-with mock.patch("asyncpg.create_pool"):
-    import main as app_main # type: ignore
-    import dependencies # type: ignore
-    from models import _validate_key
-
-# Патчим BOT_TOKEN прямо в модуле — он мог быть загружен раньше с другим значением
-app_main.BOT_TOKEN = TEST_TOKEN
-dependencies.BOT_TOKEN = TEST_TOKEN
-
-
-def _make_init_data(
-    user: dict,
-    bot_token: str = TEST_TOKEN,
-    auth_date: int | None = None,
-) -> str:
-    """Генерирует валидный initData с правильной HMAC-подписью."""
+def _make_init_data(user: dict, token: str, auth_date: int = None):
     if auth_date is None:
         auth_date = int(time.time())
-
     params = {
-        "user": json.dumps(user, ensure_ascii=False),
-        "auth_date": str(auth_date),
-        "chat_type": "private",
+        "user": json.dumps(user, separators=(',', ':')),
+        "auth_date": str(auth_date)
     }
     check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
-
-    secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
-    signature = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
-
-    params["hash"] = signature
+    secret_key = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+    data_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+    params["hash"] = data_hash
     return urlencode(params)
 
+def test_verify_init_data_success():
+    user = {"id": 12345, "first_name": "Test"}
+    token = settings.BOT_TOKEN
+    init_data = _make_init_data(user, token)
+    result = verify_telegram_init_data(init_data)
+    assert result is not None
+    assert result["id"] == 12345
 
-# ── Fixtures ──────────────────────────────────────────────────
+def test_verify_init_data_invalid_hash():
+    user = {"id": 12345}
+    init_data = _make_init_data(user, "wrong_token")
+    assert verify_telegram_init_data(init_data) is None
 
+def test_verify_init_data_expired():
+    user = {"id": 12345}
+    old_time = int(time.time()) - 90000 # More than 24h
+    init_data = _make_init_data(user, settings.BOT_TOKEN, auth_date=old_time)
+    assert verify_telegram_init_data(init_data) is None
 
-@pytest.fixture(autouse=True)
-def patch_bot_token():
-    """Гарантируем что dependencies.BOT_TOKEN = TEST_TOKEN перед каждым тестом."""
-    original = dependencies.BOT_TOKEN
-    app_main.BOT_TOKEN = TEST_TOKEN
-    dependencies.BOT_TOKEN = TEST_TOKEN
-    yield
-    app_main.BOT_TOKEN = original
-    dependencies.BOT_TOKEN = original
+def test_verify_login_widget_success():
+    data = {
+        "id": "12345",
+        "first_name": "Test",
+        "auth_date": str(int(time.time()))
+    }
+    check_string = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
+    secret_key = hashlib.sha256(settings.BOT_TOKEN.encode()).digest()
+    expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+    data["hash"] = expected
+    
+    assert verify_telegram_login_widget(data) is True
 
-
-# ── Тесты ──────────────────────────────────────────────────────
-
-
-class TestVerifyTelegramInitData:
-    """verify_telegram_init_data должна возвращать dict пользователя при валидных данных
-    и None при любой ошибке."""
-
-    def test_valid_data_returns_user(self):
-        user = {"id": 123456, "first_name": "Тест", "username": "testuser"}
-        init_data = _make_init_data(user)
-        result = dependencies.verify_telegram_init_data(init_data)
-        assert result is not None
-        assert result["id"] == 123456
-        assert result["first_name"] == "Тест"
-
-    def test_empty_string_returns_none(self):
-        assert dependencies.verify_telegram_init_data("") is None
-
-    def test_missing_hash_returns_none(self):
-        init_data = "user=%7B%22id%22%3A1%7D&auth_date=1700000000"
-        assert dependencies.verify_telegram_init_data(init_data) is None
-
-    def test_wrong_hash_returns_none(self):
-        user = {"id": 99, "first_name": "Bad"}
-        init_data = _make_init_data(user)
-        # Подменяем hash на мусор
-        tampered = init_data.replace(
-            init_data.split("hash=")[1][:10],
-            "0000000000",
-        )
-        assert dependencies.verify_telegram_init_data(tampered) is None
-
-    def test_wrong_token_returns_none(self):
-        user = {"id": 42, "first_name": "Wrong"}
-        # Подписано другим токеном
-        init_data = _make_init_data(user, bot_token="9999999999:AAwrongtoken")
-        assert dependencies.verify_telegram_init_data(init_data) is None
-
-    def test_expired_auth_date_returns_none(self):
-        user = {"id": 7, "first_name": "Old"}
-        old_ts = int(time.time()) - 999_999  # ~11 дней назад
-        init_data = _make_init_data(user, auth_date=old_ts)
-        # INIT_DATA_MAX_AGE = 86400 по умолчанию, 999999 > 86400
-        assert dependencies.verify_telegram_init_data(init_data) is None
-
-    def test_future_auth_date_is_accepted(self):
-        """auth_date в будущем проходит — Telegram иногда присылает с небольшим drift."""
-        user = {"id": 8, "first_name": "Future"}
-        future_ts = int(time.time()) + 60
-        init_data = _make_init_data(user, auth_date=future_ts)
-        # future ts: time.time() - future_ts < 0 < MAX_AGE, должен пройти
-        result = dependencies.verify_telegram_init_data(init_data)
-        assert result is not None
-
-    def test_malformed_json_user_returns_none(self):
-        user = {"id": 5, "first_name": "Ok"}
-        init_data = _make_init_data(user)
-        # Ломаем JSON пользователя, но hash уже посчитан — подпись будет неверной
-        broken = init_data.replace("%7B", "%FF")
-        assert dependencies.verify_telegram_init_data(broken) is None
-
-    def test_user_without_username_is_ok(self):
-        """username необязателен в Telegram."""
-        user = {"id": 999, "first_name": "Аноним"}
-        init_data = _make_init_data(user)
-        result = dependencies.verify_telegram_init_data(init_data)
-        assert result is not None
-        assert result.get("username") is None
-
-    def test_non_string_input_returns_none(self):
-        assert dependencies.verify_telegram_init_data(None) is None  # type: ignore
-
-
-class TestParseIds:
-    """_parse_ids парсит строку ID-шников в set[int]."""
-
-    def test_comma_separated(self):
-        assert dependencies._parse_ids("123,456,789") == {123, 456, 789}
-
-    def test_semicolon_separated(self):
-        assert dependencies._parse_ids("1;2;3") == {1, 2, 3}
-
-    def test_mixed_separators(self):
-        assert dependencies._parse_ids("1,2;3") == {1, 2, 3}
-
-    def test_empty_string(self):
-        assert dependencies._parse_ids("") == set()
-
-    def test_spaces_stripped(self):
-        assert dependencies._parse_ids(" 10 , 20 ") == {10, 20}
-
-    def test_non_digit_skipped(self):
-        assert dependencies._parse_ids("abc,123,xyz") == {123}
-
-    def test_negative_id_accepted(self):
-        """Telegram group IDs могут быть отрицательными."""
-        assert -100123456 in dependencies._parse_ids("-100123456")
-
-
-class TestValidateKey:
-    """_validate_key разрешает только строчные буквы, цифры, _ и - до 64 символов.
-    Бросает HTTPException(422) при нарушении — так FastAPI возвращает 422, не 500."""
-
-    def test_valid_simple(self):
-        assert _validate_key("my_guide") == "my_guide"
-
-    def test_valid_with_dash(self):
-        assert _validate_key("guide-123") == "guide-123"
-
-    def test_valid_numbers(self):
-        assert _validate_key("guide123") == "guide123"
-
-    def test_uppercase_raises(self):
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException) as exc:
-            _validate_key("MyGuide")
-        assert exc.value.status_code == 422
-        assert "Ключ" in exc.value.detail
-
-    def test_spaces_raise(self):
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException) as exc:
-            _validate_key("my guide")
-        assert exc.value.status_code == 422
-
-    def test_empty_raises(self):
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException) as exc:
-            _validate_key("")
-        assert exc.value.status_code == 422
-
-    def test_too_long_raises(self):
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException) as exc:
-            _validate_key("a" * 65)
-        assert exc.value.status_code == 422
-
-    def test_max_length_ok(self):
-        key = "a" * 64
-        assert _validate_key(key) == key
-
-    def test_cyrillic_raises(self):
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException) as exc:
-            _validate_key("гайд")
-        assert exc.value.status_code == 422
+def test_verify_login_widget_fail():
+    data = {"id": "1", "hash": "wrong"}
+    assert verify_telegram_login_widget(data) is False

@@ -1,4 +1,3 @@
-import os
 from urllib.parse import urlparse
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +17,8 @@ def setup_cors(app: FastAPI):
     if settings.FRONTEND_URL:
         for origin_entry in settings.FRONTEND_URL.split(","):
             entry = origin_entry.strip()
-            if not entry: continue
+            if not entry:
+                continue
             parsed = urlparse(entry)
             if parsed.scheme and parsed.netloc:
                 base_origin = f"{parsed.scheme}://{parsed.netloc}"
@@ -44,7 +44,8 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 def setup_honeybadger(app: FastAPI):
-    if not settings.HONEYBADGER_API_KEY: return
+    if not settings.HONEYBADGER_API_KEY:
+        return
     try:
         from honeybadger import honeybadger
         from honeybadger.contrib.asgi import ASGIHoneybadger

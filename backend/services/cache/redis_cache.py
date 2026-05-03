@@ -19,40 +19,51 @@ class RedisCacheService:
         self.prefix_guide = "br:guide:"
 
     async def get_client(self):
-        if self._disabled_until > time.time(): return None
-        if self._redis: return self._redis
+        if self._disabled_until > time.time():
+            return None
+        if self._redis:
+            return self._redis
 
         url = settings.REDIS_URL
-        if not url: return None
+        if not url:
+            return None
 
         async with self._lock:
-            if self._redis: return self._redis
+            if self._redis:
+                return self._redis
             try:
                 self._redis = aioredis.from_url(url, decode_responses=True, socket_timeout=1)
                 await self._redis.ping()
                 return self._redis
             except Exception as e:
-                if "limit exceeded" in str(e).lower(): self._disabled_until = time.time() + 300
+                if "limit exceeded" in str(e).lower():
+                    self._disabled_until = time.time() + 300
                 self._redis = None
                 return None
 
     async def get_categories(self) -> dict | None:
         r = await self.get_client()
-        if not r: return None
+        if not r:
+            return None
         try:
             raw = await r.get(self.prefix_cats)
             return json.loads(raw) if raw else None
-        except: return None
+        except Exception:
+            return None
 
     async def set_categories(self, data: dict):
         r = await self.get_client()
-        if not r: return
-        try: await r.setex(self.prefix_cats, self.ttl_cats, json.dumps(data))
-        except: pass
+        if not r:
+            return
+        try:
+            await r.setex(self.prefix_cats, self.ttl_cats, json.dumps(data))
+        except Exception:
+            pass
 
     async def ping(self) -> dict:
         r = await self.get_client()
-        if not r: return {"status": "disabled/missing"}
+        if not r:
+            return {"status": "disabled/missing"}
         import time
         start = time.perf_counter()
         try:
@@ -64,20 +75,27 @@ class RedisCacheService:
 
     async def invalidate_guide(self, key: str):
         r = await self.get_client()
-        if not r: return
-        try: await r.delete(f"{self.prefix_guide}{key}")
-        except: pass
+        if not r:
+            return
+        try:
+            await r.delete(f"{self.prefix_guide}{key}")
+        except Exception:
+            pass
 
     async def invalidate_all(self):
         r = await self.get_client()
-        if not r: return
+        if not r:
+            return
         try:
             # We use keys with prefix to avoid clearing other data if shared
             keys = await r.keys(f"{self.prefix_cats}*")
-            if keys: await r.delete(*keys)
+            if keys:
+                await r.delete(*keys)
             keys = await r.keys(f"{self.prefix_guide}*")
-            if keys: await r.delete(*keys)
-        except: pass
+            if keys:
+                await r.delete(*keys)
+        except Exception:
+            pass
 
     async def close(self):
         if self._redis:

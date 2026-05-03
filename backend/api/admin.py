@@ -1,11 +1,9 @@
 import asyncio
-from typing import Any
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse
 
 from core.auth import require_admin
 from core.logging import get_logger
-from models.schemas import CategoryIn, GuideIn, ReorderIn, TagsIn, ImportMediaIn, LabImportIn
+from models.schemas import CategoryIn, GuideIn, ImportMediaIn, LabImportIn
 from services.guides.service import guide_service, category_service
 from services.cache.redis_cache import cache_service
 from services.storage.hf_storage import storage_service
@@ -83,14 +81,16 @@ async def admin_import_media(body: ImportMediaIn, user=Depends(require_admin)):
 @router.delete("/guide/{key}")
 async def admin_delete_guide(key: str, user=Depends(require_admin)):
     deleted = await guide_service.delete(key, changed_by=user.get("id"))
-    if not deleted: raise HTTPException(status_code=404, detail="Guide not found")
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Guide not found")
     await cache_service.invalidate_all()
     return {"ok": True}
 
 @router.delete("/category/{key}")
 async def admin_delete_category(key: str, user=Depends(require_admin)):
     deleted = await category_service.delete(key)
-    if not deleted: raise HTTPException(status_code=404, detail="Category not found")
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Category not found")
     await cache_service.invalidate_all()
     return {"ok": True}
 

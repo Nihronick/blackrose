@@ -1,14 +1,14 @@
-import logging
 import os
 import uuid
-import base64
 import gc
 from io import BytesIO
 from huggingface_hub import HfApi
-from huggingface_hub.utils import RepositoryNotFoundError, HfHubHTTPError
 from fastapi import UploadFile
 from PIL import Image, UnidentifiedImageError
 from core.config import settings
+from core.logging import get_logger
+
+logger = get_logger("blackrose.storage")
 
 # Exports for compatibility with GC worker
 hf_api = HfApi(token=settings.HF_TOKEN)
@@ -17,7 +17,8 @@ HF_PATH = "uploads"
 
 async def delete_files(paths: list[str]) -> int:
     """Batch delete files from HF dataset."""
-    if not settings.HF_TOKEN or not HF_DATASET_REPO: return 0
+    if not settings.HF_TOKEN or not HF_DATASET_REPO:
+        return 0
     count = 0
     for path in paths:
         try:
@@ -40,7 +41,8 @@ class HFStorageService:
         self.max_width = int(os.getenv("MEDIA_MAX_IMAGE_WIDTH", "1920"))
 
     def _get_public_url(self, path: str) -> str:
-        if not self.repo_id: return ""
+        if not self.repo_id:
+            return ""
         return f"https://huggingface.co/datasets/{self.repo_id}/resolve/main/{path}"
 
     def _optimize_image(self, filename: str, content: bytes) -> tuple[str, bytes, bool]:
@@ -103,14 +105,16 @@ class HFStorageService:
             gc.collect()
 
     async def delete(self, url: str) -> bool:
-        if not settings.HF_TOKEN or not self.repo_id: return False
+        if not settings.HF_TOKEN or not self.repo_id:
+            return False
         
         path = None
         marker = "/resolve/main/"
         if marker in url:
             path = url.split(marker)[1]
         
-        if not path: return False
+        if not path:
+            return False
 
         try:
             self.api.delete_file(
@@ -126,7 +130,8 @@ class HFStorageService:
 
     async def upload_local_file(self, file_path: str, filename: str, folder: str = "guides") -> str:
         """Uploads a local file from disk with optional optimization."""
-        if not settings.HF_TOKEN or not self.repo_id: return ""
+        if not settings.HF_TOKEN or not self.repo_id:
+            return ""
         
         with open(file_path, "rb") as f:
             content = f.read()

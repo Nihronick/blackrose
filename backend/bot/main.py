@@ -10,8 +10,6 @@ import sys
 import socket
 from pathlib import Path
 
-import aiohttp
-from aiohttp import TCPConnector
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.session.aiohttp import AiohttpSession

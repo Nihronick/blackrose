@@ -1,9 +1,13 @@
-import logging
 import html
-import re
+import logging
 from urllib.parse import quote
+
 import aiohttp
+from sqlalchemy import select
+
 from core.config import settings
+from core.db import get_sessionmaker
+from models.db_models import Member
 
 logger = logging.getLogger("blackrose.services.notifications")
 
@@ -29,7 +33,8 @@ class TelegramService:
                     async with session.post(api, json={
                         "chat_id": uid, "text": msg_text, "parse_mode": "HTML", "reply_markup": reply_markup
                     }) as r:
-                        if r.status == 200: sent += 1
+                        if r.status == 200:
+                            sent += 1
                 except Exception as e:
                     logger.debug(f"Failed to notify {uid}: {e}")
         return sent
@@ -39,15 +44,10 @@ async def _telegram_send_new_guide_notifications(guide_key: str, guide_title: st
     """
     Helper function for background worker to notify all active members.
     """
-    from services.common.members import MemberService
-    from core.db import get_sessionmaker
-    from models.db_models import Member
-    from sqlalchemy import select
-    
     # Get all active user IDs
     user_ids = []
     async with get_sessionmaker()() as session:
-        res = await session.execute(select(Member.user_id).where(Member.is_active == True))
+        res = await session.execute(select(Member.user_id).where(Member.is_active))
         user_ids = [uid for uid in res.scalars()]
     
     if not user_ids:

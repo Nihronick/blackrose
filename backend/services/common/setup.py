@@ -1,13 +1,14 @@
-import os
 from core.config import settings
 from core.logging import get_logger
 from core.auth import hash_password
+from core.db import get_sessionmaker
+from models.db_models import LocalAdmin
+from sqlalchemy.dialects.postgresql import insert
 
 logger = get_logger("blackrose.services.setup")
 
 async def seed_initial_admin():
     """Seeds initial admin users from environment variables."""
-    from services.common.members import member_service
     # We need a method in member_service or a direct DB call to seed local admins
     # For now, let's assume we use member_service.upsert for Telegram admins
     # and we need a LocalAdminService for local logins.
@@ -16,17 +17,16 @@ async def seed_initial_admin():
     
     if settings.INITIAL_ADMINS:
         for admin_str in settings.INITIAL_ADMINS.split(";"):
-            if ":" in admin_str: admins_to_seed.append(admin_str.strip())
+            if ":" in admin_str:
+                admins_to_seed.append(admin_str.strip())
     
     if not admins_to_seed and settings.INITIAL_ADMIN and ":" in settings.INITIAL_ADMIN:
         admins_to_seed.append(settings.INITIAL_ADMIN.strip())
         
-    if not admins_to_seed: return
+    if not admins_to_seed:
+        return
     
     logger.info(f"Seeding {len(admins_to_seed)} local admin(s)...")
-    from core.db import get_sessionmaker
-    from models.db_models import LocalAdmin
-    from sqlalchemy.dialects.postgresql import insert
     
     async with get_sessionmaker()() as session:
         for admin_str in admins_to_seed:

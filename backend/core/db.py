@@ -1,7 +1,7 @@
 import asyncio
 import logging
-import os
 import re
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -17,7 +17,8 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 _init_lock = asyncio.Lock()
 
 def _normalize_db_url(url: str) -> str:
-    if not url: return url
+    if not url:
+        return url
     url = url.strip().strip("'").strip('"')
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
@@ -30,7 +31,8 @@ def _normalize_db_url(url: str) -> str:
 async def init_db():
     global _engine, _sessionmaker
     async with _init_lock:
-        if _engine is not None: return
+        if _engine is not None:
+            return
         from core.config import settings
         url = _normalize_db_url(settings.DATABASE_URL)
         try:

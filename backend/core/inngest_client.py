@@ -1,5 +1,4 @@
 from inngest import Inngest
-from core.config import settings
 
 # Initialize Inngest client
 # The ID should be unique to your application

@@ -57,7 +57,8 @@ class Settings(BaseSettings):
     MINIAPP_URL: Optional[str] = None
     @property
     def admin_user_ids(self) -> set[int]:
-        if not self.ADMIN_USERS: return set()
+        if not self.ADMIN_USERS:
+            return set()
         return {int(x.strip()) for x in self.ADMIN_USERS.split(",") if x.strip().isdigit()}
 
     class Config:

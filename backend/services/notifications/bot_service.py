@@ -14,7 +14,8 @@ class BotService:
         self._session = None
 
     def init_bot(self):
-        if self.bot: return
+        if self.bot:
+            return
         
         session = AiohttpSession(timeout=40.0)
         session._connector_init = {"family": socket.AF_INET}

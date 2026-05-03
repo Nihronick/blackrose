@@ -1,64 +1,7 @@
-"""
-Тесты для format_guide_text и normalize_icon_syntax.
-
-Markdown-парсер написан вручную — это самое хрупкое место в коде.
-Тесты фиксируют контракт: что входит → что выходит.
-"""
-
-import os
-import sys
-import types
-import unittest.mock as mock
-
-# Stub модулей с зависимостями
-_db_stub = types.ModuleType("database")
-_db_stub.get_sessionmaker = mock.MagicMock()
-_db_stub.get_subscribers = mock.AsyncMock(return_value=[])
-_db_stub.add_comment = mock.AsyncMock()
-_db_stub.delete_comment = mock.AsyncMock()
-_db_stub.get_all_tags = mock.AsyncMock(return_value=[])
-_db_stub.get_categories_with_counts = mock.AsyncMock(return_value=[])
-_db_stub.get_category = mock.AsyncMock(return_value=None)
-_db_stub.get_comments = mock.AsyncMock(return_value=[])
-_db_stub.get_guide = mock.AsyncMock(return_value=None)
-_db_stub.get_guide_tags = mock.AsyncMock(return_value=[])
-_db_stub.get_guides_by_category = mock.AsyncMock(return_value=[])
-_db_stub.get_guides_by_tag = mock.AsyncMock(return_value=[])
-_db_stub.get_top_guides = mock.AsyncMock(return_value=[])
-_db_stub.get_user_subscriptions = mock.AsyncMock(return_value=[])
-_db_stub.increment_views = mock.AsyncMock(return_value=0)
-_db_stub.search_guides = mock.AsyncMock(return_value=[])
-_db_stub.subscribe = mock.AsyncMock()
-_db_stub.unsubscribe = mock.AsyncMock()
-_db_stub.get_local_admin = mock.AsyncMock(return_value=None)
-_db_stub.get_admin_member_ids = mock.AsyncMock(return_value=set())
-
-_aiohttp_stub = types.ModuleType("aiohttp")
-sys.modules.setdefault("database", _db_stub)
-sys.modules.setdefault("aiohttp", _aiohttp_stub)
-
-# Stub icons — возвращаем предсказуемый URL
-_icons_stub = types.ModuleType("icons")
-_icons_stub.ALL_ICONS = {
-    "HP": "https://cdn.example.com/hp.png",
-    "ATK": "https://cdn.example.com/atk.png",
-}
-_icons_stub._ICONS_LOWER = {"hp": "HP", "atk": "ATK"}
-_icons_stub.get_icon = lambda name: _icons_stub.ALL_ICONS.get(name, "")
-sys.modules["icons"] = _icons_stub
-
-os.environ.setdefault("BOT_TOKEN", "test:token")
-os.environ.setdefault("DATABASE_URL", "postgresql://test/test")
-os.environ.setdefault("ALLOWED_USERS", "")
-os.environ.setdefault("ADMIN_USERS", "")
-
-with mock.patch("asyncpg.create_pool"):
-    import main as app_main # type: ignore
-    import services.common.utils # type: ignore
-
+import pytest
+from services.common import utils
 
 # ── format_guide_text ──────────────────────────────────────────
-
 
 class TestFormatGuideText:
     def _fmt(self, text: str, guide_links: dict | None = None) -> str:

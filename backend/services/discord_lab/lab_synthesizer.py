@@ -3,7 +3,10 @@ import json
 import os
 import aiohttp
 from typing import List, Dict
+from core.config import settings
+from core.http import http_client
 from core.logging import get_logger
+from services.common import utils
 
 logger = get_logger("blackrose.services.discord_lab")
 
@@ -23,7 +26,6 @@ class DiscordGuideSynthesizer:
         self.glossary = self._load_glossary()
 
     def _load_glossary(self) -> Dict:
-        from core.config import settings
         path = settings.GLOSSARY_PATH
         if os.path.exists(path):
             try:
@@ -46,7 +48,8 @@ class DiscordGuideSynthesizer:
         return re.sub(discord_emoji_re, replace_emoji, text)
 
     def enrich_text(self, text: str) -> str:
-        if not self.glossary: return text
+        if not self.glossary:
+            return text
         # Use abbreviations and terminology from glossary
         abbrs = self.glossary.get("abbreviations", {})
         
@@ -89,9 +92,6 @@ class DiscordGuideSynthesizer:
         """
         Synthesizes Discord messages using Gemini AI for high-quality structuring.
         """
-        from core.config import settings
-        from core.http import http_client
-        
         if not settings.GEMINI_API_KEY:
             logger.info("GEMINI_API_KEY not found, falling back to manual synthesis")
             return self.synthesize(messages)

@@ -1,19 +1,21 @@
 import asyncio
 import logging
-import os
+import re
+import signal
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from sqlalchemy import select
 
 # Добавляем корневую директорию проекта в sys.path
 root_path = Path(__file__).parent.parent
 if str(root_path) not in sys.path:
     sys.path.append(str(root_path))
 
-from core.db import init_db, get_sessionmaker, close_pool
-from models.db_models import Guide, Category
-from sqlalchemy import select
-from services.storage.hf_storage import hf_api, HF_DATASET_REPO, HF_PATH, delete_files
+from core.db import close_pool, get_sessionmaker, init_db # noqa: E402
+from models.db_models import Category, Guide # noqa: E402
+from services.storage.hf_storage import HF_DATASET_REPO, HF_PATH, delete_files, hf_api # noqa: E402
 
 logger = logging.getLogger("blackrose.gc")
 
@@ -32,7 +34,6 @@ async def run_storage_gc():
     try:
         # 1. Собираем все файлы, на которые ссылается БД
         db_files = set()
-        import re
         
         # Регулярка для поиска URL-ов нашего хранилища
         # Ищем как в Markdown ![...](url), так и просто в тексте
@@ -44,12 +45,16 @@ async def run_storage_gc():
             guides_result = await session.execute(select(Guide))
             for g in guides_result.scalars():
                 # Проверяем иконку
-                if g.icon_url: db_files.add(g.icon_url)
+                if g.icon_url:
+                    db_files.add(g.icon_url)
                 
                 # Проверяем массивы
-                if g.photo: db_files.update(g.photo)
-                if g.video: db_files.update(g.video)
-                if g.document: db_files.update(g.document)
+                if g.photo:
+                    db_files.update(g.photo)
+                if g.video:
+                    db_files.update(g.video)
+                if g.document:
+                    db_files.update(g.document)
                 
                 # ВНИМАНИЕ: Парсим основной текст гайда!
                 if g.text:
@@ -65,13 +70,15 @@ async def run_storage_gc():
             # Категории
             cats_result = await session.execute(select(Category))
             for c in cats_result.scalars():
-                if c.icon_url: db_files.add(c.icon_url)
+                if c.icon_url:
+                    db_files.add(c.icon_url)
 
         # Нормализуем db_files: оставляем только относительные пути (от корня репозитория)
         # Это защитит нас от разницы в доменах/протоколах
         normalized_db_paths = set()
         for item in db_files:
-            if not isinstance(item, str): continue
+            if not isinstance(item, str):
+                continue
             
             # Если это полный URL
             if "resolve/main/" in item:
@@ -101,7 +108,8 @@ async def run_storage_gc():
             
             for f in repo_files_iter:
                 # Нам нужны только файлы
-                if f.type != "file": continue
+                if f.type != "file":
+                    continue
                 
                 # Проверяем "возраст" файла (если API отдает дату изменения)
                 if hasattr(f, 'last_commit') and f.last_commit:
@@ -154,7 +162,6 @@ async def run_storage_gc():
         await close_pool()
 
 async def main_loop():
-    import signal
     stop_event = asyncio.Event()
 
     def handle_exit():

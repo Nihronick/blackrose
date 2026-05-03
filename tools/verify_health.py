@@ -16,7 +16,7 @@ async def verify_health(url: str):
             # 2. Inngest Discovery
             resp = await client.get(f"{url}/api/inngest")
             if resp.status_code == 200:
-                print(f"✅ Inngest: OK (Discovered functions)")
+                print("✅ Inngest: OK (Discovered functions)")
             else:
                 print(f"❌ Inngest: Failed (Status {resp.status_code})")
                 
