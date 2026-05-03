@@ -84,4 +84,7 @@ class RedisCacheService:
             await self._redis.aclose()
             self._redis = None
 
+async def close_redis():
+    await cache_service.close()
+
 cache_service = RedisCacheService()

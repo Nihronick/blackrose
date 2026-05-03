@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     
     # Frontend/WebApp
     FRONTEND_URL: str = "http://localhost:5173"
+    MINIAPP_URL: Optional[str] = None
     @property
     def admin_user_ids(self) -> set[int]:
         if not self.ADMIN_USERS: return set()

@@ -10,7 +10,26 @@ from fastapi import UploadFile
 from PIL import Image, UnidentifiedImageError
 from core.config import settings
 
-logger = logging.getLogger("blackrose.services.storage")
+# Exports for compatibility with GC worker
+hf_api = HfApi(token=settings.HF_TOKEN)
+HF_DATASET_REPO = settings.HF_DATASET_REPO
+HF_PATH = "uploads"
+
+async def delete_files(paths: list[str]) -> int:
+    """Batch delete files from HF dataset."""
+    if not settings.HF_TOKEN or not HF_DATASET_REPO: return 0
+    count = 0
+    for path in paths:
+        try:
+            hf_api.delete_file(
+                path_in_repo=path,
+                repo_id=HF_DATASET_REPO,
+                repo_type="dataset"
+            )
+            count += 1
+        except Exception:
+            continue
+    return count
 
 class HFStorageService:
     def __init__(self):

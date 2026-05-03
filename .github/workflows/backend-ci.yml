@@ -37,4 +37,5 @@ jobs:
           JWT_SECRET: test_secret
           BOT_TOKEN: 123456:ABC-DEF
         run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
           pytest backend/tests/
