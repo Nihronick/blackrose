@@ -66,11 +66,11 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(bot.router)
 
 # Inngest Background Tasks
-import inngest.fastapi
+import inngest.fast_api
 from core.inngest_client import inngest_client
 from functions.discord_import import discord_import_guide
 
-inngest.fastapi.serve(
+inngest.fast_api.serve(
     app,
     inngest_client,
     [discord_import_guide],
