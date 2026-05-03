@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from core.auth import require_public_user, jwt_encode, require_admin, verify_telegram_login_widget, verify_telegram_init_data
 from core.config import settings
 from core.logging import get_logger
-from core.db import get_sessionmaker, is_db_ready
+from core.db import get_sessionmaker, is_db_ready, get_health as get_db_health
 from services.guides.service import guide_service, category_service
 from services.cache.redis_cache import cache_service
 from models.schemas import CommentIn, PreviewIn

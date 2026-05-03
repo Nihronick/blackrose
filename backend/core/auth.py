@@ -91,19 +91,45 @@ async def require_telegram_user(request: Request) -> dict:
 
     raise HTTPException(status_code=403, detail="Требуется авторизация")
 
+# Alias for public endpoints
+require_public_user = require_telegram_user
+
 async def require_admin(request: Request) -> dict:
     user = await require_telegram_user(request)
     if user.get("is_local_admin"): return user
     
-    # Lazy import to avoid circular dependencies
+    user_id = user.get("id", 0)
+    
+    # 1. Check Hardcoded IDs from .env
+    if user_id in settings.admin_user_ids:
+        return user
+        
+    # 2. Check Database Roles
     from services.common.members import member_service
-    is_admin = await member_service.is_admin(user.get("id", 0))
-    if is_admin or user.get("id", 0) in settings.admin_user_ids:
+    is_admin = await member_service.is_admin(user_id)
+    if is_admin:
         return user
     
-    if user.get("id", 0) not in admins:
-        raise HTTPException(status_code=403, detail="Нет прав администратора")
-    return user
+    raise HTTPException(status_code=403, detail="Нет прав администратора")
+
+def verify_telegram_login_widget(data: dict) -> bool:
+    """Verifies data from Telegram Login Widget."""
+    try:
+        check_hash = data.get("hash")
+        if not check_hash: return False
+        
+        check_list = []
+        for k, v in sorted(data.items()):
+            if k != "hash":
+                check_list.append(f"{k}={v}")
+        
+        check_string = "\n".join(check_list)
+        secret_key = hashlib.sha256(settings.BOT_TOKEN.encode()).digest()
+        expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+        
+        return hmac.compare_digest(expected, check_hash)
+    except Exception:
+        return False
 
 async def get_db():
     sessionmaker = get_sessionmaker()
