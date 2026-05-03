@@ -87,13 +87,7 @@ inngest.fast_api.serve(
     serve_path="/api/inngest"
 )
 
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "ok",
-        "version": settings.VERSION,
-        "database": await is_db_ready()
-    }
+# Health check is handled in api/public.py as /api/health
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

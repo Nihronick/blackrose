@@ -7,7 +7,7 @@ async def verify_health(url: str):
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             # 1. API Health
-            resp = await client.get(f"{url}/health")
+            resp = await client.get(f"{url}/api/health")
             if resp.status_code == 200:
                 print(f"✅ API Health: OK ({resp.json()})")
             else:
