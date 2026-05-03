@@ -446,7 +446,8 @@ These mistakes have already been made. **Do NOT repeat them.**
 | 15 | Using `backend.` prefix in imports | Use absolute imports relative to `/app` (e.g., `from api import ...`) |
 | 16 | Missing `__init__.py` in packages | Always include `__init__.py` in all backend subdirectories |
 | 17 | `import inngest.fastapi` | Correct import is `import inngest.fast_api` (with underscore) |
-| 18 | Forgetting `MINIAPP_URL` in Settings | Ensure all Telegram-related env vars are present in `Settings` class |
+| 18 | `api_path` in Inngest `serve` | Use `serve_path` instead of `api_path` for Inngest FastAPI integration |
+| 19 | Forgetting `MINIAPP_URL` in Settings | Ensure all Telegram-related env vars are present in `Settings` class |
 
 ---
 

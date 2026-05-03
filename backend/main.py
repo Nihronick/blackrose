@@ -74,7 +74,7 @@ inngest.fast_api.serve(
     app,
     inngest_client,
     [discord_import_guide],
-    api_path="/api/inngest"
+    serve_path="/api/inngest"
 )
 
 @app.get("/health")
