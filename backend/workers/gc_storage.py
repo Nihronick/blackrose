@@ -153,8 +153,8 @@ async def run_storage_gc():
     finally:
         await close_pool()
 
+async def main_loop():
     import signal
-
     stop_event = asyncio.Event()
 
     def handle_exit():
@@ -166,23 +166,20 @@ async def run_storage_gc():
         try:
             loop.add_signal_handler(sig, handle_exit)
         except NotImplementedError:
-            # Signal handling not supported on Windows
             pass
 
-    async def main_loop():
-        logger.info("GC Worker started")
-        while not stop_event.is_set():
-            await run_storage_gc()
-            logger.info("Next GC run in 24 hours...")
-            try:
-                # Wait for 24 hours OR until stop_event is set
-                await asyncio.wait_for(stop_event.wait(), timeout=24 * 3600)
-            except asyncio.TimeoutError:
-                # Normal timeout, continue to next run
-                continue
-        
-        logger.info("GC Worker stopped gracefully")
-            
+    logger.info("GC Worker started")
+    while not stop_event.is_set():
+        await run_storage_gc()
+        logger.info("Next GC run in 24 hours...")
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=24 * 3600)
+        except asyncio.TimeoutError:
+            continue
+    
+    logger.info("GC Worker stopped gracefully")
+
+if __name__ == "__main__":
     try:
         asyncio.run(main_loop())
     except KeyboardInterrupt:

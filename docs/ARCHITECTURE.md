@@ -31,24 +31,25 @@ sequenceDiagram
 | **История поиска** | `useSearchHistory.ts` | (Клиентская часть / CloudStorage) | - |
 | **Гайды и Контент** | `GuideView.tsx` | `public.py` | `guides`, `guide_tags` |
 | **Управление Медиа** | `ExportImport.tsx` | `admin.py` | (Hugging Face API) |
-| **Авторизация** | `AdminLoginModal.tsx` | `dependencies.py` | `local_admins`, `members` |
+| **Авторизация** | `AdminLoginModal.tsx` | `core/auth.py` | `local_admins`, `members` |
 
 ---
 
-### ⚠️ Известные технические ограничения (Windows)
+### 🏛️ Правила Разработки (MANDATORY)
 
-- **Ограничения песочницы**: Прямые команды удаления (`run_command`) заблокированы на Windows в текущей среде агента.
-- **Ручная работа**: Удаление файлов и установка зависимостей (`npm install`) должны выполняться пользователем вручную.
-- **"Мягкое" удаление**: Агент очищает содержимое файлов вместо их физического удаления.
+1.  **Flat Imports**: Бэкенд использует плоскую структуру. Все импорты должны идти от корня `/app`. **Запрещено** использовать префикс `backend.` (например, `from api import ...` вместо `from backend.api import ...`).
+2.  **Package Markers**: Каждая подпапка в `backend/` должна содержать `__init__.py`. Это критично для корректной работы Docker и CI.
+3.  **Inngest SDK**: При интеграции с FastAPI используйте `import inngest.fast_api` (с подчеркиванием).
 
 ## 📦 Архитектура потоков данных
 
 1.  **Запрос (Request)**: React-приложение использует `TanStack Query` для асинхронных вызовов к FastAPI.
-2.  **Обработка (Logic)**: Бэкенд проверяет JWT/Telegram сессию в `dependencies.py`.
+2.  **Обработка (Logic)**: Бэкенд проверяет JWT/Telegram сессию в `core/auth.py`.
 3.  **Данные (Storage)**:
-    *   **SQL**: PostgreSQL для гайдов, комментариев и истории.
-    *   **Knowledge**: `backend/core/glossary.json` для AI-синтеза.
-    *   **Media**: Discord CDN + Hugging Face Datasets.
+    *   **SQL**: PostgreSQL (Neon) для гайдов, комментариев и истории.
+    *   **Knowledge**: `core/glossary.json` для AI-синтеза.
+    *   **Media**: Hugging Face Datasets + `imgproxy` для оптимизации.
+    *   **Persistence**: `GitSyncService` автоматически бэкапит контент базы в `.md` файлы на GitHub.
 4.  **Наблюдаемость (Observability)**:
-    *   **Logs**: `structlog` + `RotatingFileHandler` (запись в `logs/app.log`).
-    *   **Jobs**: Inngest Cloud для мониторинга фоновых процессов.
+    *   **Logs**: `structlog` с ротацией логов.
+    *   **Jobs**: Inngest для управления сложными фоновыми задачами.

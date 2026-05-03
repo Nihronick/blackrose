@@ -179,9 +179,11 @@ backend/
 ├── services/            — Business Logic (guides/, discord_lab/, storage/)
 ├── functions/           — Background Workflows (Inngest tasks)
 ├── bot/                 — aiogram 3.x Telegram Bot logic
-├── trash/               — Deprecated files
-└── Dockerfile           — Development & Production Container
+├── workers/             — Standalone worker scripts (notify.py, gc_storage.py)
+└── Dockerfile           — Production Container (Flat Structure)
 ```
+> [!IMPORTANT]
+> **Package Markers**: All directories in `backend/` MUST contain an `__init__.py` file for correct import resolution in CI and Docker environments.
 </details>
 
 <details>
@@ -440,8 +442,11 @@ These mistakes have already been made. **Do NOT repeat them.**
 | 10 | Leaving heavy video compression on free-tier backend | Do not process heavy media on the API server. Use direct upload or offload. |
 | 11 | Using `React.` namespace (Vite 6/React 18 build errors) | Always use named imports (`{ FC, useState }`) to prevent ReferenceErrors in production builds. |
 | 12 | Referencing non-existent local fonts in CSS | Use Google Fonts (Outfit) via CDN in `index.html`. Avoid local `@font-face` without files. |
-| 13 | Using `SELECT *` in production code | Explicitly specify columns to avoid memory overhead and accidental data leakage. |
 | 14 | Missing indexes on filtered columns | Always index columns used in `WHERE`, `JOIN`, or `ORDER BY`. |
+| 15 | Using `backend.` prefix in imports | Use absolute imports relative to `/app` (e.g., `from api import ...`) |
+| 16 | Missing `__init__.py` in packages | Always include `__init__.py` in all backend subdirectories |
+| 17 | `import inngest.fastapi` | Correct import is `import inngest.fast_api` (with underscore) |
+| 18 | Forgetting `MINIAPP_URL` in Settings | Ensure all Telegram-related env vars are present in `Settings` class |
 
 ---
 

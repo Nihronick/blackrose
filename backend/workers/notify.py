@@ -16,7 +16,7 @@ async def send_new_guide_notifications(
     guide_title: str,
     category_key: str,
 ) -> dict:
-    from services.common.utils import _telegram_send_new_guide_notifications
+    from services.notifications.telegram_service import _telegram_send_new_guide_notifications
     logger.info(f"[worker] notify start: guide={guide_key} category={category_key}")
     sent, total = await _telegram_send_new_guide_notifications(
         guide_key, guide_title, category_key

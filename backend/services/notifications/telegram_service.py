@@ -34,4 +34,26 @@ class TelegramService:
                     logger.debug(f"Failed to notify {uid}: {e}")
         return sent
 
+
+async def _telegram_send_new_guide_notifications(guide_key: str, guide_title: str, category_key: str):
+    """
+    Helper function for background worker to notify all active members.
+    """
+    from services.common.members import MemberService
+    from core.db import get_sessionmaker
+    from models.db_models import Member
+    from sqlalchemy import select
+    
+    # Get all active user IDs
+    user_ids = []
+    async with get_sessionmaker()() as session:
+        res = await session.execute(select(Member.user_id).where(Member.is_active == True))
+        user_ids = [uid for uid in res.scalars()]
+    
+    if not user_ids:
+        return 0, 0
+        
+    sent = await telegram_service.notify_new_guide(guide_key, guide_title, category_key, user_ids)
+    return sent, len(user_ids)
+
 telegram_service = TelegramService()
