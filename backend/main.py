@@ -31,7 +31,16 @@ async def lifespan(app: FastAPI):
         if webhook_base:
             full_url = f"{webhook_base.rstrip('/')}{settings.WEBHOOK_PATH}"
             logger.info(f"Setting webhook: {full_url}")
-            await bot_service.bot.set_webhook(url=full_url, secret_token=settings.WEBHOOK_SECRET or None, drop_pending_updates=True)
+            try:
+                await bot_service.bot.set_webhook(
+                    url=full_url, 
+                    secret_token=settings.WEBHOOK_SECRET or None, 
+                    drop_pending_updates=True,
+                    request_timeout=30.0 # Explicit timeout
+                )
+                logger.info("Bot webhook set successfully.")
+            except Exception as e:
+                logger.error("Failed to set bot webhook, continuing without bot.", error=str(e))
     
     # Seeding
     await seed_initial_admin()
@@ -69,11 +78,12 @@ app.include_router(bot.router)
 import inngest.fast_api
 from core.inngest_client import inngest_client
 from functions.discord_import import discord_import_guide
+from functions.test_job import test_job
 
 inngest.fast_api.serve(
     app,
     inngest_client,
-    [discord_import_guide],
+    [discord_import_guide, test_job],
     serve_path="/api/inngest"
 )
 
