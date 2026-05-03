@@ -5,5 +5,6 @@ from core.config import settings
 # The ID should be unique to your application
 inngest_client = Inngest(
     app_id="blackrose",
-    logger=None, # It will use the default logger
+    is_production=False, # Disable signature check for initial setup
+    logger=None,
 )
