@@ -36,16 +36,23 @@ async def lifespan(app: FastAPI):
         if webhook_base:
             full_url = f"{webhook_base.rstrip('/')}{settings.WEBHOOK_PATH}"
             logger.info(f"Setting webhook: {full_url}")
-            try:
-                await bot_service.bot.set_webhook(
-                    url=full_url, 
-                    secret_token=settings.WEBHOOK_SECRET or None, 
-                    drop_pending_updates=True,
-                    request_timeout=30.0 # Explicit timeout
-                )
-                logger.info("Bot webhook set successfully.")
-            except Exception as e:
-                logger.error("Failed to set bot webhook, continuing without bot.", error=str(e))
+            # Retry webhook setup 3 times
+            for attempt in range(1, 4):
+                try:
+                    await bot_service.bot.set_webhook(
+                        url=full_url, 
+                        secret_token=settings.WEBHOOK_SECRET or None, 
+                        drop_pending_updates=True,
+                        request_timeout=60.0
+                    )
+                    logger.info(f"Bot webhook set successfully on attempt {attempt}.")
+                    break
+                except Exception as e:
+                    if attempt == 3:
+                        logger.error("Failed to set bot webhook after 3 attempts.", error=str(e))
+                    else:
+                        logger.warning(f"Webhook setup attempt {attempt} failed, retrying in 5s...", error=str(e))
+                        await asyncio.sleep(5)
     
     # Seeding
     await seed_initial_admin()

@@ -41,11 +41,7 @@ class DiscordGuideSynthesizer:
         return text.strip()
 
     def map_emojis(self, text: str) -> str:
-        discord_emoji_re = r'<:(.*?):(\d+)>'
-        def replace_emoji(match):
-            name, eid = match.groups()
-            return f"{{{{icon:{name}}}}}"
-        return re.sub(discord_emoji_re, replace_emoji, text)
+        return utils.normalize_icon_syntax(text)
 
     def enrich_text(self, text: str) -> str:
         if not self.glossary:
