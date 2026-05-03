@@ -1,8 +1,8 @@
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
-from middleware.admin import AdminMiddleware
-from lib.api_client import api_client
+from bot.middleware.admin import AdminMiddleware
+from bot.lib.api_client import api_client
 
 admin_router = Router()
 # Подключаем middleware, чтобы роутер пропускал только админов

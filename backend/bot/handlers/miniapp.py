@@ -18,7 +18,7 @@ from aiogram.types import (
     ReplyKeyboardRemove,
     WebAppInfo,
 )
-from config import ADMIN_USERS, API_URL, MINIAPP_URL
+from bot.config import ADMIN_USERS, API_URL, MINIAPP_URL
 from loguru import logger
 
 miniapp_router = Router()
@@ -46,7 +46,7 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
         )
     ]])
 
-from lib.api_client import api_client
+from bot.lib.api_client import api_client
 
 
 def guide_url(key: str) -> str:

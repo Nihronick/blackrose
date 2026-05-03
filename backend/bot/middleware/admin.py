@@ -2,7 +2,7 @@ from typing import Callable, Dict, Any, Awaitable
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 from loguru import logger
-from config import ADMIN_USERS
+from bot.config import ADMIN_USERS
 
 class AdminMiddleware(BaseMiddleware):
     async def __call__(

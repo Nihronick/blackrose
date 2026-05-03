@@ -17,10 +17,10 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.session.aiohttp import AiohttpSession
 from loguru import logger
 
-from config import API_TOKEN, WEBHOOK_PATH, WEBHOOK_SECRET, WEBHOOK_URL
-from handlers.errors import router as errors_router
-from handlers.miniapp import miniapp_router
-from handlers.admin import admin_router
+from bot.config import API_TOKEN, WEBHOOK_PATH, WEBHOOK_SECRET, WEBHOOK_URL
+from bot.handlers.errors import router as errors_router
+from bot.handlers.miniapp import miniapp_router
+from bot.handlers.admin import admin_router
 
 # ── Логи ─────────────────────────────────────────────────────
 Path("logs").mkdir(exist_ok=True)

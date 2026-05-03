@@ -1,7 +1,7 @@
 import urllib.parse
 import aiohttp
 from loguru import logger
-from config import API_URL, API_TOKEN
+from bot.config import API_URL, API_TOKEN
 
 class BotApiClient:
     def __init__(self, base_url: str = API_URL):
