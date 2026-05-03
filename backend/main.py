@@ -1,319 +1,105 @@
-"""
-BlackRose Mini App API v3.3
-"""
-
 import os
-import sys
-import socket
 from contextlib import asynccontextmanager
-from pathlib import Path
-
-# Add bot directory to sys.path to allow relative imports within the bot package
-BOT_DIR = Path(__file__).parent / "bot"
-sys.path.append(str(BOT_DIR))
-
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from slowapi.errors import RateLimitExceeded
 
-from aiogram import Bot, Dispatcher, types
-from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.client.session.aiohttp import AiohttpSession
-
-# Bot configuration and handlers
-try:
-    from bot.config import API_TOKEN, WEBHOOK_PATH, WEBHOOK_SECRET, WEBHOOK_URL
-    from bot.handlers import errors_router, miniapp_router
-    from bot.handlers.admin import admin_router as bot_admin_router
-except ImportError:
-    # Fallback for different path structures
-    from config import API_TOKEN, WEBHOOK_PATH, WEBHOOK_SECRET, WEBHOOK_URL
-    from handlers import errors_router, miniapp_router
-    from handlers.admin import admin_router as bot_admin_router
-
-from cache import close_redis
-from database import close_pool, init_db
-from dependencies import (
-    ADMIN_USERS,
-    BOT_TOKEN,
-    INITIAL_ADMIN,
-    hash_password,
-)
-from limiter import limiter
-from logging_config import RequestContextMiddleware, configure_logging, get_logger
-from models import NotifyIn
-from routers import admin_router, public_router
-from slowapi import _rate_limit_exceeded_handler
-from utils import _telegram_send_new_guide_notifications
-
-configure_logging()
-logger = get_logger("blackrose")
-
-# === Bot Initialization ===
-session = AiohttpSession(timeout=40.0)
-session._connector_init = {"family": socket.AF_INET}
-bot = Bot(token=BOT_TOKEN or API_TOKEN, session=session)
-dp = Dispatcher(storage=MemoryStorage())
-
-# Register bot routers
-dp.include_router(errors_router)
-dp.include_router(miniapp_router)
-dp.include_router(bot_admin_router)
-
-# === Configuration / Setup Helpers ===
-
-def setup_honeybadger(app: FastAPI) -> None:
-    """Configures Honeybadger error reporting if API key is present."""
-    hb_api_key = os.getenv("HONEYBADGER_API_KEY", "").strip()
-    if not hb_api_key:
-        return
-
-    try:
-        from honeybadger import honeybadger
-        from honeybadger.contrib.asgi import ASGIHoneybadger
-
-        honeybadger.configure(
-            api_key=hb_api_key,
-            environment="production",
-            force_sync=False,
-        )
-        app.add_middleware(ASGIHoneybadger)
-        logger.info("Honeybadger integration enabled.")
-    except ImportError:
-        logger.warning("Honeybadger is not installed. Error reporting disabled.")
+from core.config import settings
+from core.logging import configure_logging, RequestContextMiddleware, get_logger
+from core.db import init_db, is_db_ready
+from core.middleware import setup_cors, add_security_headers, setup_honeybadger
+from api import admin, public, bot
+from services.notifications.bot_service import bot_service
+from core.http import http_client
+from services.common.setup import seed_initial_admin
 
 
-def setup_cors(app: FastAPI) -> None:
-    """Configures CORS middleware with default and environment-specific origins."""
-    frontend_url = os.getenv("FRONTEND_URL", "").strip()
-    cors_origins = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "https://nihronick.github.io",
-    ]
-    
-    if frontend_url:
-        from urllib.parse import urlparse
-        for origin_entry in frontend_url.split(","):
-            entry = origin_entry.strip()
-            if not entry:
-                continue
-            
-            # Parse and extract base origin (proto://host[:port])
-            # CORS requires base origin, not full path
-            parsed = urlparse(entry)
-            if parsed.scheme and parsed.netloc:
-                base_origin = f"{parsed.scheme}://{parsed.netloc}"
-                if base_origin not in cors_origins:
-                    cors_origins.append(base_origin)
-                    logger.info(f"Added CORS origin: {base_origin}")
-
-    logger.info(f"Configured CORS origins: {cors_origins}")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=cors_origins,
-        allow_origin_regex=r"https://(blackrosesl\.me|nihronick\.github\.io)|https://.*\.app\.github\.dev",
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=[
-            "Content-Type",
-            "Authorization",
-            "X-Telegram-Init-Data",
-            "X-Bot-Token",
-            "Accept",
-            "Origin",
-        ],
-        expose_headers=["X-Request-ID"],
-    )
-
-
-async def seed_initial_admin() -> None:
-    """Seeds initial admin users from environment variables if specified.
-    
-    Supports:
-    - INITIAL_ADMIN=username:password (single admin, legacy)
-    - INITIAL_ADMINS=admin1:pass1;admin2:pass2;admin3:pass3 (multiple admins)
-    """
-    from database import upsert_local_admin
-
-    admins_to_seed = []
-    
-    # Support new multi-admin format
-    initial_admins = os.getenv("INITIAL_ADMINS", "").strip()
-    if initial_admins:
-        for admin_str in initial_admins.split(";"):
-            admin_str = admin_str.strip()
-            if ":" in admin_str:
-                admins_to_seed.append(admin_str)
-    
-    # Fallback to legacy INITIAL_ADMIN for backwards compatibility
-    if not admins_to_seed and INITIAL_ADMIN and ":" in INITIAL_ADMIN:
-        admins_to_seed.append(INITIAL_ADMIN)
-    
-    if not admins_to_seed:
-        return
-    
-    logger.info("Seeding %d local admin(s)...", len(admins_to_seed))
-    try:
-        for admin_str in admins_to_seed:
-            username, password = admin_str.split(":", 1)
-            username = username.strip()
-            password = password.strip()
-            await upsert_local_admin(username, hash_password(password))
-            logger.info("Local admin '%s' seeded successfully.", username)
-    except Exception as e:
-        logger.error("Failed to seed admins: %s", e, exc_info=True)
-
-
-# === Lifespan & Application Definition ===
+logger = get_logger("blackrose.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Cleanup stale temp files
-    try:
-        import shutil
-        import tempfile
-        temp_dir = tempfile.gettempdir()
-        logger.info(f"Checking for stale BlackRose temp files in {temp_dir}")
-        for item in os.listdir(temp_dir):
-            if item.startswith("blackrose_") or "_comp.mp4" in item:
-                path = os.path.join(temp_dir, item)
-                try:
-                    if os.path.isfile(path): os.remove(path)
-                    elif os.path.isdir(path): shutil.rmtree(path)
-                except Exception: pass
-    except Exception as e:
-        logger.error(f"Startup cleanup failed: {e}")
-
+    # Startup
+    configure_logging()
+    logger.info("Initializing BlackRose System", version=settings.VERSION, env=settings.ENVIRONMENT)
+    
+    # DB Init
     await init_db()
     
-    # === Bot Startup ===
-    # Priority: WEBHOOK_URL env > SPACE_HOST env > bot/config.py
-    webhook_base = os.getenv("WEBHOOK_URL")
-    if not webhook_base:
-        space_host = os.getenv("SPACE_HOST")
-        if space_host:
-            webhook_base = f"https://{space_host}"
-        else:
-            webhook_base = WEBHOOK_URL # Fallback to bot/config.py value
-
-    if webhook_base:
-        webhook_full_url = f"{webhook_base.rstrip('/')}{WEBHOOK_PATH}"
-        logger.info(f"Setting bot webhook to: {webhook_full_url}")
-        try:
-            await bot.set_webhook(
-                url=webhook_full_url,
-                secret_token=WEBHOOK_SECRET or None,
-                drop_pending_updates=True,
-                allowed_updates=dp.resolve_used_update_types()
-            )
-            logger.info("✅ Bot webhook set successfully.")
-        except Exception as e:
-            logger.error(f"❌ Failed to set bot webhook: {e}")
-    else:
-        logger.warning("⚠️ WEBHOOK_URL/SPACE_HOST not set. Bot will NOT receive updates via webhook.")
-
-    logger.info("=" * 50)
-    logger.info(f"BlackRose Mini App API v{app.version}")
-    logger.info(f"  Admins configured: {len(ADMIN_USERS)}")
+    # Bot Init
+    bot_service.init_bot()
+    if bot_service.bot:
+        webhook_base = settings.WEBHOOK_URL or (f"https://{os.getenv('SPACE_HOST')}" if os.getenv("SPACE_HOST") else "")
+        if webhook_base:
+            full_url = f"{webhook_base.rstrip('/')}{settings.WEBHOOK_PATH}"
+            logger.info(f"Setting webhook: {full_url}")
+            await bot_service.bot.set_webhook(url=full_url, secret_token=settings.WEBHOOK_SECRET or None, drop_pending_updates=True)
     
+    # Seeding
     await seed_initial_admin()
     
-    logger.info("=" * 50)
     yield
+    
     # Shutdown
-    logger.info("Shutting down...")
-    await bot.session.close()
-    await dp.storage.close()
+    logger.info("Shutting down system...")
+    await bot_service.close()
+    from services.cache.redis_cache import cache_service
+    await cache_service.close()
+    from core.db import close_pool
     await close_pool()
-    await close_redis()
+    await http_client.close()
 
 
 app = FastAPI(
-    title="BlackRose API",
-    description="Backend API for Slayer Legend Community Knowledge Base. Handles guide management, hybrid authentication, and Discord synchronization.",
-    version="3.3.0",
-    lifespan=lifespan,
-    contact={
-        "name": "Nihronick",
-        "url": "https://github.com/Nihronick",
-    },
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    lifespan=lifespan
 )
 
-# Setup integrations
+# Integrations & Middleware
 setup_honeybadger(app)
+setup_cors(app)
+app.add_middleware(RequestContextMiddleware)
+app.middleware("http")(add_security_headers)
+
+# Routers
+app.include_router(public.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+app.include_router(bot.router)
+
+# Inngest Background Tasks
+import inngest.fastapi
+from core.inngest_client import inngest_client
+from functions.discord_import import discord_import_guide
+
+inngest.fastapi.serve(
+    app,
+    inngest_client,
+    [discord_import_guide],
+    api_path="/api/inngest"
+)
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "version": settings.VERSION,
+        "database": await is_db_ready()
+    }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    from alerts import notify_error
-    from logging_config import get_logger
-    
-    logger = get_logger("blackrose.global")
-    request_id = getattr(request.state, "request_id", "unknown")
-    
-    error_msg = f"Unhandled exception: {exc}\nPath: {request.url.path}\nRequest ID: {request_id}"
-    logger.error("unhandled_error", error=str(exc), path=request.url.path, request_id=request_id)
-    
-    # Notify admins
-    notify_error(error_msg)
-    
+    # In production, notify via alerts if implemented
+    logger.error("unhandled_exception", error=str(exc), path=request.url.path, exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Внутренняя ошибка сервера. Админы уже уведомлены.", "request_id": request_id},
+        content={"detail": "Internal Server Error", "request_id": getattr(request.state, "request_id", "unknown")}
     )
 
-# Rate limiting
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# Middlewares (added in reverse order of execution)
-setup_cors(app)
-app.add_middleware(RequestContextMiddleware)
-
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    return response
-
-# Routers
-app.include_router(public_router, prefix="/api", tags=["public"])
-app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
-
-
-@app.post(WEBHOOK_PATH, include_in_schema=False)
-async def bot_webhook(request: Request):
-    """Эндпоинт для приема вебхуков от Telegram."""
-    if WEBHOOK_SECRET:
-        secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-        if secret != WEBHOOK_SECRET:
-            logger.warning("Unauthorized webhook request (invalid secret token)")
-            raise HTTPException(status_code=401, detail="Unauthorized")
-
+# Setup uvloop for performance on Linux
+if os.name != "nt":
     try:
-        update_data = await request.json()
-        update = types.Update(**update_data)
-        await dp.feed_update(bot, update)
-        return {"status": "ok"}
-    except Exception as e:
-        logger.error(f"Error processing bot update: {e}", exc_info=True)
-        # Возвращаем 200 даже при ошибке, чтобы Telegram не спамил ретраями
-        return {"status": "error", "detail": str(e)}
+        import uvloop
+        uvloop.install()
+        logger.info("uvloop installed")
+    except ImportError:
+        pass
 
-
-@app.post("/api/internal/notify")
-async def notify_subscribers(body: NotifyIn):
-    """Внутренний вызов: рассылка уведомлений при создании гайда."""
-    if body.bot_token != BOT_TOKEN:
-        raise HTTPException(status_code=403, detail="Forbidden")
-        
-    sent, total = await _telegram_send_new_guide_notifications(
-        body.guide_key, body.guide_title, body.category_key
-    )
-    
-    return {"success": True, "sent": sent, "total": total}

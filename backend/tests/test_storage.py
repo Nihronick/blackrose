@@ -43,7 +43,7 @@ os.environ.setdefault("HF_TOKEN", "hf_test_token_abcdef1234567890")
 os.environ.setdefault("HF_DATASET_REPO", "TestUser/test-dataset")
 
 with mock.patch("asyncpg.create_pool"):
-    import storage
+    import services.storage.hf_storage
 
 
 # ── _public_media_url ──────────────────────────────────────────

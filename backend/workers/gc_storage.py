@@ -10,10 +10,10 @@ root_path = Path(__file__).parent.parent
 if str(root_path) not in sys.path:
     sys.path.append(str(root_path))
 
-from database import init_db, get_sessionmaker, close_pool
-from db_models import Guide, Category
+from core.db import init_db, get_sessionmaker, close_pool
+from models.db_models import Guide, Category
 from sqlalchemy import select
-from storage import hf_api, HF_DATASET_REPO, HF_PATH, delete_files
+from services.storage.hf_storage import hf_api, HF_DATASET_REPO, HF_PATH, delete_files
 
 logger = logging.getLogger("blackrose.gc")
 
@@ -153,15 +153,37 @@ async def run_storage_gc():
     finally:
         await close_pool()
 
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    )
+    import signal
+
+    stop_event = asyncio.Event()
+
+    def handle_exit():
+        logger.info("Received stop signal, shutting down...")
+        stop_event.set()
+
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(sig, handle_exit)
+        except NotImplementedError:
+            # Signal handling not supported on Windows
+            pass
+
     async def main_loop():
-        while True:
+        logger.info("GC Worker started")
+        while not stop_event.is_set():
             await run_storage_gc()
             logger.info("Next GC run in 24 hours...")
-            await asyncio.sleep(24 * 3600)
+            try:
+                # Wait for 24 hours OR until stop_event is set
+                await asyncio.wait_for(stop_event.wait(), timeout=24 * 3600)
+            except asyncio.TimeoutError:
+                # Normal timeout, continue to next run
+                continue
+        
+        logger.info("GC Worker stopped gracefully")
             
-    asyncio.run(main_loop())
+    try:
+        asyncio.run(main_loop())
+    except KeyboardInterrupt:
+        pass

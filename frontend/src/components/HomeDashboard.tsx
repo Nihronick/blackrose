@@ -18,13 +18,21 @@ import { useAppStore } from '@/store'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { FC, useRef } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, apiGetCategories } from '@/lib/api'
+
+interface Category {
+  key: string
+  title: string
+  icon: string
+  guides_count: number
+}
 
 interface HomeDashboardProps {
   onSelectGuide: (key: string, title?: string, icon?: string) => void
+  onSelectCategory: (category: Category) => void
 }
 
-export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide }) => {
+export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectCategory }) => {
   const language = useAppStore((state) => state.language)
   const userName = window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Слеер'
 
@@ -42,6 +50,11 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide }) => {
   const { data: recentCommentsData, isLoading: commentsLoading } = useQuery({
     queryKey: ['recent-comments'],
     queryFn: apiRecentComments,
+  })
+
+  const { data: categoriesData, isLoading: catsLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: apiGetCategories,
   })
 
   const topGuides = (topGuidesData?.results || []).filter((g) =>
@@ -91,6 +104,41 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide }) => {
                 : "Сегодня отличный день, чтобы изучить что-то новое."}
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* 1.5. Featured Categories (Horizontal) */}
+      <section className="flex flex-col gap-4">
+        <div className="px-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-amber-400" />
+            <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70">
+              Категории
+            </h3>
+          </div>
+        </div>
+
+        <div className="flex gap-3 overflow-x-auto px-5 scrollbar-none pb-2">
+          {catsLoading
+            ? [...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-10 w-24 shrink-0 rounded-full bg-muted/40" />
+              ))
+            : (categoriesData?.categories || []).map((c: Category) => (
+                <motion.button
+                  key={c.key}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    haptic.light()
+                    onSelectCategory(c)
+                  }}
+                  className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-border/10 bg-muted/20 px-4 transition-all hover:bg-muted/30 hover:border-primary/20"
+                >
+                  <span className="text-sm">{c.icon || '📁'}</span>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-foreground/80 whitespace-nowrap">
+                    {c.title}
+                  </span>
+                </motion.button>
+              ))}
         </div>
       </section>
 

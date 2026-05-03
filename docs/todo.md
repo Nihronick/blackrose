@@ -7,6 +7,11 @@
 - [x] Simplify Backend Storage (Remove CPU-heavy video compression).
 - [x] Optimize Frontend (Remove complex animations and universal transitions).
 - [x] **Stabilize TMA Navigation** (Fixed Back button, double header, and redundant FAB).
+- [x] **Premium UI Evolution**: Staggered animations, interactive spoilers, and lightbox.
+- [x] **Architecture Hardening**: Named imports refactor and environment-aware modules.
+- [x] **SEO & Discovery**: Implement `/api/sitemap.xml` for discovery.
+- [x] **Search UX**: Local search history persistence.
+- [x] **Featured Content**: Horizontal category scroll on HomeDashboard.
 - [x] **Premium Video Player** (Custom UI, PiP, Looping, Hydration).
 - [x] **Fix Frontend Rendering** (Height calculation & Card import error).
 
@@ -15,12 +20,13 @@
 - [x] Add `/health` endpoint to FastAPI for monitoring.
 - [x] Implement automated icon downloader for Discord Lab.
 - [x] **Consolidate Processes**: Merged Telegram Bot into FastAPI (Webhooks) for HF stability.
+- [x] **Code Cleanup & Refactoring**: Removed 50+ dead files and scripts, implemented service-layer deletion, and synchronized icon logic.
 
 ## 🛡️ Reliability & Maintenance (Based on RISKS.md)
-- [ ] **Load Testing**: Perform stress tests (k6/locust) for 200+ concurrent users on HF Spaces.
-- [ ] **Backup Verification**: Verify Neon.tech automated backup frequency and perform a manual SQL dump.
+- [ ] **Load Testing**: Execute k6/locust suite for 200+ concurrent users.
+- [ ] **Redis Migration**: Move from local/internal Redis to Upstash for persistence.
+- [ ] **Backup Automation**: Configure scheduled Neon.tech logical backups.
 - [ ] **Media Offloading**: Research Cloudflare R2 / Backblaze B2 as a backup for HF Datasets if latency increases.
-- [ ] **Redis Migration**: Move from in-memory cache to external Redis (Upstash) to survive HF Space restarts.
 - [ ] **Logging Audit**: Review structured logs for `X-Forwarded-For` parsing accuracy after 1 week of production.
 - [x] Implement **Home Dashboard** (Hero section, Horizontal scrolls, Activity feed).
 - [x] Add **Subscription UI** (Notifications toggle on category cards).

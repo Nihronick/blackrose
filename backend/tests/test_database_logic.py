@@ -39,7 +39,7 @@ os.environ.setdefault("BOT_TOKEN", "test:token")
 os.environ.setdefault("DATABASE_URL", "postgresql://test/test")
 os.environ.setdefault("ADMIN_USERS", "")
 
-from database import _normalize_db_url, _strip_html, _strip_markdown
+from core.db import _normalize_db_url, _strip_html, _strip_markdown
 
 
 # ── _normalize_db_url ──────────────────────────────────────────
@@ -163,7 +163,7 @@ class TestGuideToDictContract:
 
     def test_required_fields(self):
         """Dict должен содержать все поля, которые фронтенд ожидает."""
-        from database import _guide_to_dict
+        from core.db import _guide_to_dict
 
         # Создаём mock объект Guide
         guide = mock.MagicMock()
@@ -208,7 +208,7 @@ class TestGuideToDictContract:
 
     def test_none_media_becomes_empty_list(self):
         """photo=None, video=None, document=None → пустые списки."""
-        from database import _guide_to_dict
+        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"
@@ -232,7 +232,7 @@ class TestGuideToDictContract:
 
     def test_preview_strips_markdown(self):
         """Preview не должен содержать markdown-разметку."""
-        from database import _guide_to_dict
+        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"
@@ -255,7 +255,7 @@ class TestGuideToDictContract:
 
     def test_tags_from_relationship(self):
         """Теги должны извлекаться из relationship."""
-        from database import _guide_to_dict
+        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"
@@ -281,7 +281,7 @@ class TestGuideToDictContract:
 
     def test_tags_lazy_load_failure_returns_empty(self):
         """Если tags relationship не загружен — возвращаем []."""
-        from database import _guide_to_dict
+        from core.db import _guide_to_dict
 
         guide = mock.MagicMock()
         guide.key = "k"

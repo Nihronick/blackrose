@@ -12,6 +12,7 @@ import { isLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
 import { useQueryClient } from '@tanstack/react-query'
 import { FC, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchHistory } from '@/hooks/useSearchHistory'
 
 interface CategoriesViewProps {
   onSelectCategory: (category: Category) => void
@@ -34,6 +35,8 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
   const language = useAppStore((state) => state.language)
+  const { searchHistory, addToSearchHistory, clearSearchHistory, removeFromSearchHistory } = useSearchHistory()
+  const [isInputFocused, setIsInputFocused] = useState(false)
 
   // Pull-to-refresh logic at the top level
   const { pullY, refreshing } = usePullToRefresh(
@@ -74,6 +77,8 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
             data-testid="search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
             autoComplete="off"
           />
           {search && (
@@ -99,13 +104,45 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
             {isSearch ? (
               <CategorySearch
                 query={debouncedQ}
-                onSelectGuide={onSelectGuide}
+                onSelectGuide={(key) => {
+                  addToSearchHistory(debouncedQ)
+                  onSelectGuide(key)
+                }}
                 onTagClick={onTagClick}
                 categories={categories}
               />
+            ) : isInputFocused && searchHistory.length > 0 ? (
+              <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                    История поиска
+                  </h4>
+                  <button onClick={clearSearchHistory} className="text-[10px] font-bold text-primary/60 hover:text-primary">
+                    Очистить
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {searchHistory.map((q) => (
+                    <div key={q} className="flex items-center gap-1 rounded-full bg-muted/30 px-3 py-1.5 border border-border/10">
+                      <button
+                        onClick={() => {
+                          haptic.light()
+                          setSearch(q)
+                        }}
+                        className="text-xs font-medium text-foreground/80 hover:text-primary"
+                      >
+                        {q}
+                      </button>
+                      <button onClick={() => removeFromSearchHistory(q)} className="text-muted-foreground/40 hover:text-red-500 ml-1">
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col gap-6">
-                <HomeDashboard onSelectGuide={onSelectGuide} />
+                <HomeDashboard onSelectGuide={onSelectGuide} onSelectCategory={onSelectCategory} />
 
                 <div className="flex flex-col gap-4 mt-4">
                   <div className="flex items-center gap-2">

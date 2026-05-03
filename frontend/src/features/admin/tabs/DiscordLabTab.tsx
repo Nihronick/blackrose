@@ -421,13 +421,32 @@ export const DiscordLabTab: FC = () => {
 // Компонент для отрисовки контента с иконками вынесен наружу для стабильности хуков
 const FormattedContent = ({ text }: { text: string }) => {
   const parts = useMemo(() => {
-    // Ищем <a:name:id>, <:name:id>, :name:, ![type](url), и прямые ссылки Discord
-    return text.split(/(<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|!\[(?:image|video)\]\(.*?\)|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/attachments\/\d+\/\d+\/[\w.-]+(?:\?[\w=&.%-]+)?)/g)
+    // Ищем {{icon:name}}, <a:name:id>, <:name:id>, :name:, ![type](url), и прямые ссылки Discord
+    return text.split(/(\{\{icon:[^}]+\}\}|<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|!\[(?:image|video)\]\(.*?\)|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/attachments\/\d+\/\d+\/[\w.-]+(?:\?[\w=&.%-]+)?)/g)
   }, [text])
 
   return (
     <div className="text-sm leading-relaxed whitespace-pre-wrap opacity-90">
       {parts.map((part, i) => {
+        // 0. Обработка нового формата {{icon:name}}
+        const iconTokenMatch = part.match(/^\{\{icon:([^}]+)\}\}$ /) || part.match(/^\{\{icon:([^}]+)\}\}$ /)
+        // Correcting regex for token
+        if (part.startsWith('{{icon:') && part.endsWith('}}')) {
+           const name = part.slice(7, -2);
+           const url = getGameIconUrl(name);
+           if (url) {
+             return (
+               <img 
+                 key={i} 
+                 src={url} 
+                 alt={name} 
+                 className="inline-block size-5 mx-0.5 -mt-1 rounded-sm align-middle hover:scale-150 transition-transform cursor-help object-contain"
+                 title={name}
+               />
+             )
+           }
+        }
+
         // 1. Обработка Discord эмодзи
         const emojiMatch = part.match(/<(a?):([a-zA-Z0-9_]+):(\d+)>/) || part.match(/^:([a-zA-Z0-9_]+):$/)
         if (emojiMatch) {

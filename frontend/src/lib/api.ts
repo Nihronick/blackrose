@@ -131,6 +131,8 @@ export const apiUnsubscribe = (categoryKey: string) =>
 export const apiTags = () => apiFetch<TagsResponse>('/api/tags')
 export const apiMediaList = () => apiFetch<{ groups: any[], total: number }>('/api/admin/media/list')
 
+export const apiGetCategories = () => apiFetch<CategoriesResponse>('/api/categories')
+
 /**
  * Returns a proxied URL for Discord media to bypass CORS/expiration.
  * Uses the absolute BASE URL to ensure requests go to the backend.

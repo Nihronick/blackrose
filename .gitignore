@@ -1,4 +1,4 @@
-# IDEs & System
+# --- IDEs & System ---
 .vscode/
 .idea/
 .DS_Store
@@ -7,19 +7,49 @@ Desktop.ini
 *.swp
 *.swo
 
-# AI & Skills (Excluded from Git)
+# --- AI & Agent Artifacts ---
 .agents/
 .agent/
 .gemini/
-
-# Scratch & Temp (Global)
 scratch/
 temp/
+.agent_logs/
+
+# --- Build & Runtime Artifacts ---
+node_modules/
+dist/
+dist-web/
+build/
+*.log
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.venv/
+venv/
+ENV/
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+*.key
+*.pem
+*.p12
+
+# --- Project Specific ---
 .deploy_temp_*/
 *.tmp
 *.temp
-
-# Local Env
-.env
-frontend/.env
-backend/.env
+final_import*.json
+scripts/
+backend/trash/
+backend/experiments/

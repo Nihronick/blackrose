@@ -54,7 +54,7 @@ os.environ.setdefault("ADMIN_USERS", "")
 
 with mock.patch("asyncpg.create_pool"):
     import main as app_main # type: ignore
-    import utils # type: ignore
+    import services.common.utils # type: ignore
 
 
 # ── format_guide_text ──────────────────────────────────────────

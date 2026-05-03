@@ -3,58 +3,85 @@
 [![Website](https://img.shields.io/badge/Сайт-blackrosesl.me-blueviolet?style=for-the-badge&logo=react)](https://blackrosesl.me)
 [![Backend](https://img.shields.io/badge/Бэкенд-Hugging_Face-orange?style=for-the-badge&logo=fastapi)](https://huggingface.co/spaces/Nihronick/blackrose-backend)
 [![License](https://img.shields.io/badge/Лицензия-MIT-green?style=for-the-badge)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 
-**BlackRose** — это высокопроизводительная и защищенная база знаний для экосистемы **Slayer Legend**, построенная на архитектуре **Ultimate Hybrid Core**. Проект разработан русским разработчиком и полностью оптимизирован для работы в качестве **Telegram Mini App (TMA)** и современного **PWA**, обеспечивая мгновенный доступ к игровым гайдам с премиальным уровнем UX.
+**BlackRose** — это высокопроизводительная база знаний для экосистемы **Slayer Legend**, построенная на архитектуре **Ultimate Hybrid Core**. Проект объединяет мощь ИИ-синтеза, распределенную инфраструктуру и премиальный UX для создания лучшего опыта чтения гайдов в Telegram и Web.
 
 ---
 
 ## ✨ Основные особенности
 
-*   **Premium UI/UX ("Renaissance")**: Интерфейс с использованием Mesh-градиентов, эффекта стекла (Glassmorphism) и плавных анимаций на базе Framer Motion.
-*   **Оптимизация под TMA**: Полная интеграция с Telegram SDK, поддержка нативных кнопок, тактильной отдачи (Haptic Feedback) и автоматическое определение платформы.
-*   **Умная Синхронизация**: Автоматический импорт, синтез и перевод гайдов из Discord-лаборатории с сохранением игрового глоссария.
-*   **Predictive Performance**: Упреждающая загрузка контента (prefetching) и продвинутое кэширование для работы в условиях медленного интернета.
+*   **Premium UX ("Renaissance")**: Интерфейс с эффектом стекла (Glassmorphism), Mesh-градиентами и плавными анимациями на базе Framer Motion.
+*   **AI Guide Synthesis**: Автоматический импорт контента из Discord-лабораторий с использованием **Gemini 1.5 Flash** для структурирования и перевода.
+*   **Media Optimization (imgproxy)**: На лету сжимает и конвертирует скриншоты в WebP, обеспечивая мгновенную загрузку даже при слабом 4G/LTE.
+*   **Git-Sync Wiki**: Двусторонняя связь между базой данных и GitHub. Все гайды автоматически бэкапятся в `.md` файлы для версионности.
+*   **Haptic & Native Integration**: Глубокая поддержка Telegram SDK (Haptic Feedback, Native Buttons, Theme Sync).
 
 ---
 
 ## 🏗️ Техническая Архитектура (Hybrid Core)
 
-BlackRose использует уникальную гибридную архитектуру, которая адаптируется под контекст пользователя (TMA vs Web).
+BlackRose распределен по нескольким облачным слоям для максимальной надежности и бесплатного масштабирования.
 
 ```mermaid
 graph TD
-    A[Пользователь] --> B{Определение среды}
-    B -->|Telegram Mini App| C[Контекст TMA]
-    B -->|Web / PWA| D[Контекст Браузера]
-
-    C --> E[Telegram SDK / Native UI]
-    D --> F[Premium Web UI]
-
-    E & F --> G[FastAPI Backend]
-
-    subgraph "Уровень Безопасности"
-    G --> H{Стратегия Auth}
-    H -- "TMA: initData (HMAC-SHA256)" --> I[JWT Сессия]
-    H -- "Web: JWT + Refresh" --> I
+    Client[Frontend: GitHub Pages] -->|API| BE[Backend: HF Spaces]
+    BE -->|SQL| DB[(Postgres: Neon)]
+    BE -->|Sync| Wiki[(GitHub Repo: .md)]
+    BE -->|Process| IMG[imgproxy Service]
+    BE -->|AI| Gemini[Gemini AI]
+    BE -->|Store| Media[HF Datasets: Media]
+    
+    subgraph "Уровень Оптимизации"
+    IMG -->|Cache| Client
+    Wiki -->|Backup| BE
     end
-
-    I --> J[(PostgreSQL / Neon)]
-    I --> K[Redis / Cache]
-    G --> L[HF Datasets / Media]
 ```
 
 ---
 
-## 🔐 Безопасность и Надежность
+## 🔐 Настройка окружения (Secrets)
 
-Проект прошел глубокую закалку (hardening) для стабильной работы:
-- **Криптографическая валидация**: Проверка `initData` по официальному алгоритму Telegram (HMAC-SHA256).
-- **Защита от атак**: Rate Limiting с поддержкой прокси (Hugging Face / Cloudflare) через `X-Forwarded-For`.
-- **Мониторинг**: Интеграция с Telegram для мгновенных алертов о критических ошибках бэкенда.
-- **Чистая архитектура**: Децентрализованная обработка медиа и автоматическая очистка временных файлов.
+Для полной функциональности в Hugging Face Spaces или локально в `.env` должны быть установлены:
+
+| Variable | Description |
+|---|---|
+| `BOT_TOKEN` | Telegram Bot API токен |
+| `DATABASE_URL` | Ссылка на Postgres (Neon) |
+| `HF_TOKEN` | Доступ к Hugging Face Datasets |
+| `GEMINI_API_KEY` | Для работы AI-синтезатора |
+| `IMGPROXY_URL` | Адрес вашего сервера imgproxy |
+| `GITHUB_TOKEN` | Для работы Git-Sync (Wiki бэкап) |
+
+---
+
+## 🛠️ Стек Технологий
+
+- **Бэкенд**: FastAPI, SQLAlchemy 2.0 (Async), Inngest (Workflows), aiogram 3.
+- **Фронтенд**: React 18, Vite, Tailwind CSS 4, Framer Motion, Zustand.
+- **Инфраструктура**: Neon PostgreSQL, imgproxy (Docker), GitHub API.
+- **AI**: Google Gemini 1.5 Flash.
+
+---
+
+## 🚀 Развертывание
+
+Проект использует изолированную стратегию деплоя через скрипты в папке `tools/`:
+
+- `powershell -File tools/deploy-backend.ps1` — Деплой бэкенда на HF Spaces.
+- `powershell -File tools/deploy-frontend.ps1` — Сборка и деплой на GitHub Pages.
+- `powershell -File tools/architectural_purge.ps1` — Очистка проекта от мусора.
+
+---
+
+## 👤 Автор
+
+**Максим Морозов (Nihronick)**
+- **GitHub**: [@Nihronick](https://github.com/Nihronick)
+- **Статус**: Production Ready | Media Optimized | AI Powered
+
+---
+*BlackRose — сделано с ❤️ в России для глобального комьюнити.*
+стка временных файлов.
 
 ---
 

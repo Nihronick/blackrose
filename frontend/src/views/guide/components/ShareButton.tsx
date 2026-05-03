@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import { Check, Share2 } from '@/lib/icons'
-import type React from 'react'
-import { useState } from 'react'
+import { FC, useState } from 'react'
 
 interface Telegram {
   WebApp: {
@@ -17,10 +16,10 @@ interface ShareButtonProps {
   }
 }
 
-export const ShareButton: React.FC<ShareButtonProps> = ({ guide }) => {
+export const ShareButton: FC<ShareButtonProps> = ({ guide }) => {
   const [shared, setShared] = useState(false)
 
-  const share = () => {
+  const share = async () => {
     haptic.light()
     const botUsername = 'blackrosesl1_bot'
     const deepLink = `https://t.me/${botUsername}?start=guide_${guide.key}`
@@ -31,6 +30,23 @@ export const ShareButton: React.FC<ShareButtonProps> = ({ guide }) => {
       setTimeout(() => setShared(false), 2000)
     }
 
+    // 1. Try native Web Share API (Mobile browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: guide.title,
+          text: `BlackRose: ${guide.title}`,
+          url: deepLink,
+        })
+        markShared()
+        return
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return
+        console.error('Share failed:', err)
+      }
+    }
+
+    // 2. Try Telegram WebApp
     const tgApp = (window as unknown as { Telegram?: Telegram })?.Telegram?.WebApp
     if (tgApp?.openTelegramLink) {
       tgApp.openTelegramLink(
@@ -40,6 +56,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({ guide }) => {
       return
     }
 
+    // 3. Fallback to clipboard
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(deepLink).then(markShared)
       return

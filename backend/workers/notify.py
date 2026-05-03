@@ -16,7 +16,7 @@ async def send_new_guide_notifications(
     guide_title: str,
     category_key: str,
 ) -> dict:
-    from utils import _telegram_send_new_guide_notifications
+    from services.common.utils import _telegram_send_new_guide_notifications
     logger.info(f"[worker] notify start: guide={guide_key} category={category_key}")
     sent, total = await _telegram_send_new_guide_notifications(
         guide_key, guide_title, category_key
@@ -26,14 +26,14 @@ async def send_new_guide_notifications(
 
 
 async def startup(ctx: dict) -> None:
-    from database import init_db
+    from core.db import init_db
     await init_db()
     logger.info("[worker] started")
 
 
 async def shutdown(ctx: dict) -> None:
-    from database import close_pool
-    from cache import close_redis
+    from core.db import close_pool
+    from services.cache.redis_cache import close_redis
     await close_pool()
     await close_redis()
     logger.info("[worker] stopped")

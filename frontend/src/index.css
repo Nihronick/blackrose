@@ -268,11 +268,11 @@
 }
 
 .guide-spoiler {
-  @apply inline-block bg-zinc-800 text-transparent filter blur-[6px] cursor-pointer transition-all duration-500 rounded px-1 select-none;
+  @apply inline-block bg-muted-foreground/20 text-transparent filter blur-[6px] cursor-pointer transition-all duration-500 rounded px-1 select-none;
 }
 
 .guide-spoiler:hover {
-  @apply bg-zinc-700;
+  @apply bg-muted-foreground/30;
 }
 
 .guide-spoiler.revealed {
@@ -314,3 +314,7 @@
 .stagger-in > *:nth-child(6) { animation-delay: 0.30s; }
 .stagger-in > *:nth-child(7) { animation-delay: 0.35s; }
 .stagger-in > *:nth-child(8) { animation-delay: 0.40s; }
+.stagger-in > *:nth-child(9) { animation-delay: 0.45s; }
+.stagger-in > *:nth-child(10) { animation-delay: 0.50s; }
+.stagger-in > *:nth-child(11) { animation-delay: 0.55s; }
+.stagger-in > *:nth-child(12) { animation-delay: 0.60s; }

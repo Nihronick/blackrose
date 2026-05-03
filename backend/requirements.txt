@@ -20,3 +20,6 @@ aiogram>=3.4.0
 loguru>=0.7.0
 pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
+pyjwt==2.10.1
+uvloop==0.21.0
+inngest==0.4.0

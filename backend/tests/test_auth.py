@@ -27,7 +27,7 @@ sys.modules["database"] = mock_db
 sys.modules["icons"] = mock.MagicMock()
 sys.modules["aiohttp"] = mock.MagicMock()
 
-import database
+import core.db
 import icons
 
 TEST_TOKEN = "1234567890:AAFakeTokenForTestingPurposesOnly"
