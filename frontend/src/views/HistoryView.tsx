@@ -4,7 +4,7 @@ import { haptic } from '@/lib/haptic'
 import { ChevronRight, Clock } from '@/lib/icons'
 import { normalizeUrl } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { FC, SyntheticEvent } from 'react'
+import type { FC, SyntheticEvent } from 'react'
 
 import type { HistoryItem } from '@/hooks/useHistory'
 

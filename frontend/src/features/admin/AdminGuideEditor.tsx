@@ -29,7 +29,7 @@ import {
 } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { cn, normalizeUrl } from '@/lib/utils'
-import { FC, ReactNode, ChangeEvent, useEffect, useRef, useState } from 'react'
+import { type ChangeEvent, type FC, type ReactNode, useEffect, useRef, useState } from 'react'
 import { RichEditor } from './AdminRichEditor'
 import { IC } from './adminIcons'
 
@@ -272,12 +272,7 @@ interface GuideEditorProps {
   onCancel: () => void
 }
 
-export const GuideEditor: FC<GuideEditorProps> = ({
-  guide,
-  categories,
-  onSave,
-  onCancel,
-}) => {
+export const GuideEditor: FC<GuideEditorProps> = ({ guide, categories, onSave, onCancel }) => {
   const isNew = !guide?.key
   const [form, setForm] = useState({
     key: guide?.key ?? '',
@@ -290,7 +285,9 @@ export const GuideEditor: FC<GuideEditorProps> = ({
     document: Array.isArray(guide?.document) ? guide.document : [],
     sort_order: guide?.sort_order ?? 0,
   })
-  const [tags, setTags] = useState<string[]>(Array.isArray(guide?.tags) ? (guide?.tags as string[]) : [])
+  const [tags, setTags] = useState<string[]>(
+    Array.isArray(guide?.tags) ? (guide?.tags as string[]) : []
+  )
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -299,7 +296,12 @@ export const GuideEditor: FC<GuideEditorProps> = ({
     setForm((p) => ({ ...p, [f]: e.target.value }))
 
   const handleDelete = async () => {
-    if (!window.confirm('Вы уверены, что хотите удалить этот гайд? Все связанные медиа-файлы также будут удалены.')) return
+    if (
+      !window.confirm(
+        'Вы уверены, что хотите удалить этот гайд? Все связанные медиа-файлы также будут удалены.'
+      )
+    )
+      return
     setSaving(true)
     try {
       await apiDelete(`/api/admin/guide/${form.key}`)
@@ -356,7 +358,7 @@ export const GuideEditor: FC<GuideEditorProps> = ({
           >
             <ArrowLeft className="size-5" />
           </Button>
-          
+
           {!isNew && (
             <Button
               variant="ghost"

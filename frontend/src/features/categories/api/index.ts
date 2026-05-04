@@ -17,7 +17,9 @@ export const categoriesApi = {
   search: (query: string): TE.TaskEither<Error, SearchResult[]> =>
     TE.tryCatch(
       async () => {
-        const payload = await apiFetch<SearchResult[] | { results?: SearchResult[] }>(`/api/search?q=${encodeURIComponent(query)}`)
+        const payload = await apiFetch<SearchResult[] | { results?: SearchResult[] }>(
+          `/api/search?q=${encodeURIComponent(query)}`
+        )
         if (Array.isArray(payload)) return payload as SearchResult[]
         if (Array.isArray(payload?.results)) return payload.results as SearchResult[]
         return []

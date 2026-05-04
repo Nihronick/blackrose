@@ -4,7 +4,7 @@ import { haptic } from '@/lib/haptic'
 import { ChevronRight, Star } from '@/lib/icons'
 import { normalizeUrl } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { FC, SyntheticEvent } from 'react'
+import type { FC, SyntheticEvent } from 'react'
 
 import type { FavoriteGuide } from '@/hooks/useFavorites'
 
@@ -17,11 +17,7 @@ interface FavoritesViewProps {
 /**
  * FavoritesView refactored with TSX, shadcn/ui and premium visuals.
  */
-export const FavoritesView: FC<FavoritesViewProps> = ({
-  favorites,
-  onSelectGuide,
-  onToggle,
-}) => {
+export const FavoritesView: FC<FavoritesViewProps> = ({ favorites, onSelectGuide, onToggle }) => {
   if (favorites.length === 0) {
     return (
       <div className="flex h-[80vh] flex-col items-center justify-center px-10 text-center animate-in fade-in zoom-in duration-500">

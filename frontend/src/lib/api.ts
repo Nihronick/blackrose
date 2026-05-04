@@ -2,7 +2,15 @@ import * as E from 'fp-ts/Either'
 import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/function'
 import { clearStoredToken, getAuthHeaders } from './auth'
-import type { ApiResponse, CommentsResponse, IconsGroupedResponse, SubscriptionsResponse, TagsResponse, TopGuidesResponse } from './types'
+import type {
+  ApiResponse,
+  CommentsResponse,
+  IconsGroupedResponse,
+  MediaListResponse,
+  SubscriptionsResponse,
+  TagsResponse,
+  TopGuidesResponse,
+} from './types'
 
 const BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -13,20 +21,27 @@ export interface ApiError extends Error {
 function throwHttpError(res: Response, data: ApiResponse<unknown>): never {
   if (res.status === 403) {
     const err: ApiError = new Error('ACCESS_DENIED')
-    err.detail = typeof data === 'object' && data && 'detail' in data ? (Array.isArray(data.detail) ? data.detail.join(', ') : String(data.detail)) : undefined
+    err.detail =
+      typeof data === 'object' && data && 'detail' in data
+        ? Array.isArray(data.detail)
+          ? data.detail.join(', ')
+          : String(data.detail)
+        : undefined
     throw err
   }
-  
+
   let detail: string | null = null
   if (typeof data === 'object' && data && 'detail' in data && data.detail != null) {
     if (Array.isArray(data.detail)) {
       // Handle FastAPI validation error lists
-      detail = data.detail.map(d => typeof d === 'object' ? (d.msg || JSON.stringify(d)) : String(d)).join(', ')
+      detail = data.detail
+        .map((d) => (typeof d === 'object' ? d.msg || JSON.stringify(d) : String(d)))
+        .join(', ')
     } else {
       detail = String(data.detail)
     }
   }
-  
+
   throw new Error(detail ?? `Ошибка ${res.status}`)
 }
 
@@ -129,7 +144,7 @@ export const apiSubscribe = (categoryKey: string) =>
 export const apiUnsubscribe = (categoryKey: string) =>
   apiDelete<unknown>(`/api/subscriptions/${categoryKey}`)
 export const apiTags = () => apiFetch<TagsResponse>('/api/tags')
-export const apiMediaList = () => apiFetch<{ groups: any[], total: number }>('/api/admin/media/list')
+export const apiMediaList = () => apiFetch<MediaListResponse>('/api/admin/media/list')
 
 export const apiGetCategories = () => apiFetch<CategoriesResponse>('/api/categories')
 
@@ -139,8 +154,8 @@ export const apiGetCategories = () => apiFetch<CategoriesResponse>('/api/categor
  */
 /**
  * Вспомогательная функция для проксирования ссылок (отключена).
- * Прямые ссылки на Discord CDN отлично работают в тегах <img> и <video> 
- * без CORS-ограничений. Использование прямого подключения решает проблему 
+ * Прямые ссылки на Discord CDN отлично работают в тегах <img> и <video>
+ * без CORS-ограничений. Использование прямого подключения решает проблему
  * с поддержкой Range-запросов для видеоплееров.
  */
 export function apiGetProxyUrl(url: string): string {

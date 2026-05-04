@@ -1,18 +1,18 @@
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { HomeDashboard } from '@/components/HomeDashboard'
 import { PtrIndicator } from '@/components/PtrIndicator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { HomeDashboard } from '@/components/HomeDashboard'
 import { CategoryList, CategorySearch, useCategories } from '@/features/categories'
 import type { Category } from '@/features/categories'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { useSearchHistory } from '@/hooks/useSearchHistory'
 import { haptic } from '@/lib/haptic'
 import { LayoutGrid, Search, X } from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
 import { useQueryClient } from '@tanstack/react-query'
-import { FC, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchHistory } from '@/hooks/useSearchHistory'
+import { type FC, useEffect, useMemo, useRef, useState } from 'react'
 
 interface CategoriesViewProps {
   onSelectCategory: (category: Category) => void
@@ -35,7 +35,8 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
   const language = useAppStore((state) => state.language)
-  const { searchHistory, addToSearchHistory, clearSearchHistory, removeFromSearchHistory } = useSearchHistory()
+  const { searchHistory, addToSearchHistory, clearSearchHistory, removeFromSearchHistory } =
+    useSearchHistory()
   const [isInputFocused, setIsInputFocused] = useState(false)
 
   // Pull-to-refresh logic at the top level
@@ -117,13 +118,19 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
                     История поиска
                   </h4>
-                  <button onClick={clearSearchHistory} className="text-[10px] font-bold text-primary/60 hover:text-primary">
+                  <button
+                    onClick={clearSearchHistory}
+                    className="text-[10px] font-bold text-primary/60 hover:text-primary"
+                  >
                     Очистить
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {searchHistory.map((q) => (
-                    <div key={q} className="flex items-center gap-1 rounded-full bg-muted/30 px-3 py-1.5 border border-border/10">
+                    <div
+                      key={q}
+                      className="flex items-center gap-1 rounded-full bg-muted/30 px-3 py-1.5 border border-border/10"
+                    >
                       <button
                         onClick={() => {
                           haptic.light()
@@ -133,7 +140,10 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
                       >
                         {q}
                       </button>
-                      <button onClick={() => removeFromSearchHistory(q)} className="text-muted-foreground/40 hover:text-red-500 ml-1">
+                      <button
+                        onClick={() => removeFromSearchHistory(q)}
+                        className="text-muted-foreground/40 hover:text-red-500 ml-1"
+                      >
                         <X className="size-3" />
                       </button>
                     </div>
@@ -151,9 +161,9 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
                       Категории
                     </h3>
                   </div>
-                  <CategoryList 
-                    categories={categories} 
-                    onSelectCategory={onSelectCategory} 
+                  <CategoryList
+                    categories={categories}
+                    onSelectCategory={onSelectCategory}
                     isLoading={!categoriesData && !categories.length}
                   />
                 </div>

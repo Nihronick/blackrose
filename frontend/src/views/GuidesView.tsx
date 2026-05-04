@@ -3,13 +3,13 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { apiFetch } from '@/lib/api'
-import type { CategoryGuidesResponse } from '@/lib/types'
 import { haptic } from '@/lib/haptic'
 import { BookOpen, ChevronRight, Eye } from '@/lib/icons'
+import type { CategoryGuidesResponse } from '@/lib/types'
 import { normalizeUrl } from '@/lib/utils'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { FC, SyntheticEvent, useMemo, useRef } from 'react'
+import { type FC, type SyntheticEvent, useMemo, useRef } from 'react'
 
 interface GuideItem {
   key: string

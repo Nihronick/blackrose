@@ -1,23 +1,29 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { apiFetch, apiPost } from '@/lib/api'
-import { ChevronRight, Eye, FileText, LayoutGrid, MessageSquare, RefreshCw, TrendingUp } from '@/lib/icons'
+import {
+  ChevronRight,
+  Eye,
+  FileText,
+  LayoutGrid,
+  MessageSquare,
+  RefreshCw,
+  TrendingUp,
+} from '@/lib/icons'
 import type { AdminStats, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { FC, useEffect, useState } from 'react'
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { type FC, useEffect, useState } from 'react'
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+
+interface AnalyticsData {
+  day: string
+  count: number
+}
 
 export const DashboardTab: FC = () => {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [guides, setGuides] = useState<Guide[]>([])
-  const [analytics, setAnalytics] = useState<any[]>([])
+  const [analytics, setAnalytics] = useState<AnalyticsData[]>([])
   const [clearing, setClearing] = useState(false)
 
   useEffect(() => {
@@ -27,14 +33,19 @@ export const DashboardTab: FC = () => {
     apiFetch<{ results: Guide[] }>('/api/top')
       .then((res) => setGuides(res.results))
       .catch(() => {})
-    apiFetch<{ chart: any[] }>('/api/admin/analytics?days=30')
+    apiFetch<{ chart: AnalyticsData[] }>('/api/admin/analytics?days=30')
       .then((res) => setAnalytics(res.chart))
       .catch(() => {})
   }, [])
 
   const handleClearCache = async () => {
-    if (!window.confirm('Вы уверены, что хотите полностью очистить кэш? Это может временно замедлить работу приложения.')) return
-    
+    if (
+      !window.confirm(
+        'Вы уверены, что хотите полностью очистить кэш? Это может временно замедлить работу приложения.'
+      )
+    )
+      return
+
     setClearing(true)
     try {
       await apiPost('/api/admin/cache/clear', {})
@@ -46,13 +57,13 @@ export const DashboardTab: FC = () => {
     }
   }
 
-  const chartData = (analytics || []).map(d => {
+  const chartData = (analytics || []).map((d) => {
     const date = new Date(d.day)
     return {
-      name: isNaN(date.getTime()) 
-        ? '???' 
+      name: Number.isNaN(date.getTime())
+        ? '???'
         : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
-      views: d.count
+      views: d.count,
     }
   })
 
@@ -95,7 +106,6 @@ export const DashboardTab: FC = () => {
     },
   ]
 
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -128,38 +138,38 @@ export const DashboardTab: FC = () => {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fontSize: 10, fontWeight: 'bold', fill: 'var(--muted-foreground)'}}
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fontWeight: 'bold', fill: 'var(--muted-foreground)' }}
                 minTickGap={30}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fontSize: 10, fontWeight: 'bold', fill: 'var(--muted-foreground)'}}
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fontWeight: 'bold', fill: 'var(--muted-foreground)' }}
               />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'var(--card)', 
-                  border: '1px solid var(--border)', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--card)',
+                  border: '1px solid var(--border)',
                   borderRadius: '12px',
                   fontSize: '11px',
-                  fontWeight: 'bold'
+                  fontWeight: 'bold',
                 }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="views" 
-                stroke="var(--color-primary)" 
+              <Area
+                type="monotone"
+                dataKey="views"
+                stroke="var(--color-primary)"
                 strokeWidth={3}
-                fillOpacity={1} 
-                fill="url(#colorViews)" 
+                fillOpacity={1}
+                fill="url(#colorViews)"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -211,17 +221,18 @@ export const DashboardTab: FC = () => {
             <div className="space-y-1">
               <div className="text-sm font-bold text-foreground">Очистка кэша Redis</div>
               <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed max-w-md">
-                Принудительно удаляет все сохраненные категории и данные гайдов из оперативной памяти. 
-                Полезно, если данные в приложении не обновляются или отображаются некорректно.
+                Принудительно удаляет все сохраненные категории и данные гайдов из оперативной
+                памяти. Полезно, если данные в приложении не обновляются или отображаются
+                некорректно.
               </div>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="rounded-xl h-12 px-6 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all active:scale-95 shrink-0"
               onClick={handleClearCache}
               disabled={clearing}
             >
-              <RefreshCw className={cn("size-4", clearing && "animate-spin")} />
+              <RefreshCw className={cn('size-4', clearing && 'animate-spin')} />
               <span>{clearing ? 'Очистка...' : 'Очистить кэш'}</span>
             </Button>
           </div>

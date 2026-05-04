@@ -1,13 +1,13 @@
-import { useMemo } from 'react'
 import { formatGuideText } from '@/lib/markdown'
-import { normalizeUrl } from '@/lib/utils'
 import type { Guide } from '@/lib/types'
+import { normalizeUrl } from '@/lib/utils'
+import { useMemo } from 'react'
 
 export function useGuideLogic(guide: Guide | undefined) {
   const formattedText = useMemo(() => {
     const rawText = guide?.text || guide?.text_content || ''
     if (!rawText) return ''
-    
+
     return formatGuideText(rawText, {
       guideLinks: (guide.guide_links as Record<string, { title?: string; icon?: string }>) ?? {},
       iconResolver: (nameValue: string) => {

@@ -109,3 +109,20 @@ export type IconsGroupedResponse = IconGroupResponse[]
 export interface SubscriptionsResponse {
   subscriptions: string[]
 }
+
+export interface MediaItem {
+  url: string
+  name: string
+  type: 'image' | 'video'
+}
+
+export interface MediaGroup {
+  id: string
+  label: string
+  items: MediaItem[]
+}
+
+export interface MediaListResponse {
+  groups: MediaGroup[]
+  total: number
+}

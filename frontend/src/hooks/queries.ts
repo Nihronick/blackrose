@@ -32,7 +32,7 @@ export function useCategories() {
   return useQuery({
     queryKey: keys.categories(),
     queryFn: () =>
-      apiFetch<{ categories: any }>('/api/categories').then((r) => r.categories),
+      apiFetch<{ categories: Category[] }>('/api/categories').then((r) => r.categories),
     staleTime: 60_000,
   })
 }
@@ -42,7 +42,7 @@ export function useCategoryGuides(categoryKey: string) {
   return useQuery({
     queryKey: keys.category(categoryKey),
     queryFn: () =>
-      apiFetch<{ items: any }>(`/api/category/${categoryKey}`).then((r) => r.items),
+      apiFetch<{ items: Guide[] }>(`/api/category/${categoryKey}`).then((r) => r.items),
     staleTime: 60_000,
     enabled: !!categoryKey,
   })
@@ -62,7 +62,7 @@ export function useGuide(guideKey: string) {
 export function useSearch(q: string) {
   return useQuery({
     queryKey: keys.search(q),
-    queryFn: () => apiSearch(q).then((r: { results: unknown }) => r.results),
+    queryFn: () => apiSearch(q).then((r: { results: Guide[] }) => r.results),
     staleTime: 30_000,
     enabled: q.trim().length >= 2,
   })
@@ -72,7 +72,7 @@ export function useSearch(q: string) {
 export function useTopGuides() {
   return useQuery({
     queryKey: keys.top(),
-    queryFn: () => apiTopGuides().then((r: { results: unknown }) => r.results),
+    queryFn: () => apiTopGuides().then((r: { results: Guide[] }) => r.results),
     staleTime: 120_000,
   })
 }
@@ -81,7 +81,7 @@ export function useTopGuides() {
 export function useComments(guideKey: string, enabled = false) {
   return useQuery({
     queryKey: keys.comments(guideKey),
-    queryFn: () => apiGetComments(guideKey).then((r: { comments: unknown }) => r.comments),
+    queryFn: () => apiGetComments(guideKey).then((r: { comments: Comment[] }) => r.comments),
     enabled: !!guideKey && enabled,
     staleTime: 30_000,
   })
@@ -108,7 +108,7 @@ export function useSubscriptions() {
   return useQuery({
     queryKey: keys.subscriptions(),
     queryFn: () =>
-      apiGetSubscriptions().then((r: { subscriptions?: unknown }) => r.subscriptions ?? []),
+      apiGetSubscriptions().then((r: { subscriptions?: string[] }) => r.subscriptions ?? []),
     staleTime: 60_000,
   })
 }
@@ -148,7 +148,7 @@ export function useToggleSubscription() {
 export function useGuidesByTag(tag: string) {
   return useQuery({
     queryKey: keys.tag(tag),
-    queryFn: () => apiGuidesByTag(tag).then((r: { results: unknown }) => r.results),
+    queryFn: () => apiGuidesByTag(tag).then((r: { results: Guide[] }) => r.results),
     staleTime: 60_000,
     enabled: !!tag,
   })
@@ -157,7 +157,7 @@ export function useGuidesByTag(tag: string) {
 export function useTags() {
   return useQuery({
     queryKey: keys.tags(),
-    queryFn: () => apiTags().then((r: { tags: unknown }) => r.tags),
+    queryFn: () => apiTags().then((r: { tags: string[] }) => r.tags),
     staleTime: 120_000,
   })
 }

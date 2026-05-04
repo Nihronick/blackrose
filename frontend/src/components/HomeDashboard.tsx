@@ -3,22 +3,15 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiRecentComments, apiRecentGuides, apiTopGuides } from '@/lib/api'
+import { apiFetch, apiGetCategories } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import {
-  ChevronRight,
-  Clock,
-  Eye,
-  MessageCircle,
-  Sparkles,
-  TrendingUp,
-} from '@/lib/icons'
+import { ChevronRight, Clock, Eye, MessageCircle, Sparkles, TrendingUp } from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { normalizeUrl } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { FC, useRef } from 'react'
-import { apiFetch, apiGetCategories } from '@/lib/api'
+import { type FC, useRef } from 'react'
 
 interface Category {
   key: string
@@ -57,9 +50,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
     queryFn: apiGetCategories,
   })
 
-  const topGuides = (topGuidesData?.results || []).filter((g) =>
-    isLanguageKey(g.key, language)
-  )
+  const topGuides = (topGuidesData?.results || []).filter((g) => isLanguageKey(g.key, language))
   const recentGuides = (recentGuidesData?.results || []).filter((g) =>
     isLanguageKey(g.key, language)
   )
@@ -87,7 +78,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
           {/* Animated background pulse */}
           <div className="absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
           <div className="absolute -left-10 -bottom-10 size-32 rounded-full bg-primary/10 blur-[60px]" />
-          
+
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <div className="size-2 rounded-full bg-primary animate-ping" />
@@ -99,9 +90,9 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
               Привет, <span className="text-primary">{userName}!</span>
             </h1>
             <p className="text-[15px] font-medium text-muted-foreground/80 leading-snug max-w-[260px]">
-              {recentGuides.length > 0 
-                ? `У нас появилось ${recentGuides.length} новых гайдов. Пора стать сильнее!` 
-                : "Сегодня отличный день, чтобы изучить что-то новое."}
+              {recentGuides.length > 0
+                ? `У нас появилось ${recentGuides.length} новых гайдов. Пора стать сильнее!`
+                : 'Сегодня отличный день, чтобы изучить что-то новое.'}
             </p>
           </div>
         </div>
@@ -243,7 +234,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
                         {g.title}
                       </h4>
                       <p className="mt-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-                        {g.updated_at && !isNaN(new Date(g.updated_at).getTime())
+                        {g.updated_at && !Number.isNaN(new Date(g.updated_at).getTime())
                           ? `Обновлено: ${new Date(g.updated_at).toLocaleDateString()}`
                           : 'Недавно'}
                       </p>

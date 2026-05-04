@@ -1,15 +1,8 @@
-import {
-  Loader2,
-  Maximize,
-  Pause,
-  PictureInPicture2,
-  Play,
-  Volume2,
-  VolumeX,
-} from '@/lib/icons'
+import { Loader2, Maximize, Pause, PictureInPicture2, Play, Volume2, VolumeX } from '@/lib/icons'
 import { normalizeUrl, parseVideo } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
-import React, { useEffect, useRef, useState } from 'react'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }) => {
   const v = parseVideo(normalizeUrl(url))
@@ -19,7 +12,7 @@ export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }
   const [isLoading, setIsLoading] = useState(true)
   const [progress, setProgress] = useState(0)
   const [showControls, setShowControls] = useState(true)
-  const controlsTimeout = useRef<any>()
+  const controlsTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   if (!v) return null
   const normalizedUrl = normalizeUrl(url)
@@ -72,9 +65,11 @@ export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }
     if (!videoRef.current) return
     if (videoRef.current.requestFullscreen) {
       videoRef.current.requestFullscreen()
-    } else if ((videoRef.current as any).webkitEnterFullscreen) {
+    } else if ('webkitEnterFullscreen' in videoRef.current) {
       // iOS support
-      ;(videoRef.current as any).webkitEnterFullscreen()
+      ;(
+        videoRef.current as unknown as { webkitEnterFullscreen: () => void }
+      ).webkitEnterFullscreen()
     }
   }
 

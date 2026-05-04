@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiIconsGrouped } from '../lib/api'
 import { haptic } from '../lib/haptic'
 import { Check, ChevronDown, ChevronRight, Search, X } from '../lib/icons'
@@ -30,8 +31,12 @@ export const IconLibrary: React.FC = () => {
 
   useEffect(() => {
     apiIconsGrouped()
-      .then((response: any) => {
-        const data = (response.data || response) as IconGroup[]
+      .then((response) => {
+        const data = (
+          Array.isArray(response)
+            ? response
+            : (response as unknown as { data: IconGroup[] }).data || []
+        ) as IconGroup[]
         setGroups(data)
         const initial: Record<string, boolean> = {}
         data.slice(0, 2).forEach((g) => {

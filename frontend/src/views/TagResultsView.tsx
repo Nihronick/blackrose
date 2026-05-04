@@ -6,7 +6,7 @@ import { ChevronRight, Folder, Hash } from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { FC, useMemo, SyntheticEvent } from 'react'
+import { type FC, type SyntheticEvent, useMemo } from 'react'
 
 interface TagResultsItem {
   key: string

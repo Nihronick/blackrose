@@ -3,7 +3,17 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { apiMediaList, apiUpload } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { Film, ImageIcon, Search, Upload, X, Check, ChevronDown, ChevronRight, LayoutGrid } from '@/lib/icons'
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Film,
+  ImageIcon,
+  LayoutGrid,
+  Search,
+  Upload,
+  X,
+} from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -116,7 +126,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
           <button
             className={cn(
               'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95',
-              activeTab === 'upload' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:bg-muted'
+              activeTab === 'upload'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-muted-foreground hover:bg-muted'
             )}
             onClick={() => setActiveTab('upload')}
           >
@@ -125,7 +137,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
           <button
             className={cn(
               'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95',
-              activeTab === 'gallery' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:bg-muted'
+              activeTab === 'gallery'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-muted-foreground hover:bg-muted'
             )}
             onClick={() => setActiveTab('gallery')}
           >
@@ -141,7 +155,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
                 <button
                   className={cn(
                     'flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all',
-                    type === 'image' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    type === 'image'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   )}
                   onClick={() => setType('image')}
                 >
@@ -151,7 +167,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
                 <button
                   className={cn(
                     'flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all',
-                    type === 'video' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    type === 'video'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   )}
                   onClick={() => setType('video')}
                 >
@@ -179,7 +197,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
               {loading && (
                 <div className="w-full py-20 flex flex-col items-center justify-center gap-4">
                   <div className="adm2-spinner size-10" />
-                  <span className="text-xs font-bold text-muted-foreground animate-pulse">ЗАГРУЗКА...</span>
+                  <span className="text-xs font-bold text-muted-foreground animate-pulse">
+                    ЗАГРУЗКА...
+                  </span>
                 </div>
               )}
 
@@ -198,7 +218,11 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
                       <X className="size-5" />
                     </button>
                   </div>
-                  <Input className="h-12 border-none bg-muted/50 text-sm font-medium" value={url} readOnly />
+                  <Input
+                    className="h-12 border-none bg-muted/50 text-sm font-medium"
+                    value={url}
+                    readOnly
+                  />
                 </div>
               )}
 
@@ -211,7 +235,11 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
               />
 
               <div className="flex items-center gap-3 pt-4">
-                <Button className="flex-1 h-14 rounded-2xl gap-2 font-black uppercase tracking-tighter" disabled={!url || loading} onClick={() => handleInsert()}>
+                <Button
+                  className="flex-1 h-14 rounded-2xl gap-2 font-black uppercase tracking-tighter"
+                  disabled={!url || loading}
+                  onClick={() => handleInsert()}
+                >
                   <Check className="size-5" />
                   Вставить в текст
                 </Button>
@@ -230,19 +258,30 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
               </div>
 
               {galleryLoading ? (
-                <div className="py-20 flex justify-center"><div className="adm2-spinner" /></div>
+                <div className="py-20 flex justify-center">
+                  <div className="adm2-spinner" />
+                </div>
               ) : (
                 <div className="space-y-4 pb-10">
                   {filteredGroups.map((group) => (
-                    <div key={group.id} className="border border-border/10 rounded-2xl overflow-hidden bg-background">
+                    <div
+                      key={group.id}
+                      className="border border-border/10 rounded-2xl overflow-hidden bg-background"
+                    >
                       <button
                         className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-muted/30 transition-colors"
                         onClick={() => setOpenGroups((p) => ({ ...p, [group.id]: !p[group.id] }))}
                       >
                         <span className="text-sm font-bold tracking-tight">{group.label}</span>
-                        <span className="bg-muted px-2 py-0.5 rounded-full text-[10px] font-bold text-muted-foreground">{group.items.length}</span>
+                        <span className="bg-muted px-2 py-0.5 rounded-full text-[10px] font-bold text-muted-foreground">
+                          {group.items.length}
+                        </span>
                         <div className="ml-auto text-muted-foreground">
-                          {openGroups[group.id] || filter ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                          {openGroups[group.id] || filter ? (
+                            <ChevronDown className="size-4" />
+                          ) : (
+                            <ChevronRight className="size-4" />
+                          )}
                         </div>
                       </button>
 
@@ -256,15 +295,24 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
                               onClick={() => handleInsert(item.url, item.type)}
                             >
                               {item.type === 'image' ? (
-                                <img src={item.url} alt="" className="size-full object-cover" loading="lazy" />
+                                <img
+                                  src={item.url}
+                                  alt=""
+                                  className="size-full object-cover"
+                                  loading="lazy"
+                                />
                               ) : (
                                 <div className="size-full flex flex-col items-center justify-center bg-muted/50">
                                   <Film className="size-6 text-muted-foreground/40 mb-1" />
-                                  <span className="text-[8px] font-bold uppercase text-muted-foreground/60">Video</span>
+                                  <span className="text-[8px] font-bold uppercase text-muted-foreground/60">
+                                    Video
+                                  </span>
                                 </div>
                               )}
                               <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <p className="text-[8px] text-white truncate font-bold leading-tight">{item.name}</p>
+                                <p className="text-[8px] text-white truncate font-bold leading-tight">
+                                  {item.name}
+                                </p>
                               </div>
                             </button>
                           ))}
@@ -276,7 +324,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
                   {filteredGroups.length === 0 && (
                     <div className="py-20 text-center opacity-30 flex flex-col items-center gap-2">
                       <LayoutGrid className="size-10" />
-                      <p className="text-sm font-bold uppercase tracking-widest">Медиа не найдено</p>
+                      <p className="text-sm font-bold uppercase tracking-widest">
+                        Медиа не найдено
+                      </p>
                     </div>
                   )}
                 </div>

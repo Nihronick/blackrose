@@ -51,4 +51,4 @@ window.Telegram = {
       getKeys: vi.fn(),
     },
   },
-} as any
+} as unknown as NonNullable<Window['Telegram']>

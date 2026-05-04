@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { AlertCircle, RefreshCw, XCircle } from '@/lib/icons'
 import Honeybadger from '@honeybadger-io/js'
-import { Component, type ReactNode, type ErrorInfo } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
@@ -55,12 +55,12 @@ export class ErrorBoundary extends Component<Props, State> {
               <RefreshCw className="mr-2 size-4" />
               Обновить
             </Button>
-            
-            {((window as any).Telegram?.WebApp?.version) && (
+
+            {window.Telegram?.WebApp?.version && (
               <Button
                 variant="outline"
                 className="h-12 rounded-2xl font-bold active:scale-95 transition-all w-full border-border/40"
-                onClick={() => (window as any).Telegram.WebApp.close?.()}
+                onClick={() => window.Telegram?.WebApp?.close()}
               >
                 <XCircle className="mr-2 size-4" />
                 Закрыть бота

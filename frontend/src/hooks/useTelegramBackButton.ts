@@ -1,5 +1,5 @@
-import { tgApp } from '@/lib/theme'
 import { useAppEnv } from '@/hooks/useAppEnv'
+import { tgApp } from '@/lib/theme'
 import { useCallback, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -16,7 +16,7 @@ export const useTelegramBackButton = () => {
         tg.HapticFeedback.impactOccurred('light')
       }
     } catch (e) {}
-    
+
     if (location.pathname === '/') {
       tg?.close?.()
       return
@@ -47,7 +47,7 @@ export const useTelegramBackButton = () => {
       backBtn.show()
     }
 
-    // Важно: удаляем старый обработчик перед добавлением нового, 
+    // Важно: удаляем старый обработчик перед добавлением нового,
     // чтобы не было стака вызовов при изменении pathname
     backBtn.offClick(handleBack)
     backBtn.onClick(handleBack)

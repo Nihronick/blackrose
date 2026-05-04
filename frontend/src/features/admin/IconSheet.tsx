@@ -36,8 +36,8 @@ export const IconSheet: React.FC<IconSheetProps> = ({ onInsert, onClose }) => {
 
   useEffect(() => {
     apiIconsGrouped()
-      .then((response: any) => {
-        const data = (response.data || response) as IconGroup[]
+      .then((response: IconGroup[] | { data: IconGroup[] }) => {
+        const data = Array.isArray(response) ? response : response.data
         setGroups(data)
         if (data[0]) setOpen({ [data[0].id]: true })
       })

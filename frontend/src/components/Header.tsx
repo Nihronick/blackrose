@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
+import { useAppEnv } from '@/hooks/useAppEnv'
 import { haptic } from '@/lib/haptic'
 import { ChevronLeft } from '@/lib/icons'
-import { useAppEnv } from '@/hooks/useAppEnv'
 import type { AppLanguage } from '@/store'
 import type React from 'react'
 

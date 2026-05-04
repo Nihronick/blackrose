@@ -77,19 +77,19 @@ export function getStoredUser(): O.Option<User> {
 export function getAuthHeaders() {
   const headers: Record<string, string> = {}
   const initData = getTelegramInitData()
-  
+
   // Приоритет 1: Мы в Telegram Mini App
   if (initData) {
     headers['X-Telegram-Init-Data'] = initData
     return headers
   }
-  
+
   // Приоритет 2: Мы в обычном браузере с JWT
   const token = getStoredToken()
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
-  
+
   return headers
 }
 interface TelegramUser {

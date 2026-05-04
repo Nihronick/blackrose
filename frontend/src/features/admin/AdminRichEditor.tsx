@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { Edit3, Eye, Sparkles, ImageIcon } from '@/lib/icons'
+import { Edit3, Eye, ImageIcon, Sparkles } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -95,9 +95,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
     setRendering(true)
     renderTimer.current = setTimeout(async () => {
       try {
-        const initData =
-          (window as unknown as { Telegram?: { WebApp?: { initData?: string } } })?.Telegram?.WebApp?.initData ??
-          ''
+        const initData = window.Telegram?.WebApp?.initData ?? ''
         const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/guide/__preview__', {
           method: 'POST',
           headers: {
@@ -289,6 +287,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
             ) : (
               <div
                 className="guide-content max-w-none prose prose-sm dark:prose-invert"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: Markdown rendering
                 dangerouslySetInnerHTML={{
                   __html:
                     liveHtml ||

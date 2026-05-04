@@ -4,7 +4,7 @@ import { apiDelete, apiPut } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { BarChart3, Edit2, Layers, LogIn, Plus, Trash2 } from '@/lib/icons'
 import type { Category } from '@/lib/types'
-import { FC, useCallback, useState } from 'react'
+import { type FC, useCallback, useState } from 'react'
 import { IconPicker } from '../AdminGuideEditor'
 import { IconPreview } from './components/IconPreview'
 

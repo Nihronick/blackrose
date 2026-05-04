@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify'
-import { marked, type TokenizerExtension, type RendererExtension } from 'marked'
+import { type RendererExtension, type TokenizerExtension, type Tokens, marked } from 'marked'
 import { normalizeUrl, parseVideo } from './utils'
 
 /**
@@ -29,7 +29,7 @@ const spoilerExtension: TokenizerExtension & RendererExtension = {
     const match = src.match(/^\|\|(.+?)\|\|/)
     if (match) return { type: 'spoiler', raw: match[0], text: match[1] }
   },
-  renderer(token: any): string {
+  renderer(token: Tokens.Generic): string {
     return `<span class="guide-spoiler">${token.text}</span>`
   },
 }
@@ -43,7 +43,7 @@ marked.use({
   gfm: true, // GitHub Flavored Markdown
   renderer: {
     // Заголовки с классами
-    heading({ text, depth }: any) {
+    heading({ text, depth }: Tokens.Heading) {
       const headerText = text ?? ''
       const level = depth ?? 2
       // Simple slugify for IDs
@@ -58,22 +58,30 @@ marked.use({
       return `<h${level} id="${id}">${headerText}</h${level}>`
     },
     // Blockquote с классом
-    blockquote({ tokens }: any) {
+    blockquote({ tokens }: Tokens.Blockquote) {
       const body = marked.parser(tokens ?? [])
       return `<blockquote class="guide-quote">${body}</blockquote>`
     },
     // li с классом (ul/ol различаем через ordered)
-    listitem({ tokens, task }: any) {
+    listitem({ tokens, task }: Tokens.ListItem) {
       const text = marked.parser(tokens ?? [])
       if (task) return `<li class="guide-li guide-task">${text}</li>`
       return `<li class="guide-li">${text}</li>`
     },
-    list({ items, ordered }: any) {
-      const itemsHtml = (items || []).map((item: any) => this.listitem?.(item) ?? '').join('')
+    list(
+      this: { listitem?: (item: Tokens.ListItem) => string } | undefined,
+      { items, ordered }: Tokens.List
+    ) {
+      const itemsHtml = (items || [])
+        .map((item: Tokens.ListItem) => this.listitem?.(item) ?? '')
+        .join('')
       const cls = ordered ? 'guide-ol' : 'guide-ul'
       const tag = ordered ? 'ol' : 'ul'
       // Добавляем класс на каждый li
-      const withClass = (itemsHtml || '').replace(/<li class="guide-li"/g, `<li class="guide-li ${cls}"`)
+      const withClass = (itemsHtml || '').replace(
+        /<li class="guide-li"/g,
+        `<li class="guide-li ${cls}"`
+      )
       return `<${tag}>${withClass}</${tag}>`
     },
     // HR с классом
@@ -81,12 +89,12 @@ marked.use({
       return '<hr class="guide-hr">'
     },
     // Код с классом
-    codespan({ text }: any) {
+    codespan({ text }: Tokens.Codespan) {
       const codeText = text ?? ''
       return `<code class="guide-code">${codeText}</code>`
     },
     // Внешние ссылки — target=_blank + rel=noreferrer
-    link({ href, title, tokens }: any) {
+    link({ href, tokens }: Tokens.Link) {
       const normalizedHref = normalizeUrl(href ?? '')
       const label = tokens ? marked.parser(tokens) : ''
 
@@ -101,7 +109,7 @@ marked.use({
       return `<a href="${normalizedHref}" class="text-primary hover:underline">${label}</a>`
     },
     // Изображения с нормализацией GitHub и no-referrer
-    image({ href, title, text }: any) {
+    image({ href, text }: Tokens.Image) {
       const src = normalizeUrl(href ?? '')
       const alt = text ?? ''
       const parsedVideo = parseVideo(src)
@@ -142,7 +150,10 @@ function replaceIcons(text: string, iconResolver: (name: string) => string) {
 
 // ── Guide cyberlinks [[key]] и [[key|Подпись]] ────────────────
 
-function replaceCyberlinks(text: string, guideLinks: Record<string, { title?: string; icon?: string }> = {}) {
+function replaceCyberlinks(
+  text: string,
+  guideLinks: Record<string, { title?: string; icon?: string }> = {}
+) {
   return text.replace(
     /\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g,
     (_: string, keyPart: string, labelPart: string) => {

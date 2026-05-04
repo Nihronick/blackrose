@@ -76,10 +76,10 @@ const GuidesList = ({ onSelectGuide }: TopGuidesSectionProps) => {
   const { data } = useSuspenseQuery({
     queryKey: ['top-guides'],
     queryFn: apiTopGuides,
-  })
+  }) as { data: { results: TopGuide[] } }
   const language = useAppStore((state) => state.language)
 
-  const guides: TopGuide[] = ((data as any)?.results || []).filter((guide: TopGuide) =>
+  const guides: TopGuide[] = (data?.results || []).filter((guide: TopGuide) =>
     isLanguageKey(guide.key, language)
   )
 

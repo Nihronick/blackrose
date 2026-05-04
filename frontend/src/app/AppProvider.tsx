@@ -1,7 +1,7 @@
-import { FC, ReactNode, useEffect } from 'react'
-import { useAppStore } from '@/store'
-import { useAppInitialization } from '@/hooks/useAppInitialization'
 import { useAppEnv } from '@/hooks/useAppEnv'
+import { useAppInitialization } from '@/hooks/useAppInitialization'
+import { useAppStore } from '@/store'
+import { type FC, type ReactNode, useEffect } from 'react'
 import { toast } from 'sonner'
 
 interface AppProviderProps {
@@ -24,24 +24,28 @@ export const AppProvider: FC<AppProviderProps> = ({ children }) => {
   useEffect(() => {
     const root = window.document.documentElement
     root.lang = language
-    
+
     const applyTheme = (t: string) => {
       root.classList.remove('light', 'dark')
       if (t === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
         root.classList.add(systemTheme)
       } else {
         root.classList.add(t)
       }
     }
-    
+
     applyTheme(theme)
   }, [theme, language])
 
   // Global Error Handlers
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent | PromiseRejectionEvent) => {
-      const msg = (event instanceof ErrorEvent ? event.error?.message : event.reason?.message) || 'Что-то пошло не так'
+      const msg =
+        (event instanceof ErrorEvent ? event.error?.message : event.reason?.message) ||
+        'Что-то пошло не так'
       if (msg.includes('ResizeObserver')) return
       toast.error(msg)
     }

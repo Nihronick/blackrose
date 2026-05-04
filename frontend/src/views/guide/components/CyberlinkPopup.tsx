@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { apiFetch } from '@/lib/api'
-import type { Guide } from '@/lib/types'
 import { haptic } from '@/lib/haptic'
 import { ExternalLink } from '@/lib/icons'
 import { formatGuideText } from '@/lib/markdown'
+import type { Guide } from '@/lib/types'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import type React from 'react'
 import { useMemo } from 'react'
@@ -57,6 +57,7 @@ export const CyberlinkPopup: React.FC<CyberlinkPopupProps> = ({
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div
             className="guide-content prose prose-invert max-w-none prose-img:rounded-xl"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: Markdown rendering
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
         </div>

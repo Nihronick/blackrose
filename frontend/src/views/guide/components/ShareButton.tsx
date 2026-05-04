@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import { Check, Share2 } from '@/lib/icons'
-import { FC, useState } from 'react'
+import { type FC, useState } from 'react'
 
 interface Telegram {
   WebApp: {

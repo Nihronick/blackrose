@@ -2,12 +2,13 @@ import { Card } from '@/components/ui/card'
 import { apiDelete, apiMediaList } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { Copy, Film, Image as ImageIcon, Search, Trash2 } from '@/lib/icons'
+import type { MediaGroup, MediaItem, MediaListResponse } from '@/lib/types'
 import { normalizeUrl } from '@/lib/utils'
-import { FC, useEffect, useState, MouseEvent } from 'react'
+import { type FC, type MouseEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 export const MediaTab: FC = () => {
-  const [data, setData] = useState<{ groups: any[]; total: number } | null>(null)
+  const [data, setData] = useState<MediaListResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
@@ -29,12 +30,15 @@ export const MediaTab: FC = () => {
       </div>
     )
 
-  const filteredGroups = data?.groups.map(group => ({
-    ...group,
-    items: group.items.filter((item: any) => 
-      item.name.toLowerCase().includes(search.toLowerCase())
-    )
-  })).filter(group => group.items.length > 0) || []
+  const filteredGroups =
+    data?.groups
+      .map((group: MediaGroup) => ({
+        ...group,
+        items: group.items.filter((item: MediaItem) =>
+          item.name.toLowerCase().includes(search.toLowerCase())
+        ),
+      }))
+      .filter((group) => group.items.length > 0) || []
 
   const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url)
@@ -42,24 +46,27 @@ export const MediaTab: FC = () => {
     toast.success('Ссылка скопирована')
   }
 
-  const handleDelete = async (e: MouseEvent, item: any) => {
+  const handleDelete = async (e: MouseEvent, item: MediaItem) => {
     e.stopPropagation()
     if (!window.confirm('Удалить этот файл навсегда?')) return
-    
+
     try {
       await apiDelete(`/api/admin/media?url=${encodeURIComponent(item.url)}`)
       haptic.success()
       toast.success('Файл удален')
       load()
-    } catch (err: any) {
-      toast.error(`Ошибка: ${err.message}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      toast.error(`Ошибка: ${message}`)
     }
   }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black tracking-tight uppercase">Библиотека медиа ({data?.total})</h2>
+        <h2 className="text-xl font-black tracking-tight uppercase">
+          Библиотека медиа ({data?.total})
+        </h2>
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/40" />
           <input
@@ -85,36 +92,41 @@ export const MediaTab: FC = () => {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-              {group.items.map((item: any, i: number) => (
-                <Card 
-                  key={i} 
+              {group.items.map((item: MediaItem, i: number) => (
+                <Card
+                  key={i}
                   className="group relative aspect-square overflow-hidden border-none bg-muted/20 hover:ring-2 ring-primary/40 transition-all cursor-pointer"
                   onClick={() => copyToClipboard(item.url)}
                 >
                   {item.type === 'image' ? (
-                    <img 
-                      src={normalizeUrl(item.url)} 
-                      alt="" 
+                    <img
+                      src={normalizeUrl(item.url)}
+                      alt=""
                       className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
                       loading="lazy"
                     />
                   ) : (
                     <div className="size-full flex flex-col items-center justify-center gap-2 bg-slate-900/40">
                       <Film className="size-8 text-white/40" />
-                      <span className="text-[8px] font-black uppercase text-white/60 tracking-widest">Video</span>
+                      <span className="text-[8px] font-black uppercase text-white/60 tracking-widest">
+                        Video
+                      </span>
                     </div>
                   )}
-                  
+
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-3 gap-2 backdrop-blur-[2px]">
                     <div className="flex gap-2">
-                      <div 
+                      <div
                         className="size-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors"
-                        onClick={(e) => { e.stopPropagation(); copyToClipboard(item.url); }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          copyToClipboard(item.url)
+                        }}
                       >
                         <Copy className="size-4 text-white" />
                       </div>
-                      <div 
+                      <div
                         className="size-8 rounded-full bg-destructive/60 hover:bg-destructive flex items-center justify-center transition-colors"
                         onClick={(e) => handleDelete(e, item)}
                       >

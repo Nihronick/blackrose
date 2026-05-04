@@ -1,3 +1,4 @@
+import { useAppEnv } from '@/hooks/useAppEnv'
 import { apiFetch } from '@/lib/api'
 import {
   clearStoredToken,
@@ -10,7 +11,6 @@ import {
 } from '@/lib/auth'
 import { applyLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
-import { useAppEnv } from '@/hooks/useAppEnv'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
 import { useEffect } from 'react'
@@ -42,7 +42,13 @@ export const useAppInitialization = () => {
       // 1. Если в TMA — обмениваем данные на JWT (Exchange Strategy)
       if (initData) {
         try {
-          const data = await apiFetch<any>('/api/auth/tma-login', { method: 'POST' })
+          interface TmaLoginResponse {
+            token: string
+            user_id: number
+            first_name: string
+            is_admin: boolean
+          }
+          const data = await apiFetch<TmaLoginResponse>('/api/auth/tma-login', { method: 'POST' })
           if (data?.token && !isCancelled) {
             setStoredToken(data.token, {
               id: data.user_id,
@@ -54,7 +60,7 @@ export const useAppInitialization = () => {
         } catch (e) {
           console.warn('TMA JWT Exchange failed, falling back to initData only:', e)
         }
-      } 
+      }
       // 2. Веб-режим: сразу применяем сохранённый токен
       else if (mode === 'web') {
         pipe(
@@ -88,7 +94,9 @@ export const useAppInitialization = () => {
         ? deepGuide
         : applyLanguageKey(deepGuide, language)
 
-      const payload = await apiFetch<{ categories?: { key: string }[] }>('/api/categories').catch(() => null)
+      const payload = await apiFetch<{ categories?: { key: string }[] }>('/api/categories').catch(
+        () => null
+      )
       const categories = Array.isArray(payload?.categories) ? payload.categories : []
       const category = categories.find((c: { key: string }) => c.key === guideKey)
 

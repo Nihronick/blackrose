@@ -5,15 +5,14 @@ import { Card } from '@/components/ui/card'
 import {
   CategoriesTab,
   DashboardTab,
+  DiscordLabTab,
   GuidesTab,
   HistoryTab,
   LocalAdminLogin,
   MediaTab,
-  DiscordLabTab,
 } from '@/features/admin/AdminTabs'
 import { AdminSidebar } from '@/features/admin/components/AdminSidebar'
 import { apiFetch } from '@/lib/api'
-import type { Category } from '@/lib/types'
 import { isTelegram } from '@/lib/auth'
 import {
   AlertCircle,
@@ -31,14 +30,15 @@ import {
   ShieldCheck,
   X,
 } from '@/lib/icons'
+import type { Category, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { FC, Suspense, useCallback, useEffect, useState } from 'react'
+import { type FC, Suspense, useCallback, useEffect, useState } from 'react'
 
 interface AdminViewProps {
   onClose: () => void
 }
 
-const TABS = [
+const TABS: readonly AdminTab[] = [
   { id: 'dash', label: 'Обзор', title: 'Системная панель', icon: BarChart3 },
   { id: 'guides', label: 'Гайды', title: 'Управление гайдами', icon: FileText },
   { id: 'categories', label: 'Категории', title: 'Структура контента', icon: LayoutGrid },
@@ -65,12 +65,15 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [importedGuide, setImportedGuide] = useState<any>(null)
+  const [importedGuide, setImportedGuide] = useState<Guide | null>(null)
 
   useEffect(() => {
-    const handler = (e: any) => {
-      setImportedGuide(e.detail.guide)
-      setTab('guides')
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.guide) {
+        setImportedGuide(detail.guide)
+        setTab('guides')
+      }
     }
     window.addEventListener('blackrose:import:guide', handler)
     return () => window.removeEventListener('blackrose:import:guide', handler)
@@ -176,10 +179,12 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
         tabs={TABS}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onTabChange={(id) => { setTab(id); setSidebarOpen(false) }}
+        onTabChange={(id) => {
+          setTab(id)
+          setSidebarOpen(false)
+        }}
         onLogout={onClose}
       />
-
 
       {/* Main View Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-muted/5">
@@ -232,10 +237,10 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {activeTab?.id === 'dash' && <DashboardTab />}
                 {activeTab?.id === 'guides' && (
-                  <GuidesTab 
-                    categories={categories} 
-                    importedGuide={importedGuide} 
-                    onImportProcessed={() => setImportedGuide(null)} 
+                  <GuidesTab
+                    categories={categories}
+                    importedGuide={importedGuide}
+                    onImportProcessed={() => setImportedGuide(null)}
                   />
                 )}
                 {activeTab?.id === 'categories' && (

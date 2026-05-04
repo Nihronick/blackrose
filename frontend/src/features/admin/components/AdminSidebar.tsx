@@ -1,18 +1,31 @@
-import { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import { LogOut, X } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { ComponentType, FC } from 'react'
+
+interface AdminTab {
+  id: string
+  label: string
+  icon: ComponentType<{ className?: string }>
+}
 
 interface AdminSidebarProps {
   tab: string
-  tabs: readonly any[]
+  tabs: readonly AdminTab[]
   open: boolean
   onClose: () => void
-  onTabChange: (id: any) => void
+  onTabChange: (id: string) => void
   onLogout: () => void
 }
 
-export const AdminSidebar: FC<AdminSidebarProps> = ({ tab, tabs, open, onClose, onTabChange, onLogout }) => {
+export const AdminSidebar: FC<AdminSidebarProps> = ({
+  tab,
+  tabs,
+  open,
+  onClose,
+  onTabChange,
+  onLogout,
+}) => {
   return (
     <>
       {open && (
@@ -39,14 +52,21 @@ export const AdminSidebar: FC<AdminSidebarProps> = ({ tab, tabs, open, onClose, 
               </span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="sm:hidden rounded-full h-8 w-8" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="sm:hidden rounded-full h-8 w-8"
+            onClick={onClose}
+          >
             <X className="size-4" />
           </Button>
         </div>
 
         <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
           <div className="px-4 py-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/20">Навигация</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/20">
+              Навигация
+            </h3>
           </div>
           {tabs.map((t) => (
             <button
@@ -62,7 +82,9 @@ export const AdminSidebar: FC<AdminSidebarProps> = ({ tab, tabs, open, onClose, 
               <t.icon
                 className={cn(
                   'size-5 transition-transform group-hover:scale-110',
-                  tab === t.id ? 'text-primary-foreground' : 'text-muted-foreground/40 group-hover:text-primary/60'
+                  tab === t.id
+                    ? 'text-primary-foreground'
+                    : 'text-muted-foreground/40 group-hover:text-primary/60'
                 )}
               />
               <span className="text-sm font-bold tracking-tight">{t.label}</span>

@@ -1,5 +1,5 @@
-import { FC, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { type FC, useEffect, useRef } from 'react'
 
 interface GuideContentProps {
   html: string
@@ -49,6 +49,7 @@ export const GuideContent: FC<GuideContentProps> = ({ html, onImageClick, onCybe
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
       className="guide-content-wrapper prose prose-invert max-w-none"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: Markdown rendering
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )

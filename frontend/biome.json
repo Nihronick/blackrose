@@ -48,6 +48,13 @@
     }
   },
   "files": {
-    "ignore": ["dist/", "node_modules/", "*.min.js", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
+    "ignore": [
+      "dist/",
+      "node_modules/",
+      "*.min.js",
+      "**/__tests__/**",
+      "**/*.test.ts",
+      "**/*.test.tsx"
+    ]
   }
 }

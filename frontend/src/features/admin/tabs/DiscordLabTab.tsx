@@ -1,16 +1,41 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
-import { Beaker, Copy, Globe, RefreshCcw, Send, Settings, Database } from '@/lib/icons'
-import { FC, useState, useMemo, useEffect, ChangeEvent } from 'react'
+import { Textarea } from '@/components/ui/textarea'
+import { apiFetch, apiGetProxyUrl, apiImportMedia, apiPost, apiPut } from '@/lib/api'
 import { getGameIconUrl } from '@/lib/gameIcons'
-import { apiFetch, apiPost, apiPut, apiImportMedia, apiGetProxyUrl } from '@/lib/api'
-import type { Guide, Category } from '@/lib/types'
+import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings } from '@/lib/icons'
+import type { Category, Guide } from '@/lib/types'
+import { type ChangeEvent, type FC, useEffect, useMemo, useState } from 'react'
+
+interface DiscordAttachment {
+  filename: string
+  url: string
+  content_type?: string
+  size: number
+}
+
+interface DiscordMessage {
+  content: string
+  author: {
+    username: string
+    global_name?: string
+  }
+  timestamp: string
+  attachments?: DiscordAttachment[]
+}
+
+interface SynthesisResult {
+  title: string
+  content: string
+  media_count: number
+  media_files: DiscordAttachment[]
+  status: string
+}
 
 export const DiscordLabTab: FC = () => {
   const [jsonInput, setJsonInput] = useState('')
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<SynthesisResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [isTranslating, setIsTranslating] = useState(false)
@@ -22,67 +47,76 @@ export const DiscordLabTab: FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
 
   useEffect(() => {
-    apiFetch<Guide[]>('/api/admin/guides').then(setAllGuides).catch(() => {})
-    apiFetch<Category[]>('/api/admin/categories').then(cats => {
-      setCategories(cats)
-      if (cats.length > 0) setSelectedCategory(cats[0].key)
-    }).catch(() => {})
+    apiFetch<Guide[]>('/api/admin/guides')
+      .then(setAllGuides)
+      .catch(() => {})
+    apiFetch<Category[]>('/api/admin/categories')
+      .then((cats) => {
+        setCategories(cats)
+        if (cats.length > 0) setSelectedCategory(cats[0].key)
+      })
+      .catch(() => {})
   }, [])
 
   const runTest = async () => {
     if (!jsonInput.trim()) return
     setLoading(true)
     try {
-      await new Promise(r => setTimeout(r, 600))
-      
-      let synthesizedContent = ""
+      await new Promise((r) => setTimeout(r, 600))
+
+      let synthesizedContent = ''
       let mediaCount = 0
-      let title = "Новый импорт"
-      let mediaFiles: any[] = []
-      
+      let title = 'Новый импорт'
+      let mediaFiles: DiscordAttachment[] = []
+
       if (jsonInput.trim().startsWith('[')) {
-        const parsed = JSON.parse(jsonInput)
-        const sorted = [...parsed].sort((a: any, b: any) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        const parsed = JSON.parse(jsonInput) as DiscordMessage[]
+        const sorted = [...parsed].sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         )
 
-        synthesizedContent = sorted.map((m: any) => {
-          let text = (m.content || "").replace(/\[\d{2}:\d{2}:\d{2}\] \*\*.*?\*\*: /g, '')
-          if (m.attachments && m.attachments.length > 0) {
-            m.attachments.forEach((a: any) => {
-              const type = a.content_type?.startsWith('video') ? 'video' : 'image'
-              text += `\n![${type}](${a.url})\n`
-            })
-          }
-          return text
-        }).filter((t: string) => t.trim() !== "").join('\n\n')
+        synthesizedContent = sorted
+          .map((m) => {
+            let text = (m.content || '').replace(/\[\d{2}:\d{2}:\d{2}\] \*\*.*?\*\*: /g, '')
+            if (m.attachments && m.attachments.length > 0) {
+              for (const a of m.attachments) {
+                const type = a.content_type?.startsWith('video') ? 'video' : 'image'
+                text += `\n![${type}](${a.url})\n`
+              }
+            }
+            return text
+          })
+          .filter((t: string) => t.trim() !== '')
+          .join('\n\n')
 
-        const allAttachments = sorted.flatMap((m: any) => m.attachments || [])
+        const allAttachments = sorted.flatMap((m) => m.attachments || [])
         mediaCount = allAttachments.length
-        mediaFiles = allAttachments.map((a: any) => ({
+        mediaFiles = allAttachments.map((a) => ({
           filename: a.filename,
           url: a.url,
           content_type: a.content_type,
-          size: a.size
+          size: a.size,
         }))
 
-        title = "Гайд от " + (sorted[0]?.author?.global_name || sorted[0]?.author?.username || "Community")
+        title =
+          'Гайд от ' +
+          (sorted[0]?.author?.global_name || sorted[0]?.author?.username || 'Community')
       } else {
         synthesizedContent = jsonInput
         const links = jsonInput.match(/https?:\/\/\S+/g)
         mediaCount = links ? links.length : 0
       }
-      
+
       setEditableTitle(title)
       setResult({
         title,
         content: synthesizedContent,
         media_count: mediaCount,
         media_files: mediaFiles,
-        status: "Готово к импорту"
+        status: 'Готово к импорту',
       })
     } catch (e) {
-      alert("Ошибка обработки: " + e)
+      alert('Ошибка обработки: ' + e)
     } finally {
       setLoading(false)
     }
@@ -90,27 +124,35 @@ export const DiscordLabTab: FC = () => {
 
   const handleCreateGuide = async () => {
     if (!result) return
-    
+
     setIsImporting(true)
     let finalContent = result.content
     const photos: string[] = []
     const videos: string[] = []
     let failedMedia = 0
-    
+
     try {
       const filesToProcess = result.media_files || []
-      setImportProgress({ current: 0, total: filesToProcess.length, status: 'Подготовка файлов...' })
-      
+      setImportProgress({
+        current: 0,
+        total: filesToProcess.length,
+        status: 'Подготовка файлов...',
+      })
+
       for (let i = 0; i < filesToProcess.length; i++) {
         const file = filesToProcess[i]
-        setImportProgress(prev => ({ ...prev, current: i + 1, status: `Загрузка: ${file.filename || 'файл'} (${i + 1}/${filesToProcess.length})` }))
-        
+        setImportProgress((prev) => ({
+          ...prev,
+          current: i + 1,
+          status: `Загрузка: ${file.filename || 'файл'} (${i + 1}/${filesToProcess.length})`,
+        }))
+
         try {
-          const uploadRes: any = await apiImportMedia(file.url, `imported/discord/${Date.now()}`)
-          
-          if (uploadRes && uploadRes.url) {
+          const uploadRes = await apiImportMedia(file.url, `imported/discord/${Date.now()}`)
+
+          if (uploadRes?.url) {
             finalContent = finalContent.replace(file.url, uploadRes.url)
-            
+
             if (file.content_type?.startsWith('video')) {
               videos.push(uploadRes.url)
             } else {
@@ -119,36 +161,37 @@ export const DiscordLabTab: FC = () => {
           }
         } catch (err) {
           failedMedia++
-          console.error("Failed to import media file:", file.url, err)
+          console.error('Failed to import media file:', file.url, err)
         }
       }
-      
-      setImportProgress(prev => ({ ...prev, status: 'Сохранение гайда в базу...' }))
-      
+
+      setImportProgress((prev) => ({ ...prev, status: 'Сохранение гайда в базу...' }))
+
       // Сохраняем гайд в БД через API
       const slugify = (text: string) => {
         return text
           .toString()
           .toLowerCase()
           .trim()
-          .replace(/\s+/g, '_')           // Пробелы в _
-          .replace(/[^\w-]+/g, '')        // Удаляем всё кроме букв, цифр, - и _
-          .replace(/--+/g, '_')           // Двойные -- в _
-          .substring(0, 60);              // Лимит бэкенда 64 символа
+          .replace(/\s+/g, '_') // Пробелы в _
+          .replace(/[^\w-]+/g, '') // Удаляем всё кроме букв, цифр, - и _
+          .replace(/--+/g, '_') // Двойные -- в _
+          .substring(0, 60) // Лимит бэкенда 64 символа
       }
 
-      const guideKey = selectedGuideKey === 'new' 
-        ? `${slugify(editableTitle)}_${Date.now().toString().slice(-4)}` 
-        : selectedGuideKey
-      
+      const guideKey =
+        selectedGuideKey === 'new'
+          ? `${slugify(editableTitle)}_${Date.now().toString().slice(-4)}`
+          : selectedGuideKey
+
       // Определяем category_key
       let categoryKey = selectedCategory || 'general'
       if (selectedGuideKey !== 'new') {
         // Для существующего гайда — берём его категорию
-        const existing = allGuides.find(g => g.key === selectedGuideKey)
+        const existing = allGuides.find((g) => g.key === selectedGuideKey)
         if (existing) categoryKey = existing.category_key
       }
-      
+
       await apiPut(`/api/admin/guide/${guideKey}`, {
         category_key: categoryKey,
         title: editableTitle,
@@ -158,23 +201,24 @@ export const DiscordLabTab: FC = () => {
         document: [],
         sort_order: 0,
       })
-      
+
       setIsImporting(false)
-      
+
       const statusParts = ['✅ Гайд сохранён!']
       if (failedMedia > 0) {
         statusParts.push(`⚠️ ${failedMedia} медиа не загружено (истёкшие ссылки Discord)`)
       }
-      
+
       setResult({
         ...result,
         content: finalContent,
-        status: statusParts.join(' | ')
+        status: statusParts.join(' | '),
       })
-      
+
       // Обновляем список гайдов
-      apiFetch<Guide[]>('/api/admin/guides').then(setAllGuides).catch(() => {})
-      
+      apiFetch<Guide[]>('/api/admin/guides')
+        .then(setAllGuides)
+        .catch(() => {})
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       alert(`Ошибка при импорте: ${msg}`)
@@ -185,11 +229,12 @@ export const DiscordLabTab: FC = () => {
   const handleTranslate = async () => {
     if (!result) return
     setIsTranslating(true)
-    
+
     const mediaMap = new Map<string, string>()
     let placeholderIndex = 0
-    const protectedRegex = /(!\[(?:image|video)\]\(.*?\)|<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/[^\s]+)/g
-    
+    const protectedRegex =
+      /(!\[(?:image|video)\]\(.*?\)|<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/[^\s]+)/g
+
     const safeTextForAi = result.content.replace(protectedRegex, (match: string) => {
       const placeholder = `%%___M_TKN_${placeholderIndex}___%%`
       mediaMap.set(placeholder, match)
@@ -198,9 +243,11 @@ export const DiscordLabTab: FC = () => {
     })
 
     try {
-      const res = await apiPost<{ translated: string }>('/api/admin/translate', { text: safeTextForAi })
-      
-      if (res && res.translated) {
+      const res = await apiPost<{ translated: string }>('/api/admin/translate', {
+        text: safeTextForAi,
+      })
+
+      if (res?.translated) {
         let finalTranslated = res.translated
         mediaMap.forEach((originalMedia, placeholder) => {
           finalTranslated = finalTranslated.replace(placeholder, originalMedia)
@@ -209,11 +256,11 @@ export const DiscordLabTab: FC = () => {
         setResult({
           ...result,
           content: finalTranslated,
-          status: "Переведено (AI)"
+          status: 'Переведено (AI)',
         })
       }
     } catch (e) {
-      alert("Ошибка перевода: " + e)
+      alert('Ошибка перевода: ' + e)
     } finally {
       setIsTranslating(false)
     }
@@ -241,17 +288,22 @@ export const DiscordLabTab: FC = () => {
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">
               Ввод: JSON из Discord
             </h3>
-            <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] uppercase font-bold hover:bg-destructive/10 hover:text-destructive" onClick={() => setJsonInput('')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-3 text-[9px] uppercase font-bold hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setJsonInput('')}
+            >
               Очистить
             </Button>
           </div>
-          <Textarea 
+          <Textarea
             className="min-h-[550px] font-mono text-[11px] bg-muted/20 border-none focus-visible:ring-primary/20 p-6 rounded-2xl no-scrollbar"
             placeholder='[{"content": "Hello :fire:", "author": {"username": "HalfSquirrel"}}, ...]'
             value={jsonInput}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setJsonInput(e.target.value)}
           />
-          <Button 
+          <Button
             className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 text-xs"
             onClick={runTest}
             disabled={loading}
@@ -265,22 +317,26 @@ export const DiscordLabTab: FC = () => {
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">
             Результат синтеза и перевода
           </h3>
-          
+
           {result ? (
             <div className="space-y-6 animate-in zoom-in-95 duration-500 flex-1 flex flex-col">
               {/* Настройки импорта */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-primary/5 rounded-[24px] border border-primary/10 shadow-inner">
                 <div className="space-y-2">
-                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Целевой гайд</div>
-                  <select 
+                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">
+                    Целевой гайд
+                  </div>
+                  <select
                     className="w-full h-11 bg-background/50 border-none rounded-xl px-3 text-xs font-bold focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
                     value={selectedGuideKey}
                     onChange={(e) => setSelectedGuideKey(e.target.value)}
                   >
                     <option value="new">+ Создать новый гайд</option>
                     <optgroup label="Существующие гайды (Заменить)">
-                      {allGuides.map(g => (
-                        <option key={g.key} value={g.key}>{g.title}</option>
+                      {allGuides.map((g) => (
+                        <option key={g.key} value={g.key}>
+                          {g.title}
+                        </option>
                       ))}
                     </optgroup>
                   </select>
@@ -288,34 +344,42 @@ export const DiscordLabTab: FC = () => {
 
                 {selectedGuideKey === 'new' && categories.length > 0 && (
                   <div className="space-y-2">
-                    <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Категория</div>
-                    <select 
+                    <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">
+                      Категория
+                    </div>
+                    <select
                       className="w-full h-11 bg-background/50 border-none rounded-xl px-3 text-xs font-bold focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
                     >
-                      {categories.map(c => (
-                        <option key={c.key} value={c.key}>{c.title}</option>
+                      {categories.map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {c.title}
+                        </option>
                       ))}
                     </select>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">Название гайда</div>
-                  <Input 
+                  <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">
+                    Название гайда
+                  </div>
+                  <Input
                     className="h-11 bg-background/50 border-none font-bold text-sm focus-visible:ring-primary/20 rounded-xl"
                     value={editableTitle}
                     onChange={(e) => setEditableTitle(e.target.value)}
                     placeholder="Введите название..."
                   />
                 </div>
-                
+
                 <div className="col-span-full pt-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Database className="size-3 text-primary/40" />
                     <span className="text-[9px] font-bold text-muted-foreground/40 uppercase">
-                      {selectedGuideKey === 'new' ? 'Будет создан новый объект в базе' : `Обновит контент гайда: ${selectedGuideKey}`}
+                      {selectedGuideKey === 'new'
+                        ? 'Будет создан новый объект в базе'
+                        : `Обновит контент гайда: ${selectedGuideKey}`}
                     </span>
                   </div>
                   <div className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-[9px] font-black uppercase tracking-widest">
@@ -326,8 +390,12 @@ export const DiscordLabTab: FC = () => {
 
               <div className="flex-1 p-8 bg-muted/20 rounded-[32px] border border-white/5 space-y-4 shadow-inner relative overflow-hidden">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">Содержимое гайда</div>
-                  <div className="px-3 py-1 bg-muted/40 rounded-full text-[9px] font-bold text-primary/60 border border-primary/5">{result.media_count} медиа-файлов</div>
+                  <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">
+                    Содержимое гайда
+                  </div>
+                  <div className="px-3 py-1 bg-muted/40 rounded-full text-[9px] font-bold text-primary/60 border border-primary/5">
+                    {result.media_count} медиа-файлов
+                  </div>
                 </div>
                 <div className="max-h-[400px] overflow-y-auto no-scrollbar pr-2">
                   <FormattedContent text={result.content} />
@@ -336,23 +404,30 @@ export const DiscordLabTab: FC = () => {
 
               {result.media_files && result.media_files.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-[10px] font-black text-muted-foreground/40 uppercase">Найденные медиа (Временные ссылки)</div>
+                  <div className="text-[10px] font-black text-muted-foreground/40 uppercase">
+                    Найденные медиа (Временные ссылки)
+                  </div>
                   <div className="grid grid-cols-1 gap-2">
-                    {result.media_files.slice(0, 3).map((f: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-muted/10 rounded-xl text-[10px] font-mono truncate">
+                    {result.media_files.slice(0, 3).map((f, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-2 bg-muted/10 rounded-xl text-[10px] font-mono truncate"
+                      >
                         <span className="truncate flex-1 pr-2">{f.filename}</span>
                         <span className="text-primary/40 shrink-0">{f.content_type}</span>
                       </div>
                     ))}
                     {result.media_files.length > 3 && (
-                      <div className="text-[9px] text-center text-muted-foreground italic">и еще {result.media_files.length - 3} файла...</div>
+                      <div className="text-[9px] text-center text-muted-foreground italic">
+                        и еще {result.media_files.length - 3} файла...
+                      </div>
                     )}
                   </div>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                <Button 
+                <Button
                   className="h-14 rounded-2xl bg-primary shadow-xl shadow-primary/20 text-md font-black uppercase tracking-wider group"
                   onClick={handleCreateGuide}
                   disabled={isImporting}
@@ -360,7 +435,9 @@ export const DiscordLabTab: FC = () => {
                   {isImporting ? (
                     <div className="flex items-center gap-2">
                       <RefreshCcw className="size-4 animate-spin" />
-                      <span>{importProgress.current}/{importProgress.total}</span>
+                      <span>
+                        {importProgress.current}/{importProgress.total}
+                      </span>
                     </div>
                   ) : (
                     <>
@@ -370,21 +447,25 @@ export const DiscordLabTab: FC = () => {
                   )}
                 </Button>
                 <div className="flex flex-col gap-2">
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     className="flex-1 rounded-2xl text-xs gap-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20"
                     onClick={handleTranslate}
                     disabled={isTranslating}
                   >
-                    {isTranslating ? <RefreshCcw className="size-3.5 animate-spin" /> : <Globe className="size-3.5" />}
+                    {isTranslating ? (
+                      <RefreshCcw className="size-3.5 animate-spin" />
+                    ) : (
+                      <Globe className="size-3.5" />
+                    )}
                     Перевести (AI)
                   </Button>
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     className="flex-1 rounded-2xl text-xs gap-2"
                     onClick={() => {
                       navigator.clipboard.writeText(result.content)
-                      alert("Текст скопирован!")
+                      alert('Текст скопирован!')
                     }}
                   >
                     <Copy className="size-3.5" />
@@ -395,11 +476,15 @@ export const DiscordLabTab: FC = () => {
 
               {isImporting && (
                 <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 animate-in slide-in-from-bottom-2">
-                  <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">Процесс автоматизации</div>
-                  <div className="text-xs font-bold text-foreground/80">{importProgress.status}</div>
+                  <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">
+                    Процесс автоматизации
+                  </div>
+                  <div className="text-xs font-bold text-foreground/80">
+                    {importProgress.status}
+                  </div>
                   <div className="mt-2 h-1 w-full bg-primary/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary transition-all duration-300" 
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
                       style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
                     />
                   </div>
@@ -422,44 +507,50 @@ export const DiscordLabTab: FC = () => {
 const FormattedContent = ({ text }: { text: string }) => {
   const parts = useMemo(() => {
     // Ищем {{icon:name}}, <a:name:id>, <:name:id>, :name:, ![type](url), и прямые ссылки Discord
-    return text.split(/(\{\{icon:[^}]+\}\}|<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|!\[(?:image|video)\]\(.*?\)|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/attachments\/\d+\/\d+\/[\w.-]+(?:\?[\w=&.%-]+)?)/g)
+    return text.split(
+      /(\{\{icon:[^}]+\}\}|<a?:[a-zA-Z0-9_]+:\d+>|:[a-zA-Z0-9_]+:|!\[(?:image|video)\]\(.*?\)|https?:\/\/(?:cdn|media)\.discordapp\.(?:com|net)\/attachments\/\d+\/\d+\/[\w.-]+(?:\?[\w=&.%-]+)?)/g
+    )
   }, [text])
 
   return (
     <div className="text-sm leading-relaxed whitespace-pre-wrap opacity-90">
       {parts.map((part, i) => {
         // 0. Обработка нового формата {{icon:name}}
-        const iconTokenMatch = part.match(/^\{\{icon:([^}]+)\}\}$ /) || part.match(/^\{\{icon:([^}]+)\}\}$ /)
+        const iconTokenMatch =
+          part.match(/^\{\{icon:([^}]+)\}\}$ /) || part.match(/^\{\{icon:([^}]+)\}\}$ /)
         // Correcting regex for token
         if (part.startsWith('{{icon:') && part.endsWith('}}')) {
-           const name = part.slice(7, -2);
-           const url = getGameIconUrl(name);
-           if (url) {
-             return (
-               <img 
-                 key={i} 
-                 src={url} 
-                 alt={name} 
-                 className="inline-block size-5 mx-0.5 -mt-1 rounded-sm align-middle hover:scale-150 transition-transform cursor-help object-contain"
-                 title={name}
-               />
-             )
-           }
+          const name = part.slice(7, -2)
+          const url = getGameIconUrl(name)
+          if (url) {
+            return (
+              <img
+                key={i}
+                src={url}
+                alt={name}
+                className="inline-block size-5 mx-0.5 -mt-1 rounded-sm align-middle hover:scale-150 transition-transform cursor-help object-contain"
+                title={name}
+              />
+            )
+          }
         }
 
         // 1. Обработка Discord эмодзи
-        const emojiMatch = part.match(/<(a?):([a-zA-Z0-9_]+):(\d+)>/) || part.match(/^:([a-zA-Z0-9_]+):$/)
+        const emojiMatch =
+          part.match(/<(a?):([a-zA-Z0-9_]+):(\d+)>/) || part.match(/^:([a-zA-Z0-9_]+):$/)
         if (emojiMatch) {
           let name = ''
           let url = null
-          
+
           if (emojiMatch.length === 4) {
             const isAnimated = emojiMatch[1] === 'a'
             name = emojiMatch[2]
             const id = emojiMatch[3]
             url = getGameIconUrl(name)
             if (!url) {
-              url = apiGetProxyUrl(`https://cdn.discordapp.com/emojis/${id}.${isAnimated ? 'gif' : 'webp'}?size=48`)
+              url = apiGetProxyUrl(
+                `https://cdn.discordapp.com/emojis/${id}.${isAnimated ? 'gif' : 'webp'}?size=48`
+              )
             }
           } else {
             name = emojiMatch[1]
@@ -468,10 +559,10 @@ const FormattedContent = ({ text }: { text: string }) => {
 
           if (url) {
             return (
-              <img 
-                key={i} 
-                src={url} 
-                alt={name} 
+              <img
+                key={i}
+                src={url}
+                alt={name}
                 className="inline-block size-5 mx-0.5 -mt-1 rounded-sm align-middle hover:scale-150 transition-transform cursor-help object-contain"
                 title={name}
               />
@@ -485,42 +576,47 @@ const FormattedContent = ({ text }: { text: string }) => {
           const type = mediaMatch[1]
           const rawUrl = mediaMatch[2]
           const proxiedUrl = apiGetProxyUrl(rawUrl)
-          
+
           return type === 'image' ? (
-            <img 
-              key={i} 
-              src={proxiedUrl} 
-              alt="Preview" 
-              className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10" 
+            <img
+              key={i}
+              src={proxiedUrl}
+              alt="Preview"
+              className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10"
             />
           ) : (
-            <video 
-              key={i} 
-              src={proxiedUrl} 
-              controls 
-              className="my-4 rounded-2xl w-full shadow-lg border border-white/10" 
+            <video
+              key={i}
+              src={proxiedUrl}
+              controls
+              className="my-4 rounded-2xl w-full shadow-lg border border-white/10"
             />
           )
         }
 
         // 3. Обработка прямых ссылок Discord (если они не попали в теги)
-        if (part.startsWith('http') && (part.includes('discordapp.com') || part.includes('discordapp.net'))) {
+        if (
+          part.startsWith('http') &&
+          (part.includes('discordapp.com') || part.includes('discordapp.net'))
+        ) {
           const proxiedUrl = apiGetProxyUrl(part)
-          const isVideo = part.toLowerCase().split('?')[0].endsWith('.mp4') || part.toLowerCase().split('?')[0].endsWith('.mov')
-          
+          const isVideo =
+            part.toLowerCase().split('?')[0].endsWith('.mp4') ||
+            part.toLowerCase().split('?')[0].endsWith('.mov')
+
           return isVideo ? (
-            <video 
-              key={i} 
-              src={proxiedUrl} 
-              controls 
-              className="my-4 rounded-2xl w-full shadow-lg border border-white/10" 
+            <video
+              key={i}
+              src={proxiedUrl}
+              controls
+              className="my-4 rounded-2xl w-full shadow-lg border border-white/10"
             />
           ) : (
-            <img 
-              key={i} 
-              src={proxiedUrl} 
-              alt="Direct link preview" 
-              className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10" 
+            <img
+              key={i}
+              src={proxiedUrl}
+              alt="Direct link preview"
+              className="my-4 rounded-2xl w-full object-cover shadow-lg border border-white/10"
             />
           )
         }

@@ -26,14 +26,16 @@ export function useSearchHistory() {
       }
       setIsInitialized(true)
     })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [])
 
   // 2. Sync to Storage (Side Effect)
   // We only sync after initialization to avoid overwriting cloud data with initial empty state
   useEffect(() => {
     if (isInitialized) {
-      storage.set(STORAGE_KEY, JSON.stringify(searchHistory)).catch(e => {
+      storage.set(STORAGE_KEY, JSON.stringify(searchHistory)).catch((e) => {
         console.error('[SearchHistory] Sync failed:', e)
       })
     }
@@ -42,7 +44,7 @@ export function useSearchHistory() {
   const addToSearchHistory = useCallback((query: string) => {
     const q = query.trim()
     if (!q || q.length < 2) return
-    
+
     setSearchHistory((prev) => {
       const filtered = prev.filter((item) => item.toLowerCase() !== q.toLowerCase())
       return [q, ...filtered].slice(0, MAX_SEARCH_HISTORY)
@@ -57,11 +59,11 @@ export function useSearchHistory() {
     setSearchHistory([])
   }, [])
 
-  return { 
-    searchHistory, 
+  return {
+    searchHistory,
     isInitialized,
-    addToSearchHistory, 
-    removeFromSearchHistory, 
-    clearSearchHistory 
+    addToSearchHistory,
+    removeFromSearchHistory,
+    clearSearchHistory,
   }
 }

@@ -2,12 +2,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSubscriptions } from '@/hooks/useSubscriptions'
+import { apiFetch } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { Bell, ChevronRight } from '@/lib/icons'
-import { apiFetch } from '@/lib/api'
 import { normalizeUrl, pluralize } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { FC, useRef, SyntheticEvent } from 'react'
+import { type FC, type SyntheticEvent, useRef } from 'react'
 import type { Category } from '../types'
 
 interface CategoryListProps {
@@ -16,7 +16,11 @@ interface CategoryListProps {
   isLoading?: boolean
 }
 
-export const CategoryList: FC<CategoryListProps> = ({ categories, onSelectCategory, isLoading }) => {
+export const CategoryList: FC<CategoryListProps> = ({
+  categories,
+  onSelectCategory,
+  isLoading,
+}) => {
   const { isSubscribed, toggle } = useSubscriptions()
   const queryClient = useQueryClient()
 
@@ -27,10 +31,10 @@ export const CategoryList: FC<CategoryListProps> = ({ categories, onSelectCatego
     prefetchTimer.current = setTimeout(() => {
       queryClient.prefetchQuery({
         queryKey: ['category', key],
-        queryFn: () => apiFetch<{ items: any }>(`/api/category/${key}`).then((r) => r.items),
+        queryFn: () => apiFetch<{ items: Guide[] }>(`/api/category/${key}`).then((r) => r.items),
         staleTime: 60_000,
       })
-    }, 150) // Small delay to avoid prefetching on accidental hover/scroll
+    }, 150)
   }
 
   if (isLoading) {

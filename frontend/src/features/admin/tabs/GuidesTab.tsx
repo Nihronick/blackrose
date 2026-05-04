@@ -6,13 +6,13 @@ import { haptic } from '@/lib/haptic'
 import { Edit2, LayoutGrid, Plus, Search, Trash2 } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { FC, ChangeEvent, useCallback, useEffect, useState } from 'react'
+import { type ChangeEvent, type FC, useCallback, useEffect, useState } from 'react'
 import { GuideEditor } from '../AdminGuideEditor'
 import { IconPreview } from './components/IconPreview'
 
 interface GuidesTabProps {
   categories: Category[]
-  importedGuide?: any
+  importedGuide?: Guide
   onImportProcessed?: () => void
 }
 

@@ -1,10 +1,21 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { AlertCircle, CheckCircle2, Database, Download, Upload } from '@/lib/icons'
+import type { Category, Guide } from '@/lib/types'
 import type React from 'react'
 import { useRef, useState } from 'react'
 import { apiExport, apiImport } from '../lib/api'
 import { haptic } from '../lib/haptic'
+
+interface ExportData {
+  categories: Category[]
+  guides: Guide[]
+}
+
+interface ImportResponse {
+  categories: number
+  guides: number
+}
 
 /**
  * ExportImport — Tool for backing up and restoring database content via JSON.
@@ -21,7 +32,7 @@ export const ExportImport: React.FC = () => {
     setError(null)
     setResult(null)
     try {
-      const data = (await apiExport()) as any
+      const data = (await apiExport()) as ExportData
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -47,7 +58,7 @@ export const ExportImport: React.FC = () => {
     try {
       const text = await file.text()
       const data = JSON.parse(text)
-      const res = (await apiImport(data)) as any
+      const res = (await apiImport(data)) as ImportResponse
       haptic.success()
       setResult(`Импортировано: ${res.categories} категорий, ${res.guides} гайдов`)
     } catch (e: unknown) {
