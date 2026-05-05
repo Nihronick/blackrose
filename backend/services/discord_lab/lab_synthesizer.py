@@ -48,7 +48,7 @@ class DiscordGuideSynthesizer:
             return text
         # Use abbreviations and terminology from glossary
         abbrs = self.glossary.get("abbreviations", {})
-        
+
         for term, full_name in abbrs.items():
             pattern = r'\b' + re.escape(term) + r'\b'
             text = re.sub(pattern, f"{term} ({full_name})", text)
@@ -58,20 +58,20 @@ class DiscordGuideSynthesizer:
         sorted_msgs = sorted(messages, key=lambda x: x.get('timestamp', ''))
         full_content = []
         media_urls = []
-        
+
         for msg in sorted_msgs:
             content = msg.get('content', '')
             author = msg.get('author', {}).get('username', 'Unknown')
             if len(content) < 5 and not msg.get('attachments'):
                 continue
-                
+
             clean_text = self.clean_noise(content)
             mapped_text = self.map_emojis(clean_text)
             enriched_text = self.enrich_text(mapped_text)
-            
+
             if enriched_text:
                 full_content.append(f"--- (Автор: {author}) ---\n{enriched_text}")
-            
+
             for att in msg.get('attachments', []):
                 media_urls.append({
                     "url": att.get('url'),
@@ -91,9 +91,9 @@ class DiscordGuideSynthesizer:
         if not settings.GEMINI_API_KEY:
             logger.info("GEMINI_API_KEY not found, falling back to manual synthesis")
             return self.synthesize(messages)
-            
+
         raw_text = self.synthesize(messages)["content"]
-        
+
         glossary = self._load_glossary()
         terms_hint = json.dumps(glossary.get("terminology_ru", {}), ensure_ascii=False)
         no_translate = ", ".join(glossary.get("no_translate", []))
@@ -116,12 +116,12 @@ class DiscordGuideSynthesizer:
             "7. The output must be ONLY the Markdown content.\n\n"
             f"RAW LOG:\n{raw_text}"
         )
-        
+
         try:
             session = await http_client.get_session()
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
             payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            
+
             async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
@@ -134,7 +134,7 @@ class DiscordGuideSynthesizer:
                     logger.error(f"Gemini AI synthesis failed with status {resp.status}")
         except Exception as e:
             logger.error(f"AI synthesis error: {e}")
-            
+
         return self.synthesize(messages)
 
 discord_lab_service = DiscordGuideSynthesizer()

@@ -7,14 +7,14 @@ class MemberService:
     @classmethod
     async def list_members(cls):
         async with get_sessionmaker()() as session:
-            res = await session.execute(select(Member).order_by(Member.added_at.desc()))
+            res = await session.execute(select(Member).order_by(Member.created_at.desc()))
             return [
                 {
                     "user_id": m.user_id,
                     "username": m.username,
                     "first_name": m.first_name,
                     "role": m.role,
-                    "added_at": m.added_at.isoformat() if m.added_at else None,
+                    "added_at": m.created_at.isoformat() if m.created_at else None,
                     "is_active": m.is_active
                 }
                 for m in res.scalars()

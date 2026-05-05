@@ -9,10 +9,10 @@ class Settings(BaseSettings):
     # Base
     PROJECT_NAME: str = "BlackRose"
     VERSION: str = "2.0.0"
-    
+
     # DB
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/blackrose"
-    
+
     # Bot & Auth
     BOT_TOKEN: str = ""
     JWT_SECRET: str = "dev_secret_key_change_me"
@@ -21,37 +21,37 @@ class Settings(BaseSettings):
     WEBHOOK_URL: str = ""
     WEBHOOK_SECRET: str = ""
     WEBHOOK_PATH: str = "/bot/webhook"
-    
+
     # Error Reporting
     HONEYBADGER_API_KEY: str = ""
-    
+
     # Initial Admin (for setup)
     INITIAL_ADMIN: str = ""
     INITIAL_ADMINS: str = "" # multi-admin format
-    
+
     # Logging
     LOG_LEVEL: str = "INFO"
     ENVIRONMENT: str = "production"
-    
+
     # Redis
     REDIS_URL: str = ""
-    
+
     # Services
     HF_TOKEN: str = ""
     HF_DATASET_REPO: str = "" # e.g. "Nihronick/blackrose-media"
     DEEPL_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
-    
+
     # Media Optimization (imgproxy)
     IMGPROXY_URL: str = "" # e.g. "https://img.blackrose.ru"
     IMGPROXY_KEY: str = ""
     IMGPROXY_SALT: str = ""
-    
+
     # Git-Sync (Wiki-style backup)
     GITHUB_TOKEN: str = ""
     GITHUB_REPO: str = "" # e.g. "Nihronick/blackrose-wiki"
     GITHUB_BRANCH: str = "main"
-    
+
     # Frontend/WebApp
     FRONTEND_URL: str = "http://localhost:5173"
     MINIAPP_URL: Optional[str] = None

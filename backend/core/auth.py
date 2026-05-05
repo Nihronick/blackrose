@@ -4,6 +4,7 @@ import json
 import logging
 import secrets
 import time
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs
 
 from fastapi import HTTPException, Request
@@ -47,11 +48,11 @@ def verify_telegram_init_data(init_data: str) -> dict | None:
         expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected, hash_val):
             return None
-        
+
         auth_date = int(parsed.get("auth_date", ["0"])[0])
         if settings.INIT_DATA_MAX_AGE > 0 and (time.time() - auth_date) > settings.INIT_DATA_MAX_AGE:
             return None
-        
+
         user_str = parsed.get("user", [None])[0]
         return json.loads(user_str) if user_str else None
     except Exception as e:
@@ -60,9 +61,20 @@ def verify_telegram_init_data(init_data: str) -> dict | None:
 
 
 
-def jwt_encode(payload: dict) -> str:
+def jwt_encode(payload: dict, *, expires_in: int = 900, token_type: str = "access") -> str:
     secret = (settings.JWT_SECRET or settings.BOT_TOKEN)
-    return jwt.encode(payload, secret, algorithm="HS256")
+    now = datetime.now(timezone.utc)
+    full_payload = {
+        **payload,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(seconds=expires_in)).timestamp()),
+        "typ": token_type,
+    }
+    return jwt.encode(full_payload, secret, algorithm="HS256")
+
+
+def jwt_refresh_encode(payload: dict, *, expires_in: int = 60 * 60 * 24 * 7) -> str:
+    return jwt_encode(payload, expires_in=expires_in, token_type="refresh")
 
 def jwt_decode(token: str) -> dict | None:
     try:
@@ -104,40 +116,53 @@ async def require_admin(request: Request) -> dict:
     user = await require_telegram_user(request)
     if user.get("is_local_admin"):
         return user
-    
+
     user_id = user.get("id", 0)
-    
+
     # 1. Check Hardcoded IDs from .env
     if user_id in settings.admin_user_ids:
         return user
-        
+
     # 2. Check Database Roles
     from services.common.members import member_service
     is_admin = await member_service.is_admin(user_id)
     if is_admin:
         return user
-    
+
     raise HTTPException(status_code=403, detail="Нет прав администратора")
 
-def verify_telegram_login_widget(data: dict) -> bool:
-    """Verifies data from Telegram Login Widget."""
+def verify_telegram_login_widget(data: dict) -> dict | None:
+    """Verifies data from Telegram Login Widget and returns normalized user payload."""
     try:
         check_hash = data.get("hash")
         if not check_hash:
-            return False
-        
+            return None
+
         check_list = []
         for k, v in sorted(data.items()):
             if k != "hash":
                 check_list.append(f"{k}={v}")
-        
+
         check_string = "\n".join(check_list)
         secret_key = hashlib.sha256(settings.BOT_TOKEN.encode()).digest()
         expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
-        
-        return hmac.compare_digest(expected, check_hash)
+
+        if not hmac.compare_digest(expected, check_hash):
+            return None
+
+        user_id = int(data.get("id", 0))
+        if user_id <= 0:
+            return None
+
+        return {
+            "id": user_id,
+            "first_name": data.get("first_name", ""),
+            "last_name": data.get("last_name", ""),
+            "username": data.get("username", ""),
+            "auth_date": int(data.get("auth_date", 0) or 0),
+        }
     except Exception:
-        return False
+        return None
 
 async def get_db():
     sessionmaker = get_sessionmaker()

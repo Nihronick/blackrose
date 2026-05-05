@@ -107,12 +107,12 @@ class HFStorageService:
     async def delete(self, url: str) -> bool:
         if not settings.HF_TOKEN or not self.repo_id:
             return False
-        
+
         path = None
         marker = "/resolve/main/"
         if marker in url:
             path = url.split(marker)[1]
-        
+
         if not path:
             return False
 
@@ -132,10 +132,10 @@ class HFStorageService:
         """Uploads a local file from disk with optional optimization."""
         if not settings.HF_TOKEN or not self.repo_id:
             return ""
-        
+
         with open(file_path, "rb") as f:
             content = f.read()
-        
+
         opt_name, content, optimized = self._optimize_image(filename, content)
         ext = os.path.splitext(opt_name)[1]
         target_filename = f"{uuid.uuid4()}{ext}"

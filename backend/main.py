@@ -10,7 +10,6 @@ from services.common.setup import seed_initial_admin
 import inngest.fast_api
 from core.inngest_client import inngest_client
 from functions.discord_import import discord_import_guide
-from functions.test_job import test_job
 from services.cache.redis_cache import cache_service
 from core.db import init_db, close_pool
 from core.middleware import setup_cors, add_security_headers, setup_honeybadger
@@ -26,10 +25,10 @@ async def lifespan(app: FastAPI):
     # Startup
     configure_logging()
     logger.info("Initializing BlackRose System", version=settings.VERSION, env=settings.ENVIRONMENT)
-    
+
     # DB Init
     await init_db()
-    
+
     # Bot Init
     bot_service.init_bot()
     if bot_service.bot:
@@ -41,8 +40,8 @@ async def lifespan(app: FastAPI):
             for attempt in range(1, 4):
                 try:
                     await bot_service.bot.set_webhook(
-                        url=full_url, 
-                        secret_token=settings.WEBHOOK_SECRET or None, 
+                        url=full_url,
+                        secret_token=settings.WEBHOOK_SECRET or None,
                         drop_pending_updates=True,
                         request_timeout=60.0
                     )
@@ -54,12 +53,12 @@ async def lifespan(app: FastAPI):
                     else:
                         logger.warning(f"Webhook setup attempt {attempt} failed, retrying in 5s...", error=str(e))
                         await asyncio.sleep(5)
-    
+
     # Seeding
     await seed_initial_admin()
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down system...")
     await bot_service.close()
@@ -90,7 +89,7 @@ app.include_router(bot.router)
 inngest.fast_api.serve(
     app,
     inngest_client,
-    [discord_import_guide, test_job],
+    [discord_import_guide],
     serve_path="/api/inngest"
 )
 
@@ -113,4 +112,10 @@ if os.name != "nt":
         logger.info("uvloop installed")
     except ImportError:
         pass
+
+
+if __name__ == "__main__":
+    import uvicorn
+    # Use string for app to support reload
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 

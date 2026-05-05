@@ -43,13 +43,13 @@ FRONTEND_AUTH_PATH = os.path.join(
     os.path.dirname(__file__), "..", "..", "frontend", "src", "lib", "auth.ts"
 )
 BACKEND_PUBLIC_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "routers", "public.py"
+    os.path.dirname(__file__), "..", "api", "public.py"
 )
 BACKEND_ADMIN_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "routers", "admin.py"
+    os.path.dirname(__file__), "..", "api", "admin.py"
 )
 BACKEND_MODELS_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "models.py"
+    os.path.dirname(__file__), "..", "models", "db_models.py"
 )
 
 
@@ -134,7 +134,7 @@ class TestAuthEndpointContract:
     def test_telegram_login_endpoint_matches(self):
         """Frontend auth endpoint should match backend after BUG-2 fix."""
         auth_src = _read_file(FRONTEND_AUTH_PATH)
-        
+
         # After fix: frontend should call /api/auth/web-login
         assert "/api/auth/web-login" in auth_src, (
             "Frontend should call /api/auth/web-login (BUG-2 fix)"
@@ -149,7 +149,7 @@ class TestReorderContract:
     def test_reorder_field_name(self):
         """Поле в body запроса должно совпадать с Pydantic моделью (BUG-4 fixed)."""
         api_src = _read_file(FRONTEND_API_PATH)
-        
+
         # After fix: frontend should send { order: [...] }
         assert "{ order: items }" in api_src or "{ order:" in api_src, (
             "Frontend should send { order: [...] } to match ReorderIn model (BUG-4 fix)"
@@ -190,16 +190,25 @@ class TestWebLoginResponseContract:
         auth_src = _read_file(FRONTEND_AUTH_PATH)
         public_src = _read_file(BACKEND_PUBLIC_PATH)
 
-        # Frontend: как парсит ответ
-        uses_result_user = "result.user" in auth_src
+        # Frontend: does it access result.user as a nested object?
+        # result.user_id / result.user_name are flat fields, not nested — they're fine.
+        # Only result.user.id or result.user.first_name would be a problem.
+        uses_nested_user = bool(re.search(r'result\.user\.', auth_src))
 
-        # Backend: что возвращает
-        # Ищем return в web_login endpoint
-        returns_nested_user = bool(re.search(r'"user"\s*:', public_src))
+        # Backend: does web_login return a nested "user": { ... } object?
+        # Extract the web_login function body
+        web_login_block = re.search(
+            r'async def web_login.*?(?=\n@router|\nclass |\Z)',
+            public_src,
+            re.DOTALL
+        )
+        returns_nested_user = False
+        if web_login_block:
+            returns_nested_user = bool(re.search(r'"user"\s*:\s*\{', web_login_block.group()))
 
-        if uses_result_user and not returns_nested_user:
+        if uses_nested_user and not returns_nested_user:
             pytest.fail(
-                "BUG-5: Frontend uses result.user, but backend returns flat {token, user_id, ...}. "
+                "BUG-5: Frontend uses result.user.*, but backend returns flat {token, user_id, ...}. "
                 "Fix frontend to construct User from flat fields."
             )
 

@@ -9,12 +9,12 @@ from core.config import settings
 
 def configure_logging() -> None:
     log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
-    
+
     # Ensure logs directory exists
     log_dir = settings.LOGS_DIR
     if not os.path.exists(log_dir):
         os.makedirs(log_dir, exist_ok=True)
-    
+
     log_file = os.path.join(log_dir, "app.log")
 
     processors = [
@@ -29,7 +29,7 @@ def configure_logging() -> None:
 
     # Console output for HF / Docker
     console_renderer = structlog.dev.ConsoleRenderer(colors=True) if settings.ENVIRONMENT == "development" else structlog.processors.JSONRenderer()
-    
+
     structlog.configure(
         processors=processors + [
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
@@ -51,7 +51,7 @@ def configure_logging() -> None:
     root_logger.addHandler(stream_handler)
     root_logger.addHandler(file_handler)
     root_logger.setLevel(log_level)
-    
+
     # Silence noisy libraries
     for noisy in ("uvicorn.access", "asyncio", "aiohttp.access", "inngest"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
@@ -84,7 +84,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
             if not request.url.path.endswith(("/health", "/metrics")):
                 log.info("request_completed", status=response.status_code, duration_ms=duration_ms)
-            
+
             response.headers["X-Request-ID"] = request_id
             return response
         except Exception as e:

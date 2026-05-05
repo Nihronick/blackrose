@@ -19,7 +19,7 @@ async def bot_webhook(request: Request):
     try:
         if not bot_service.bot or not bot_service.dp:
             raise HTTPException(status_code=503, detail="Bot not initialized")
-            
+
         update_data = await request.json()
         update = types.Update(**update_data)
         await bot_service.dp.feed_update(bot_service.bot, update)

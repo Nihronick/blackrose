@@ -116,7 +116,7 @@ async def main():
                     logger.info("✅ Webhook deleted successfully")
                 except Exception as e:
                     logger.warning(f"⚠️ Could not delete webhook: {e}. Attempting to start polling anyway...")
-                
+
                 await dp.start_polling(bot)
             except Exception as e:
                 logger.error(f"❌ Critical polling error: {e}")

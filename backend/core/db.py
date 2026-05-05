@@ -20,10 +20,17 @@ def _normalize_db_url(url: str) -> str:
     if not url:
         return url
     url = url.strip().strip("'").strip('"')
-    if url.startswith("postgres://"):
+    if url.startswith("postgresql+asyncpg://"):
+        pass  # already correct
+    elif url.startswith("postgresql+psycopg2://"):
+        url = url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif "@" in url and not url.startswith(("http://", "https://")):
+        # Bare URL without scheme: user:pass@host/db
+        url = "postgresql+asyncpg://" + url
     url = url.replace("sslmode=require", "ssl=require")
     url = re.sub(r"[&?]channel_binding=[^&]*", "", url)
     return url
@@ -65,7 +72,7 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
 async def get_health() -> dict:
     if _engine is None or _sessionmaker is None:
         return {"status": "uninitialized", "latency_ms": None}
-    
+
     import time
     start = time.perf_counter()
     try:

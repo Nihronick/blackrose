@@ -29,12 +29,12 @@ async def run_storage_gc():
         return
 
     logger.info("🚀 Starting Storage Garbage Collection...")
-    
+
     await init_db()
     try:
         # 1. Собираем все файлы, на которые ссылается БД
         db_files = set()
-        
+
         # Регулярка для поиска URL-ов нашего хранилища
         # Ищем как в Markdown ![...](url), так и просто в тексте
         url_pattern = re.compile(r'https://huggingface\.co/datasets/[^/]+/[^/]+/resolve/main/([^"\'\s)>]+)')
@@ -47,7 +47,7 @@ async def run_storage_gc():
                 # Проверяем иконку
                 if g.icon_url:
                     db_files.add(g.icon_url)
-                
+
                 # Проверяем массивы
                 if g.photo:
                     db_files.update(g.photo)
@@ -55,14 +55,14 @@ async def run_storage_gc():
                     db_files.update(g.video)
                 if g.document:
                     db_files.update(g.document)
-                
+
                 # ВНИМАНИЕ: Парсим основной текст гайда!
                 if g.text:
                     # Ищем все вхождения путей в тексте
                     found_paths = url_pattern.findall(g.text)
                     for p in found_paths:
                         db_files.add(p) # Добавляем путь (без префикса)
-                    
+
                     found_blob_paths = blob_pattern.findall(g.text)
                     for p in found_blob_paths:
                         db_files.add(p)
@@ -79,7 +79,7 @@ async def run_storage_gc():
         for item in db_files:
             if not isinstance(item, str):
                 continue
-            
+
             # Если это полный URL
             if "resolve/main/" in item:
                 normalized_db_paths.add(item.split("resolve/main/")[1])
@@ -95,22 +95,22 @@ async def run_storage_gc():
         try:
             # Используем расширенный метод для получения метаданных (нужно время создания)
             repo_files_iter = hf_api.list_repo_tree(
-                repo_id=HF_DATASET_REPO, 
-                repo_type="dataset", 
+                repo_id=HF_DATASET_REPO,
+                repo_type="dataset",
                 path_in_repo=HF_PATH,
                 recursive=True
             )
-            
+
             # Собираем файлы и фильтруем по времени (Grace Period: 24 часа)
             now = datetime.now()
             storage_files = []
             grace_period_count = 0
-            
+
             for f in repo_files_iter:
                 # Нам нужны только файлы
                 if f.type != "file":
                     continue
-                
+
                 # Проверяем "возраст" файла (если API отдает дату изменения)
                 if hasattr(f, 'last_commit') and f.last_commit:
                     commit_date = f.last_commit.created_at
@@ -118,9 +118,9 @@ async def run_storage_gc():
                     if (now.replace(tzinfo=commit_date.tzinfo) - commit_date).total_seconds() < 24 * 3600:
                         grace_period_count += 1
                         continue
-                
+
                 storage_files.append(f.path)
-                
+
             logger.info(f"Storage contains {len(storage_files)} mature files. (Skipped {grace_period_count} new files via grace period)")
         except Exception as e:
             # Если папка не найдена (404), значит она пустая - это не ошибка
@@ -144,7 +144,7 @@ async def run_storage_gc():
             return
 
         logger.info(f"♻️ Found {len(orphaned_paths)} orphaned files. Deleting...")
-        
+
         # Удаляем пачками по 10
         batch_size = 10
         deleted_count = 0
@@ -183,7 +183,7 @@ async def main_loop():
             await asyncio.wait_for(stop_event.wait(), timeout=24 * 3600)
         except asyncio.TimeoutError:
             continue
-    
+
     logger.info("GC Worker stopped gracefully")
 
 if __name__ == "__main__":

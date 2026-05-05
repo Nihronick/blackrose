@@ -13,7 +13,7 @@ class TranslationService:
     def _load_glossary(cls):
         if cls._glossary is not None:
             return cls._glossary
-        
+
         path = settings.GLOSSARY_PATH
         if os.path.exists(path):
             try:
@@ -51,7 +51,7 @@ class TranslationService:
             glossary = TranslationService._load_glossary()
             terms_hint = json.dumps(glossary.get("terminology_ru", {}), ensure_ascii=False)
             no_translate = ", ".join(glossary.get("no_translate", []))
-            
+
             model = "Qwen/Qwen2.5-72B-Instruct"
             url = f"https://api-inference.huggingface.co/models/{model}"
             headers = {"Authorization": f"Bearer {token}"}

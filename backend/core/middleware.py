@@ -13,7 +13,7 @@ def setup_cors(app: FastAPI):
         "http://localhost:8080",
         "https://nihronick.github.io",
     ]
-    
+
     if settings.FRONTEND_URL:
         for origin_entry in settings.FRONTEND_URL.split(","):
             entry = origin_entry.strip()
@@ -24,7 +24,7 @@ def setup_cors(app: FastAPI):
                 base_origin = f"{parsed.scheme}://{parsed.netloc}"
                 if base_origin not in cors_origins:
                     cors_origins.append(base_origin)
-    
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,

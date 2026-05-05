@@ -5,7 +5,10 @@ from services.storage.hf_storage import HFStorageService
 
 @pytest.fixture
 def storage():
-    return HFStorageService()
+    svc = HFStorageService()
+    # Ensure tests don't depend on real env vars
+    svc.repo_id = "test-user/test-repo"
+    return svc
 
 def test_get_public_url(storage):
     path = "uploads/guides/test.png"
@@ -23,11 +26,12 @@ def test_optimize_image_non_image(storage):
     assert optimized is False
 
 @pytest.mark.asyncio
-async def test_upload_unconfigured(storage):
+async def test_upload_unconfigured():
+    svc = HFStorageService()
     with patch("core.config.settings.HF_TOKEN", ""):
         file = MagicMock(spec=UploadFile)
         with pytest.raises(RuntimeError, match="Media storage not configured"):
-            await storage.upload(file)
+            await svc.upload(file)
 
 @pytest.mark.asyncio
 async def test_delete_invalid_url(storage):
@@ -35,6 +39,8 @@ async def test_delete_invalid_url(storage):
 
 @pytest.mark.asyncio
 async def test_ping_healthy(storage):
-    with patch.object(storage.api, 'repo_info', return_value=True):
-        res = await storage.ping()
-        assert res["status"] == "healthy"
+    with patch.object(storage, 'api') as mock_api:
+        mock_api.repo_info.return_value = True
+        with patch("core.config.settings.HF_TOKEN", "fake-token"):
+            res = await storage.ping()
+            assert res["status"] == "healthy"

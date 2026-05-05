@@ -94,27 +94,59 @@ marked.use({
       return `<code class="guide-code">${codeText}</code>`
     },
     // Внешние ссылки — target=_blank + rel=noreferrer
-    link({ href, tokens }: Tokens.Link) {
+    link(...args: unknown[]) {
+      const first = args[0]
+      const href =
+        typeof first === 'string'
+          ? first
+          : typeof first === 'object' && first !== null && 'href' in first
+            ? String((first as { href?: unknown }).href ?? '')
+            : ''
+      const text =
+        typeof first === 'string'
+          ? typeof args[2] === 'string'
+            ? args[2]
+            : href
+          : typeof first === 'object' && first !== null && 'text' in first
+            ? String((first as { text?: unknown }).text ?? '')
+            : ''
+
       const normalizedHref = normalizeUrl(href ?? '')
-      const label = tokens ? marked.parser(tokens) : ''
+      const label = text || normalizedHref
 
       // Специальная обработка для [Video: name](url)
-      if (typeof label === 'string' && label.includes('Video:')) {
-        return `<div class="premium-video-placeholder my-6" data-video-url="${normalizedHref}" data-video-alt="${label.replace('Video:', '').trim()}"></div>`
+      if (label.includes('Video:')) {
+        return `<div class="premium-video-placeholder my-6" data-video-url="${normalizedHref}" data-video-alt="${label.replace('Video:', '').trim()}">Video: ${label}</div>`
       }
 
-      if (normalizedHref.startsWith('http')) {
+      const isExternal = normalizedHref.includes('://') || normalizedHref.startsWith('//')
+      if (isExternal) {
         return `<a href="${normalizedHref}" target="_blank" rel="noreferrer" class="guide-extlink hover:text-primary transition-colors underline decoration-primary/30 underline-offset-4">${label}</a>`
       }
       return `<a href="${normalizedHref}" class="text-primary hover:underline">${label}</a>`
     },
     // Изображения с нормализацией GitHub и no-referrer
-    image({ href, text }: Tokens.Image) {
+    image(...args: unknown[]) {
+      const first = args[0]
+      const href =
+        typeof first === 'string'
+          ? first
+          : typeof first === 'object' && first !== null && 'href' in first
+            ? String((first as { href?: unknown }).href ?? '')
+            : ''
+      const text =
+        typeof first === 'string'
+          ? typeof args[2] === 'string'
+            ? args[2]
+            : ''
+          : typeof first === 'object' && first !== null && 'text' in first
+            ? String((first as { text?: unknown }).text ?? '')
+            : ''
       const src = normalizeUrl(href ?? '')
       const alt = text ?? ''
       const parsedVideo = parseVideo(src)
       if (parsedVideo?.type === 'video') {
-        return `<div class="premium-video-placeholder my-6" data-video-url="${src}" data-video-alt="${alt}"></div>`
+        return `<div class="premium-video-placeholder my-6" data-video-url="${src}" data-video-alt="${alt}">video</div>`
       }
       return (
         '<div class="my-6">' +

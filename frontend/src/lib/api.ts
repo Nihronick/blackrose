@@ -1,9 +1,15 @@
 import * as E from 'fp-ts/Either'
 import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/function'
-import { clearStoredToken, getAuthHeaders } from './auth'
+import {
+  clearStoredToken,
+  getAuthHeaders,
+  getStoredRefreshToken,
+  setStoredAccessToken,
+} from './auth'
 import type {
   ApiResponse,
+  CategoriesResponse,
   CommentsResponse,
   IconsGroupedResponse,
   MediaListResponse,
@@ -52,7 +58,8 @@ async function apiRaw<T>(
   endpoint: string,
   method = 'GET',
   body?: unknown,
-  isFormData = false
+  isFormData = false,
+  hasRetried = false
 ): Promise<T> {
   const headers = getAuthHeaders()
   if (!isFormData) {
@@ -69,6 +76,33 @@ async function apiRaw<T>(
   }
 
   const res = await fetch(`${BASE}${endpoint}`, options)
+
+  // Silent refresh flow for web JWT mode only.
+  if (
+    res.status === 401 &&
+    !hasRetried &&
+    !headers['X-Telegram-Init-Data'] &&
+    !endpoint.includes('/api/auth/refresh')
+  ) {
+    const refreshToken = getStoredRefreshToken()
+    if (refreshToken) {
+      const refreshRes = await fetch(`${BASE}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
+      if (refreshRes.ok) {
+        const refreshData = (await refreshRes.json()) as { token?: string }
+        if (refreshData?.token) {
+          setStoredAccessToken(refreshData.token)
+          return apiRaw<T>(endpoint, method, body, isFormData, true)
+        }
+      } else {
+        clearStoredToken()
+      }
+    }
+  }
+
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throwHttpError(res, data)
   return data

@@ -14,7 +14,7 @@ async def cmd_add_user(message: Message):
     if len(args) < 2 or not args[1].lstrip("-").isdigit():
         await message.answer("Использование: /add_user <user_id>")
         return
-        
+
     target_id = int(args[1])
     res = await api_client.add_member(target_id, "member")
     if res and "_error" not in res:
@@ -30,7 +30,7 @@ async def cmd_add_admin(message: Message):
     if len(args) < 2 or not args[1].lstrip("-").isdigit():
         await message.answer("Использование: /add_admin <user_id>")
         return
-        
+
     target_id = int(args[1])
     res = await api_client.add_member(target_id, "admin")
     if res and "_error" not in res:
@@ -45,7 +45,7 @@ async def cmd_remove_user(message: Message):
     if len(args) < 2 or not args[1].lstrip("-").isdigit():
         await message.answer("Использование: /remove_user <user_id>")
         return
-        
+
     target_id = int(args[1])
     res = await api_client.delete_member(target_id)
     if res and "_error" not in res:
@@ -62,11 +62,11 @@ async def cmd_members(message: Message):
     if not members:
         await message.answer("Участников нет (или ошибка API).")
         return
-        
+
     lines = ["👥 <b>Участники гильдии:</b>\n"]
     for m in members:
         role_icon = "👑" if m["role"] == "admin" else "👤"
         name = m.get("first_name") or m.get("username") or str(m["user_id"])
         lines.append(f"{role_icon} {name} (<code>{m['user_id']}</code>)")
-    
+
     await message.answer("\n".join(lines), parse_mode="HTML")

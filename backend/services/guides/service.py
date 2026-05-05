@@ -1,15 +1,33 @@
-from sqlalchemy import select, update, desc, func
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import select, update, desc, func, delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert
 import asyncio
 from core.db import get_sessionmaker
-from models.db_models import Guide, GuideHistory, GuideComment, Category, Member
+from models.db_models import (
+    Guide,
+    GuideHistory,
+    GuideComment,
+    Category,
+    Member,
+    GuideTag,
+    UserSubscription,
+    ViewLog,
+)
 from core.logging import get_logger
 from services.common.utils import _strip_markdown
 
 logger = get_logger("blackrose.services.guides")
 
 class GuideService:
+    @staticmethod
+    def _safe_tags(g) -> list[str]:
+        """Safely extract tags, returning [] on lazy-load failures."""
+        try:
+            return [t.tag for t in g.tags] if g.tags else []
+        except Exception:
+            return []
+
     @staticmethod
     def _to_dict(g: Guide) -> dict:
         if not g:
@@ -27,7 +45,7 @@ class GuideService:
             "created_at": g.created_at,
             "updated_at": g.updated_at,
             "views": g.views or 0,
-            "tags": [t.tag for t in g.tags] if hasattr(g, "tags") and g.tags else [],
+            "tags": GuideService._safe_tags(g),
             "preview": _strip_markdown(g.text)[:200],
             "has_photo": bool(g.photo),
             "has_video": bool(g.video),
@@ -70,12 +88,50 @@ class GuideService:
             return [cls._to_dict(g) for g in result.scalars()]
 
     @classmethod
+    async def get_top_guides(cls, limit: int = 10) -> list[dict]:
+        async with get_sessionmaker()() as session:
+            stmt = select(Guide).options(selectinload(Guide.tags)).order_by(desc(Guide.views)).limit(limit)
+            result = await session.execute(stmt)
+            return [cls._to_dict(g) for g in result.scalars()]
+
+    @classmethod
+    async def get_recent_guides(cls, limit: int = 10) -> list[dict]:
+        async with get_sessionmaker()() as session:
+            stmt = select(Guide).options(selectinload(Guide.tags)).order_by(desc(Guide.updated_at)).limit(limit)
+            result = await session.execute(stmt)
+            return [cls._to_dict(g) for g in result.scalars()]
+
+    @classmethod
+    async def get_recent_comments(cls, limit: int = 10) -> list[dict]:
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(GuideComment, Guide.title)
+                .join(Guide, GuideComment.guide_key == Guide.key)
+                .order_by(desc(GuideComment.created_at))
+                .limit(limit)
+            )
+            result = await session.execute(stmt)
+            comments = []
+            for comment, guide_title in result.all():
+                comments.append({
+                    "id": comment.id,
+                    "text": comment.text,
+                    "created_at": comment.created_at,
+                    "user_id": comment.user_id,
+                    "first_name": comment.first_name,
+                    "username": comment.username,
+                    "guide_key": comment.guide_key,
+                    "guide_title": guide_title
+                })
+            return comments
+
+    @classmethod
     async def upsert(cls, key: str, data: dict, changed_by: int | None = None) -> bool:
         async with get_sessionmaker()() as session:
             existing = await session.execute(select(Guide).where(Guide.key == key))
             existing_guide = existing.scalar_one_or_none()
             is_new = existing_guide is None
-            
+
             old_snapshot = cls._to_dict(existing_guide) if not is_new else None
 
             stmt = insert(Guide).values(key=key, **data)
@@ -84,7 +140,7 @@ class GuideService:
                 set_={k: getattr(stmt.excluded, k) for k in data.keys()}
             )
             await session.execute(stmt)
-            
+
             history = GuideHistory(
                 guide_key=key,
                 action="created" if is_new else "updated",
@@ -115,13 +171,169 @@ class GuideService:
             g = result.scalar_one_or_none()
             if not g:
                 return None
-            
+
             snapshot = cls._to_dict(g)
             history = GuideHistory(guide_key=key, action="deleted", changed_by=changed_by, snapshot=snapshot)
             session.add(history)
             await session.delete(g)
             await session.commit()
             return snapshot
+
+    @classmethod
+    async def get_by_category(cls, category_key: str) -> list[dict]:
+        return await cls.get_all(category_key=category_key)
+
+    @classmethod
+    async def get_by_tag(cls, tag: str) -> list[dict]:
+        if not tag:
+            return []
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(Guide)
+                .join(GuideTag, GuideTag.guide_key == Guide.key)
+                .options(selectinload(Guide.tags))
+                .where(GuideTag.tag == tag)
+                .order_by(desc(Guide.updated_at))
+            )
+            result = await session.execute(stmt)
+            return [cls._to_dict(g) for g in result.scalars()]
+
+    @classmethod
+    async def get_tags(cls) -> list[str]:
+        async with get_sessionmaker()() as session:
+            stmt = select(GuideTag.tag).distinct().order_by(GuideTag.tag.asc())
+            result = await session.execute(stmt)
+            return [t for t in result.scalars() if t]
+
+    @classmethod
+    async def set_tags(cls, key: str, tags: list[str]) -> bool:
+        normalized = sorted({(t or "").strip().lower() for t in tags if (t or "").strip()})
+        async with get_sessionmaker()() as session:
+            exists = await session.execute(select(Guide.key).where(Guide.key == key))
+            if exists.scalar_one_or_none() is None:
+                return False
+            await session.execute(delete(GuideTag).where(GuideTag.guide_key == key))
+            if normalized:
+                await session.execute(
+                    insert(GuideTag),
+                    [{"guide_key": key, "tag": t} for t in normalized],
+                )
+            await session.commit()
+            return True
+
+    @classmethod
+    async def get_comments(cls, guide_key: str) -> list[dict]:
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(GuideComment)
+                .where(GuideComment.guide_key == guide_key)
+                .order_by(desc(GuideComment.created_at))
+            )
+            result = await session.execute(stmt)
+            return [
+                {
+                    "id": c.id,
+                    "guide_key": c.guide_key,
+                    "text": c.text,
+                    "created_at": c.created_at,
+                    "user_id": c.user_id,
+                    "first_name": c.first_name,
+                    "username": c.username,
+                }
+                for c in result.scalars()
+            ]
+
+    @classmethod
+    async def add_comment(cls, guide_key: str, user: dict, text: str) -> dict:
+        async with get_sessionmaker()() as session:
+            row = GuideComment(
+                guide_key=guide_key,
+                user_id=int(user.get("id", 0) or 0),
+                username=user.get("username", ""),
+                first_name=user.get("first_name", ""),
+                text=text,
+            )
+            session.add(row)
+            await session.commit()
+            await session.refresh(row)
+            return {
+                "id": row.id,
+                "guide_key": row.guide_key,
+                "text": row.text,
+                "created_at": row.created_at,
+                "user_id": row.user_id,
+                "first_name": row.first_name,
+                "username": row.username,
+            }
+
+    @classmethod
+    async def delete_comment(cls, guide_key: str, comment_id: int, user: dict) -> bool:
+        async with get_sessionmaker()() as session:
+            result = await session.execute(
+                select(GuideComment).where(
+                    GuideComment.id == comment_id, GuideComment.guide_key == guide_key
+                )
+            )
+            row = result.scalar_one_or_none()
+            if not row:
+                return False
+            user_id = int(user.get("id", 0) or 0)
+            is_admin = bool(user.get("is_local_admin") or user.get("is_admin"))
+            if not is_admin and row.user_id != user_id:
+                return False
+            await session.delete(row)
+            await session.commit()
+            return True
+
+    @classmethod
+    async def record_view(cls, guide_key: str) -> None:
+        async with get_sessionmaker()() as session:
+            await session.execute(
+                update(Guide).where(Guide.key == guide_key).values(views=Guide.views + 1)
+            )
+            session.add(ViewLog(guide_key=guide_key))
+            await session.commit()
+
+    @classmethod
+    async def get_history(cls, guide_key: str) -> list[dict]:
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(GuideHistory)
+                .where(GuideHistory.guide_key == guide_key)
+                .order_by(desc(GuideHistory.changed_at))
+            )
+            result = await session.execute(stmt)
+            return [
+                {
+                    "id": h.id,
+                    "guide_key": h.guide_key,
+                    "action": h.action,
+                    "changed_by": h.changed_by,
+                    "changed_at": h.changed_at,
+                    "snapshot": h.snapshot,
+                }
+                for h in result.scalars()
+            ]
+
+    @classmethod
+    async def get_analytics(cls, days: int = 30) -> list[dict]:
+        safe_days = max(1, min(int(days or 30), 365))
+        since = datetime.now(timezone.utc) - timedelta(days=safe_days)
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(
+                    func.date_trunc("day", ViewLog.viewed_at).label("day"),
+                    func.count(ViewLog.id).label("count"),
+                )
+                .where(ViewLog.viewed_at >= since)
+                .group_by(func.date_trunc("day", ViewLog.viewed_at))
+                .order_by(func.date_trunc("day", ViewLog.viewed_at).asc())
+            )
+            result = await session.execute(stmt)
+            return [
+                {"day": day.isoformat() if day else "", "count": int(count or 0)}
+                for day, count in result.all()
+            ]
 
     @classmethod
     async def reorder(cls, order: list[dict]):
@@ -186,5 +398,57 @@ class CategoryService:
             await session.delete(c)
             await session.commit()
             return True
+
+    @classmethod
+    async def reorder(cls, order: list[dict]):
+        async with get_sessionmaker()() as session:
+            for item in order:
+                await session.execute(
+                    update(Category)
+                    .where(Category.key == item["key"])
+                    .values(sort_order=item["sort_order"])
+                )
+            await session.commit()
+
+    @classmethod
+    async def get_subscriptions(cls, user_id: int) -> list[str]:
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(UserSubscription.category_key)
+                .where(UserSubscription.user_id == user_id)
+                .order_by(UserSubscription.category_key.asc())
+            )
+            result = await session.execute(stmt)
+            return [k for k in result.scalars() if k]
+
+    @classmethod
+    async def subscribe(cls, user_id: int, category_key: str) -> None:
+        async with get_sessionmaker()() as session:
+            stmt = insert(UserSubscription).values(user_id=user_id, category_key=category_key)
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=[UserSubscription.user_id, UserSubscription.category_key]
+            )
+            await session.execute(stmt)
+            await session.commit()
+
+    @classmethod
+    async def unsubscribe(cls, user_id: int, category_key: str) -> None:
+        async with get_sessionmaker()() as session:
+            await session.execute(
+                delete(UserSubscription).where(
+                    UserSubscription.user_id == user_id,
+                    UserSubscription.category_key == category_key,
+                )
+            )
+            await session.commit()
+
+    @classmethod
+    async def get_subscriber_ids(cls, category_key: str) -> list[int]:
+        async with get_sessionmaker()() as session:
+            stmt = select(UserSubscription.user_id).where(
+                UserSubscription.category_key == category_key
+            )
+            result = await session.execute(stmt)
+            return [int(uid) for uid in result.scalars()]
 
 category_service = CategoryService()

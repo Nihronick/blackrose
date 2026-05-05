@@ -1,9 +1,10 @@
 import asyncio
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+import inngest
 
 from core.auth import require_admin
 from core.logging import get_logger
-from models.schemas import CategoryIn, GuideIn, ImportMediaIn, LabImportIn
+from models.schemas import CategoryIn, GuideIn, ImportMediaIn, LabImportIn, ReorderIn, TagsIn
 from services.guides.service import guide_service, category_service
 from services.cache.redis_cache import cache_service
 from services.storage.hf_storage import storage_service
@@ -12,7 +13,9 @@ from services.translation.service import translation_service
 from services.common.members import member_service
 from services.common.media import media_service
 from services.common.utils import normalize_icon_syntax
+from services.common.icons import icon_catalog, icon_url
 from services.discord_lab.lab_synthesizer import discord_lab_service
+from core.inngest_client import inngest_client
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 logger = get_logger("blackrose.api.admin")
@@ -36,6 +39,13 @@ async def admin_upsert_category(key: str, body: CategoryIn, user=Depends(require
 async def admin_guides_list(category_key: str | None = None, user=Depends(require_admin)):
     return await guide_service.get_all(category_key)
 
+@router.get("/guide/{key}")
+async def admin_guide_get(key: str, user=Depends(require_admin)):
+    g = await guide_service.get_by_key(key)
+    if not g:
+        raise HTTPException(status_code=404, detail="Guide not found")
+    return g
+
 @router.put("/guide/{key}")
 async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin)):
     is_new = await guide_service.upsert(
@@ -54,12 +64,16 @@ async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin
     )
     await cache_service.invalidate_all()
     await cache_service.invalidate_guide(key)
-    
+
     if is_new:
-        # Background task for notification
-        # In a real app we'd use Celery/Inngest, here we can use background tasks or fire-and-forget
-        asyncio.create_task(telegram_service.notify_new_guide(key, body.title, body.category_key, [])) # Need subscribers logic
-        
+        subscriber_ids = await category_service.get_subscriber_ids(body.category_key)
+        if subscriber_ids:
+            asyncio.create_task(
+                telegram_service.notify_new_guide(
+                    key, body.title, body.category_key, subscriber_ids
+                )
+            )
+
     return {"ok": True, "created": is_new}
 
 @router.post("/upload")
@@ -85,6 +99,10 @@ async def admin_delete_guide(key: str, user=Depends(require_admin)):
         raise HTTPException(status_code=404, detail="Guide not found")
     await cache_service.invalidate_all()
     return {"ok": True}
+
+@router.get("/guide/{key}/history")
+async def admin_guide_history(key: str, user=Depends(require_admin)):
+    return {"history": await guide_service.get_history(key)}
 
 @router.delete("/category/{key}")
 async def admin_delete_category(key: str, user=Depends(require_admin)):
@@ -120,6 +138,132 @@ async def admin_clear_cache(user=Depends(require_admin)):
     await cache_service.invalidate_all()
     return {"ok": True}
 
+@router.post("/reorder/guides")
+async def admin_reorder_guides(body: ReorderIn, user=Depends(require_admin)):
+    await guide_service.reorder([i.model_dump() for i in body.order])
+    await cache_service.invalidate_all()
+    return {"ok": True}
+
+@router.post("/reorder/categories")
+async def admin_reorder_categories(body: ReorderIn, user=Depends(require_admin)):
+    await category_service.reorder([i.model_dump() for i in body.order])
+    await cache_service.invalidate_all()
+    return {"ok": True}
+
+@router.put("/guide/{key}/tags")
+async def admin_set_guide_tags(key: str, body: TagsIn, user=Depends(require_admin)):
+    ok = await guide_service.set_tags(key, body.tags)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Guide not found")
+    await cache_service.invalidate_guide(key)
+    return {"ok": True}
+
+@router.get("/analytics")
+async def admin_analytics(days: int = 30, user=Depends(require_admin)):
+    return {"chart": await guide_service.get_analytics(days)}
+
+@router.get("/icons")
+async def admin_icons(user=Depends(require_admin)):
+    grouped = await admin_icons_grouped(user)
+    flat = []
+    for g in grouped:
+        flat.extend(g.get("icons", []))
+    return flat
+
+@router.get("/icons/grouped")
+async def admin_icons_grouped(user=Depends(require_admin)):
+    keys = icon_catalog()
+    return [
+        {
+            "id": "default",
+            "label": "Default",
+            "icons": [{"key": k, "url": icon_url(k)} for k in keys],
+        }
+    ]
+
+@router.get("/media/list")
+async def admin_media_list(user=Depends(require_admin)):
+    if not storage_service.repo_id:
+        return {"total": 0, "groups": []}
+    groups_map: dict[str, list[dict]] = {}
+    try:
+        tree = storage_service.api.list_repo_tree(
+            repo_id=storage_service.repo_id,
+            repo_type="dataset",
+            path_in_repo=storage_service.path_prefix,
+            recursive=True,
+        )
+        for entry in tree:
+            if getattr(entry, "type", "") != "file":
+                continue
+            path = entry.path
+            folder = path.split("/")[1] if "/" in path else "root"
+            name = path.rsplit("/", 1)[-1]
+            ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+            media_type = "video" if ext in {"mp4", "mov", "webm", "m4v"} else "image"
+            groups_map.setdefault(folder, []).append(
+                {"name": name, "url": storage_service._get_public_url(path), "type": media_type}
+            )
+    except Exception as e:
+        logger.error(f"media list failed: {e}")
+        return {"total": 0, "groups": []}
+    groups = [
+        {"id": k, "label": k, "items": sorted(v, key=lambda x: x["name"])}
+        for k, v in sorted(groups_map.items())
+    ]
+    return {"total": sum(len(g["items"]) for g in groups), "groups": groups}
+
+@router.delete("/media")
+async def admin_media_delete(url: str, user=Depends(require_admin)):
+    ok = await storage_service.delete(url)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Media not found")
+    return {"ok": True}
+
+@router.get("/export")
+async def admin_export(user=Depends(require_admin)):
+    return {
+        "categories": await category_service.get_all(),
+        "guides": await guide_service.get_all(),
+    }
+
+@router.post("/import")
+async def admin_import(request: Request, user=Depends(require_admin)):
+    body = await request.json()
+    categories = body.get("categories", []) or []
+    guides = body.get("guides", []) or []
+    imported_categories = 0
+    imported_guides = 0
+    for c in categories:
+        await category_service.upsert(
+            key=c.get("key", ""),
+            title=c.get("title", ""),
+            icon_url=c.get("icon_url", ""),
+            sort_order=int(c.get("sort_order", 0) or 0),
+        )
+        imported_categories += 1
+    for g in guides:
+        key = g.get("key", "")
+        if not key:
+            continue
+        await guide_service.upsert(
+            key=key,
+            data={
+                "category_key": g.get("category_key", ""),
+                "title": g.get("title", ""),
+                "icon_url": g.get("icon_url"),
+                "text": normalize_icon_syntax(g.get("text", "")),
+                "photo": g.get("photo", []) or [],
+                "video": g.get("video", []) or [],
+                "document": g.get("document", []) or [],
+                "sort_order": int(g.get("sort_order", 0) or 0),
+            },
+            changed_by=user.get("id"),
+        )
+        imported_guides += 1
+    await cache_service.invalidate_all()
+    return {"categories": imported_categories, "guides": imported_guides}
+
 @router.post("/lab/synthesize")
 async def admin_lab_synthesize(body: LabImportIn, user=Depends(require_admin)):
     if body.use_ai:
@@ -131,17 +275,15 @@ async def admin_lab_import(body: LabImportIn, user=Depends(require_admin)):
     """
     Triggers a background import task via Inngest.
     """
-    from core.inngest_client import inngest_client
-    
-    # We send the data to Inngest to handle it as a durable background job
-    await inngest_client.send(
-        "discord/guide.import",
+    event = inngest.Event(
+        name="discord/guide.import",
         data={
-            "messages": body.messages, # It's already a list of dicts
+            "messages": body.messages,
             "category_key": body.category_key or "imported",
             "title": body.title or "New Imported Guide",
-            "guide_key": body.guide_key
-        }
+            "guide_key": body.guide_key,
+        },
     )
-    
+    await inngest_client.send(event)
+
     return {"ok": True, "message": "Import task queued in background"}

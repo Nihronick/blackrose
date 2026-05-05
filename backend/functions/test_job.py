@@ -5,7 +5,7 @@ from core.inngest_client import inngest_client
     fn_id="test_job",
     trigger=inngest.TriggerEvent(event="app/test.job"),
 )
-async def test_job(ctx: inngest.Context, step: inngest.Step):
+async def test_job(ctx: inngest.Context):
     """
     Simple test job to verify Inngest execution on Hugging Face.
     """

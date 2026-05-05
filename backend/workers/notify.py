@@ -44,7 +44,7 @@ class WorkerSettings:
     on_startup = startup
     on_shutdown = shutdown
     redis_settings = RedisSettings.from_dsn(os.getenv("REDIS_URL", "redis://localhost:6379"))
-    
+
     # Оптимизация для Upstash Free Tier
     max_tries = 3
     job_timeout = 120

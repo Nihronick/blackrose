@@ -26,10 +26,10 @@ def mock_db():
     session.commit = AsyncMock()
     session.rollback = AsyncMock()
     session.close = AsyncMock()
-    
+
     # Mock context manager
     session_cm = MagicMock()
     session_cm.__aenter__ = AsyncMock(return_value=session)
     session_cm.__aexit__ = AsyncMock()
-    
+
     return session

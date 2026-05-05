@@ -13,6 +13,7 @@ import {
   apiTopGuides,
   apiUnsubscribe,
 } from '../lib/api'
+import type { Category, Comment, Guide } from '../lib/types'
 
 // ── Query Keys ────────────────────────────────────────────────
 export const keys = {

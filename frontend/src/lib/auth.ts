@@ -2,6 +2,7 @@ import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
 
 const TOKEN_KEY = 'br_jwt'
+const REFRESH_TOKEN_KEY = 'br_refresh_jwt'
 const USER_KEY = 'br_user'
 
 export interface User {
@@ -40,16 +41,34 @@ export function getStoredToken(): string {
   }
 }
 
-export function setStoredToken(token: string, user: User): void {
+export function getStoredRefreshToken(): string {
+  try {
+    return localStorage.getItem(REFRESH_TOKEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+export function setStoredToken(token: string, user: User, refreshToken?: string): void {
   try {
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(USER_KEY, JSON.stringify(user))
+    if (refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+    }
+  } catch {}
+}
+
+export function setStoredAccessToken(token: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, token)
   } catch {}
 }
 
 export function clearStoredToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
   } catch {}
 }
@@ -113,11 +132,15 @@ export async function handleTelegramLogin(user: TelegramUser, base: string) {
     throw new Error(err.detail || err.message || 'Ошибка авторизации')
   }
   const result = await resp.json()
-  // Backend returns flat: { token, user_id, first_name, is_admin }
-  setStoredToken(result.token, {
-    id: result.user_id,
-    first_name: result.first_name,
-    is_admin: result.is_admin,
-  })
+  // Backend returns flat: { token, refresh_token, user_id, first_name, is_admin }
+  setStoredToken(
+    result.token,
+    {
+      id: result.user_id,
+      first_name: result.first_name,
+      is_admin: result.is_admin,
+    },
+    result.refresh_token
+  )
   return result
 }

@@ -1,57 +1,57 @@
-# 🏛️ Логическая Архитектура BlackRose
+# Архитектура BlackRose (актуальная версия)
 
-Этот документ описывает связи между **Фронтендом (React)** и **Бэкендом (FastAPI)** для обеспечения целостности системы.
+Документ фиксирует фактическую архитектуру и эксплуатационные ограничения, чтобы избегать расхождения между "идеальной схемой" и реальным продом.
 
-### 🔍 Потоки данных: Поиск и Главная панель
+## 1. Основные компоненты
 
-```mermaid
-sequenceDiagram
-    participant FE as Фронтенд (React)
-    participant API as Бэкенд (FastAPI)
-    participant ING as Inngest (Queue)
-    participant AI as Gemini (AI)
-    participant DB as База Данных
+| Слой | Технология | Роль |
+|---|---|---|
+| Frontend | React + Vite + TypeScript | UI, Telegram Mini App UX, запросы к API |
+| Backend API | FastAPI | Публичные/админ маршруты, auth, orchestration |
+| Jobs | Inngest + фоновые функции | Долгие/асинхронные операции импорта |
+| DB | Neon PostgreSQL | Гайды, категории, пользователи, служебные данные |
+| Media | HF Datasets + imgproxy | Хранение и трансформация медиа |
+| Bot/Worker | aiogram + worker processes | Telegram интеграция и фоновые задачи |
 
-    FE->>API: POST /api/admin/lab/import (запрос на импорт)
-    API->>ING: TRIGGER discord/guide.import (событие)
-    API-->>FE: 202 Accepted (ID задачи)
-    
-    ING->>AI: Синтез текста гайда
-    AI-->>ING: Результат (Markdown)
-    
-    ING->>DB: Сохранение готового гайда
-    DB-->>ING: OK
-```
+## 2. Критические потоки
 
-### 📂 Сопоставление файлов (Логика -> Код)
+### 2.1 Авторизация
+1. Frontend отправляет Telegram initData / login payload.
+2. Backend валидирует подпись и выдает short-lived JWT.
+3. При `401` frontend выполняет refresh и ретраит запрос.
 
-| Функционал | Компонент Фронтенда | Роутер Бэкенда | Таблица БД |
-|---|---|---|---|
-| **Главный экран** | `HomeDashboard.tsx` | `public.py` | `guides`, `comments` |
-| **История поиска** | `useSearchHistory.ts` | (Клиентская часть / CloudStorage) | - |
-| **Гайды и Контент** | `GuideView.tsx` | `public.py` | `guides`, `guide_tags` |
-| **Управление Медиа** | `ExportImport.tsx` | `admin.py` | (Hugging Face API) |
-| **Авторизация** | `AdminLoginModal.tsx` | `core/auth.py` | `local_admins`, `members` |
+### 2.2 Импорт Discord Guide
+1. Frontend вызывает `/api/admin/lab/import`.
+2. Backend создает Inngest event и сразу возвращает `202 Accepted`.
+3. Inngest-функция выполняет синтез/нормализацию и сохраняет результат.
+4. Контент и медиа сохраняются через сервисный слой.
 
----
+### 2.3 Чтение контента
+1. Frontend запрашивает guides/comments через публичные роуты.
+2. Backend читает из PostgreSQL и возвращает типизированные DTO.
+3. Медиа рендерится через HF resolve/imgproxy URL.
 
-### 🏛️ Правила Разработки (MANDATORY)
+## 3. Где лежит код (логика -> файлы)
 
-1.  **Flat Imports**: Бэкенд использует плоскую структуру. Все импорты должны идти от корня `/app`. **Запрещено** использовать префикс `backend.` (например, `from api import ...` вместо `from backend.api import ...`).
-2.  **Package Markers**: Каждая подпапка в `backend/` должна содержать `__init__.py`. Это критично для корректной работы Docker и CI.
-3.  **Inngest SDK**: При интеграции с FastAPI используйте `import inngest.fast_api` (с подчеркиванием).
-4.  **Linting & Style**: Весь бэкенд должен проходить проверку `ruff check .` без ошибок. **Запрещено** использовать однострочные `if` с `return/raise` (E701). Все `except:` должны быть типизированы (`Exception` как минимум).
-5.  **Service Isolation**: Логика взаимодействия с внешними API (HF, Gemini, Redis) вынесена в изолированные сервисы в `backend/services/`. Прямое использование SDK в роутерах не допускается.
+| Функционал | Frontend | Backend |
+|---|---|---|
+| Главный экран | `frontend/src/components/HomeDashboard.tsx` | `backend/api/public.py` |
+| Просмотр гайда | `frontend/src/views/GuideView.tsx` | `backend/api/public.py` |
+| Импорт/медиа в админке | `frontend/src/components/ExportImport.tsx` | `backend/api/admin.py` |
+| Авторизация | `frontend/src/components/AdminLoginModal.tsx` | `backend/core/auth.py` |
+| История поиска | `frontend/src/hooks/useSearchHistory.ts` | client-side only |
 
-## 📦 Архитектура потоков данных
+## 4. Эксплуатационные риски (не теоретические)
 
-1.  **Запрос (Request)**: React-приложение использует `TanStack Query` для асинхронных вызовов к FastAPI.
-2.  **Обработка (Logic)**: Бэкенд проверяет JWT/Telegram сессию в `core/auth.py`.
-3.  **Данные (Storage)**:
-    *   **SQL**: PostgreSQL (Neon) для гайдов, комментариев и истории.
-    *   **Knowledge**: `core/glossary.json` для AI-синтеза.
-    *   **Media**: Hugging Face Datasets + `imgproxy` для оптимизации.
-    *   **Persistence**: `GitSyncService` автоматически бэкапит контент базы в `.md` файлы на GitHub.
-4.  **Наблюдаемость (Observability)**:
-    *   **Logs**: `structlog` с ротацией логов.
-    *   **Jobs**: Inngest для управления сложными фоновыми задачами.
+1. HF Spaces free-tier ограничивает ресурсы: тяжелые медиа-операции могут деградировать API.
+2. Discord CDN ссылки короткоживущие: импорт должен быть быстрым и с прозрачной ошибкой для пользователя.
+3. HF Dataset public resolve может иметь короткую eventual-consistency задержку.
+4. Цепочка из нескольких сервисов (API, Jobs, Media, Bot, Sync) увеличивает blast radius любой ошибки.
+
+## 5. Архитектурные правила
+
+1. Бизнес-логика и внешние SDK остаются в `backend/services/`, роутеры должны быть тонкими.
+2. Для backend import path используется плоская схема (`from api import ...`), без префикса `backend.`.
+3. Все backend подпакеты должны содержать `__init__.py`.
+4. Типы frontend должны оставаться строгими: без `any`, Telegram типы через `global.d.ts`.
+5. Любое изменение деплоя и инфраструктуры должно быть синхронизировано с `docs/CLAUDE.md` и `docs/todo.md`.

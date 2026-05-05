@@ -1,6 +1,11 @@
 # 📋 Project TODO
 
 ## 🚀 Priority: High
+- [x] Implement frontend silent refresh flow on 401 (`/api/auth/refresh` + token retry).
+- [x] Fix Inngest event dispatch in `/api/admin/lab/import` (proper `inngest.Event` usage).
+- [x] Fix broken media import pipeline in `MediaService.import_from_url` (unreachable code after status check).
+- [x] Restore web login auth contract (`verify_telegram_login_widget` returns normalized user payload).
+- [x] Add refresh token endpoint (`/api/auth/refresh`) and short-lived access token policy.
 - [x] Verify Admin Panel stability (fixed stats/analytics and missing view_logs table).
 - [x] Implement Backend Proxy for Discord Media (bypass CORS policy).
 - [x] Implement/Fix Guide deletion logic.
@@ -16,6 +21,7 @@
 - [x] **Fix Frontend Rendering** (Height calculation & Card import error).
 
 ## 🛠️ Features & Improvements
+- [x] Normalize core documentation (`README.md`, `docs/CLAUDE.md`, `docs/ARCHITECTURE.md`) to match real structure and deployment paths.
 - [x] Clean up redundant Graphify files (Verified removed).
 - [x] Add `/health` endpoint to FastAPI for monitoring.
 - [x] Implement automated icon downloader for Discord Lab.

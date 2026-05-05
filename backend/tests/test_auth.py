@@ -48,9 +48,11 @@ def test_verify_login_widget_success():
     secret_key = hashlib.sha256(settings.BOT_TOKEN.encode()).digest()
     expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
     data["hash"] = expected
-    
-    assert verify_telegram_login_widget(data) is True
+
+    result = verify_telegram_login_widget(data)
+    assert result is not None
+    assert result["id"] == 12345
 
 def test_verify_login_widget_fail():
     data = {"id": "1", "hash": "wrong"}
-    assert verify_telegram_login_widget(data) is False
+    assert verify_telegram_login_widget(data) is None

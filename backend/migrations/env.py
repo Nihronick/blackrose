@@ -16,10 +16,10 @@ def _make_async_url(url: str) -> str:
     """Конвертирует DATABASE_URL в формат asyncpg и исправляет типичные ошибки."""
     if not url:
         return url
-    
+
     # Удаляем лишние пробелы и кавычки
     url = url.strip().strip("'").strip('"')
-    
+
     # Принудительно добавляем или исправляем драйвер для asyncpg
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
@@ -48,8 +48,8 @@ def get_url() -> str:
     raw = os.environ.get("DIRECT_URL") or os.environ.get("DATABASE_URL", "")
     if not raw:
         raise RuntimeError("Ни DIRECT_URL, ни DATABASE_URL не заданы")
-    
-    # Мы не можем использовать logger здесь легко без доп настройки, 
+
+    # Мы не можем использовать logger здесь легко без доп настройки,
     # поэтому просто возвращаем нормализованный URL
     return _make_async_url(raw)
 

@@ -19,7 +19,7 @@ async def discord_import_guide(ctx: inngest.Context):
     messages = ctx.event.data.get("messages", [])
     category_key = ctx.event.data.get("category_key", "imported")
     guide_key = ctx.event.data.get("guide_key")
-    
+
     if not messages:
         return {"status": "skipped", "reason": "no_messages"}
 
@@ -29,7 +29,7 @@ async def discord_import_guide(ctx: inngest.Context):
         "ai-synthesis",
         lambda: discord_lab_service.synthesize_ai(messages)
     )
-    
+
     content = synthesis["content"]
     raw_media = synthesis["media"]
 

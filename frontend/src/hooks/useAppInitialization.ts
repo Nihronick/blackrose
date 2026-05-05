@@ -1,5 +1,5 @@
 import { useAppEnv } from '@/hooks/useAppEnv'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, apiPost } from '@/lib/api'
 import {
   clearStoredToken,
   getMode,
@@ -44,17 +44,22 @@ export const useAppInitialization = () => {
         try {
           interface TmaLoginResponse {
             token: string
+            refresh_token?: string
             user_id: number
             first_name: string
             is_admin: boolean
           }
-          const data = await apiFetch<TmaLoginResponse>('/api/auth/tma-login', { method: 'POST' })
+          const data = await apiPost<TmaLoginResponse>('/api/auth/tma-login', {})
           if (data?.token && !isCancelled) {
-            setStoredToken(data.token, {
-              id: data.user_id,
-              first_name: data.first_name,
-              is_admin: data.is_admin,
-            })
+            setStoredToken(
+              data.token,
+              {
+                id: data.user_id,
+                first_name: data.first_name,
+                is_admin: data.is_admin,
+              },
+              data.refresh_token
+            )
             if (data.is_admin) setIsAdmin(true)
           }
         } catch (e) {

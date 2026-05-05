@@ -121,8 +121,8 @@ const user = window.Telegram.WebApp.initDataUnsafe.user;
 
 #### 🗺️ Zero-to-Hero Learning Path
 1. **Foundation**: Learn `FastAPI` (Python) and `Vite/React` (TS).
-2. **Setup**: Run `.\deploy-backend.ps1` (backend) and `.\deploy-frontend.ps1` (frontend) locally to understand the build chain.
-3. **Architecture**: Review `backend/database.py` (Neon DB) and `frontend/src/store/` (Zustand).
+2. **Setup**: Review deployment scripts in `tools\deploy-backend.ps1` and `tools\deploy-frontend.ps1`.
+3. **Architecture**: Review `backend/core/db.py` (Neon DB) and `frontend/src/store/` (Zustand).
 4. **Contribution**: Pick a task from `docs/todo.md`, follow the **Atomic Commit** rule, and verify via the **Pre-Flight Checklist**.
 
 | Document | Purpose | Reading Order |
@@ -313,13 +313,13 @@ All deployments use isolated `.deploy_temp_*` directories.
 
 ### Backend → Hugging Face Spaces
 
-- **Script:** `.\deploy-backend.ps1`
+- **Script:** `.\tools\deploy-backend.ps1`
 - **What happens:** Creates `.deploy_temp_backend/`, copies `backend/*` into it, `git init`, force pushes to HF.
 - **Target:** `https://huggingface.co/spaces/Nihronick/blackrose-backend`
 
 ### Frontend → GitHub Pages
 
-- **Script:** `.\deploy-frontend.ps1`
+- **Script:** `.\tools\deploy-frontend.ps1`
 - **What happens:** Runs `npm install && npm run build` in `frontend/`, copies `dist/*` to `.deploy_temp_frontend/`, force pushes to `gh-pages`.
 - **Target:** `https://nihronick.github.io/blackrose/`
 
@@ -384,12 +384,12 @@ Before running any deploy script:
 - ✅ Root configs (`pyproject.toml`, `pyrightconfig.json`, `.gitattributes`)
 - ❌ **Never:** `node_modules/`, `.env`, `__pycache__/`, `.deploy_temp_*/`
 
-### What Goes to HF Space (via `deploy-backend.ps1`)
+### What Goes to HF Space (via `tools/deploy-backend.ps1`)
 
 - ✅ Everything inside `backend/` — Python code, Dockerfile, requirements.txt, supervisord.conf
 - ❌ **Not:** `frontend/`, `docs/`, `scripts/`, root configs
 
-### What Goes to `gh-pages` (via `deploy-frontend.ps1`)
+### What Goes to `gh-pages` (via `tools/deploy-frontend.ps1`)
 
 - ✅ Only `frontend/dist/` after `npm run build`
 - ❌ **Not:** source code, backend, docs — only the production build
@@ -431,7 +431,7 @@ These mistakes have already been made. **Do NOT repeat them.**
 | # | What Happened | Rule |
 |---|---|---|
 | 1 | Agent used `select(1)` in SQLAlchemy 2.0 — broke init_db() | Always verify API compatibility with the library version in `requirements.txt` |
-| 2 | Agent deployed broken code to HF without testing | Never run `deploy-backend.ps1` without local verification |
+| 2 | Agent deployed broken code to HF without testing | Never run `tools/deploy-backend.ps1` without local verification |
 | 3 | Agent rewrote CLAUDE.md and deleted Session Entry/Exit rules | Never remove existing rules from CLAUDE.md — only add or amend |
 | 4 | Agent made 2 commits in 1 minute to fix own mistakes | Test before committing. One commit = one verified change |
 | 5 | Agent wrote "nerdzao-elite" everywhere without reading the skill | Do not name-drop skills. Read the SKILL.md or don't mention it |
@@ -442,13 +442,13 @@ These mistakes have already been made. **Do NOT repeat them.**
 | 10 | Leaving heavy video compression on free-tier backend | Do not process heavy media on the API server. Use direct upload or offload. |
 | 11 | Using `React.` namespace (Vite 6/React 18 build errors) | Always use named imports (`{ FC, useState }`) to prevent ReferenceErrors in production builds. |
 | 12 | Referencing non-existent local fonts in CSS | Use Google Fonts (Outfit) via CDN in `index.html`. Avoid local `@font-face` without files. |
-| 14 | Missing indexes on filtered columns | Always index columns used in `WHERE`, `JOIN`, or `ORDER BY`. |
-| 15 | Using `backend.` prefix in imports | Use absolute imports relative to `/app` (e.g., `from api import ...`) |
-| 16 | Missing `__init__.py` in packages | Always include `__init__.py` in all backend subdirectories |
-| 17 | `import inngest.fastapi` | Correct import is `import inngest.fast_api` (with underscore) |
-| 18 | `api_path` in Inngest `serve` | Use `serve_path` instead of `api_path` for Inngest FastAPI integration |
-| 19 | Missing `INNGEST_SIGNING_KEY` | Set `is_production=False` in `Inngest` client if no key is available on HF |
-| 20 | Forgetting `MINIAPP_URL` in Settings | Ensure all Telegram-related env vars are present in `Settings` class |
+| 13 | Missing indexes on filtered columns | Always index columns used in `WHERE`, `JOIN`, or `ORDER BY`. |
+| 14 | Using `backend.` prefix in imports | Use absolute imports relative to `/app` (e.g., `from api import ...`) |
+| 15 | Missing `__init__.py` in packages | Always include `__init__.py` in all backend subdirectories |
+| 16 | `import inngest.fastapi` | Correct import is `import inngest.fast_api` (with underscore) |
+| 17 | `api_path` in Inngest `serve` | Use `serve_path` instead of `api_path` for Inngest FastAPI integration |
+| 18 | Missing `INNGEST_SIGNING_KEY` | Set `is_production=False` in `Inngest` client if no key is available on HF |
+| 19 | Forgetting `MINIAPP_URL` in Settings | Ensure all Telegram-related env vars are present in `Settings` class |
 
 ---
 
@@ -571,148 +571,25 @@ cd frontend && npm run dev
 
 ---
 
-## 📝 Current Status (Last Updated: 2026-05-03, Session 4)
+## 📝 Current Status (Last Updated: 2026-05-06)
 
-### 💎 Senior Infrastructure & Discovery (Session 4)
-- ✅ Discovery Layer: Added horizontal "Categories" scroll to HomeDashboard.
-- ✅ Admin Core: Implemented `AdminAuthService` for local credentials.
-- ✅ Inngest Flow: Integrated `discord_lab_service` with background workers.
+### Stable baseline
+- Auth flow uses short-lived JWT + refresh endpoint (`/api/auth/refresh`) with frontend silent refresh.
+- Import pipeline uses Inngest + Gemini and persists guides/media through service layer.
+- Deployment scripts are centralized in `tools/`.
 
-### 🧹 Code Cleanup & Refactoring (Session 5 - Current)
-- ✅ **Dead Code Removal**: Soft-deleted legacy experimental scripts in `trash/`, `experiments/`, and redundant glossaries.
-- ✅ **Scripts Audit**: Deprecated 30+ legacy migration scripts in `scripts/` folder.
-- ✅ **Architecture Fixes**:
-    - Fixed missing `os` import in `backend/core/config.py`.
-    - Cleaned up unused imports in `backend/api/admin.py`.
-    - Implemented `CategoryService.delete` logic in service layer.
-    - Updated admin route to use proper service-layer deletion and cache invalidation.
-- ✅ **Frontend Organization**: Relocated test files from `components/` to dedicated `test/` directory.
-- ✅ **Consistency**: Synchronized Discord emoji mapping logic across all services.
-- ✅ **Premium Sharing**: Upgraded `ShareButton` with native Web Share API support.
-- ✅ **Senior Docs Upgrade**: Applied `wiki-architect` & `senior-architect` standards to `CLAUDE.md`.
+### Operational constraints (must be considered in every change)
+- HF Spaces free tier has limited CPU/RAM and may degrade under heavy media workflows.
+- Discord CDN URLs are short-lived; import UX must remain fast and explicit.
+- HF Dataset public resolve is eventually consistent (short delay before new media is visible).
 
-### Recent Changes (Session 3)
+### Current technical debt
+- `reorder_categories/guides` still performs N+1 updates.
+- Documentation is being normalized to match real file locations and runtime behavior.
+- Multi-service chain (API + worker + bot + media + sync) increases blast radius for regressions.
 
-- ✅ **JWT Exchange Strategy**: Implemented TMA-to-JWT conversion for stable cross-platform sessions.
-- ✅ **Extended Environment Metadata**: Added platform, version, and colorScheme to global store.
-- ✅ **Hybrid Core Architecture**: Robust separation and lifecycle management via `AppEnvProvider`.
-- ✅ **Instant Theme Sync**: Automatic UI reaction to Telegram theme changes.
-- ✅ **Adaptive UI Layer**: Context-aware headers, buttons, and ErrorBoundaries.
-- ✅ **Bulletproof Navigation**: Native BackButton logic with reliable fallback.
-- ✅ **Redis Optimization**: Increased ARQ worker `poll_delay` to 10.0s.
-- ✅ **Adaptive UI Layer**: Context-aware headers, buttons, and ErrorBoundaries.
-- ✅ **Process Consolidation**: Integrated Telegram Bot (aiogram) into FastAPI lifespan.
-- ✅ **Stable Webhooks**: Configured automated webhook setup with secret token validation for HF Spaces.
-- ✅ **Unified Requirements**: Merged backend and bot dependencies for cleaner Docker builds.
-
-### Code Audit Fixes (2026-05-01, Session 1)
-
-- ✅ Fixed `select(1)` → `text("SELECT 1")` in `database.py` (Anti-Pattern #1).
-- ✅ Fixed `entrypoint.sh` CRLF → LF line endings (Anti-Pattern #7).
-- ✅ Created `.gitattributes` with `*.sh text eol=lf`.
-- ✅ Fixed JWT `_jwt_encode` empty key vulnerability in `dependencies.py`.
-- ✅ Added `ffmpeg` to Dockerfile for video compression.
-- ✅ Replaced `print()` with `logger.error()` in `admin.py` (Anti-Pattern #8).
-- ✅ Replaced `traceback.print_exc()` with `logger.error(..., exc_info=True)`.
-- ✅ Moved `ImportMediaIn` from mid-file to `models.py` (Anti-Pattern #9).
-- ✅ Updated `.env.example` — removed R2/Cloudflare, added HF_TOKEN/HF_DATASET_REPO.
-- ✅ Removed unused deps: `aioboto3`, `psycopg2-binary`, `sqlalchemy-utils`.
-- ✅ Hardened CORS regex: `nihronick.github.io` only.
-- ✅ Fixed token leakage in `storage.py` and `admin.py` error logs.
-- ✅ Added config diagnostics for `HF_DATASET_REPO` (token detection).
-- ✅ Improved `deploy-backend.ps1` with `HF_TOKEN` auth support.
-- ✅ Implemented comprehensive Guide & Media deletion logic (cleanup in HF Dataset).
-- ✅ Added manual media deletion to Admin Library UI.
-- ✅ Migrated `storage.py` to async `ffmpeg` execution.
-
-### 2026-05-01 (Session 2): Backend Premium Evolution
-
-- **Database Performance**: Added indexes to `sort_order`, `views`, and `updated_at` for high-speed sorting.
-- **Query Optimization**: Refactored `admin_stats` to use a single query instead of 5 separate ones.
-- **Service Architecture**: Created `TranslationService` to modularize multi-provider (HF/Gemini/Google) translation logic.
-- **Reliability**: Implemented robust temp file cleanup using `finally` blocks in media import.
-- **UX**: Relaxed `nh3` sanitization to allow basic formatting (`<b>`, `<i>`, `<code>`) in comments.
-- **Fixes**: Resolved missing `Request` and `JSONResponse` imports in the global exception handler.
-
-### 2026-05-01 (Session 3): Validation & Accessibility Hardening
-
-- **Documentation**: Created `docs/TESTING.md` with a comprehensive 6-point validation protocol.
-- **Accessibility**: Integrated `MotionConfig` to globally respect `prefers-reduced-motion` for all animations.
-- **API Resilience**: Enhanced `apiFetch` error handling to correctly parse and display FastAPI validation detail lists.
-- **UI Consistency**: Verified end-to-end markdown-to-video hydration for premium media playback.
-
-### Ultimate Hybrid Core Hardening (2026-05-01, Session 2) — DONE 💎
-
-- ✅ **Security**: Implemented HMAC-SHA256 TMA validation & Security Headers middleware.
-- ✅ **Auth**: Added JWT Refresh tokens and environment-aware logout logic.
-- ✅ **Reliability**: Integrated Telegram Error Alerts and structured JSON logging (X-Forwarded-For support).
-- ✅ **Performance**: Added CSS/HTML Skeletons and SEO Open Graph meta tags.
-- ✅ **Observability**: Upgraded `/health` with deep DB/Redis checks and added Pytest suite.
-- ✅ **Documentation**: Created `docs/RISKS.md`, `CHANGELOG.md`, and upgraded `README.md`.
-
-### 2026-05-02 (Session 1): Premium Frontend Evolution 💎
-
-- ✅ **Named Imports Migration**: Systemic refactor of all components to remove `React.` namespace dependencies.
-- ✅ **Build Stability**: Resolved Vite 6 production build failures and chunking issues.
-- ✅ **UI WOW Factor**: Implemented staggered animations (`stagger-in`) and premium skeleton shimmer.
-- ✅ **Interactive Content**: Added interactive spoiler reveals and lightbox support for all in-text images.
-- ✅ **Typography & Aesthetics**: Modernized guide content with premium quotes, headers, and code styles.
-- ✅ **API Reliability**: Fixed cache clearing logic by migrating from GET to POST for sensitive admin actions.
-
-### Known Issues
-
-- `reorder_categories/guides` — N+1 UPDATE queries (low priority).
-- Discord CDN links expire quickly — user should import within 5-10 mins of "Prepare".
-- Hugging Face Spaces free-tier resource limits (see `docs/RISKS.md`).
-
-### Status: PREMIUM EVOLUTION 💎 (10/10)
-
-- **Architecture:** Enterprise-grade named imports and environment-aware modules.
-- **Backend:** Stable webhook integration, optimized DB indexes, and robust media handling.
-- **Frontend:** State-of-the-art animations, interactive markdown content, and pixel-perfect aesthetics.
+### Source of truth for next tasks
+- `docs/todo.md` — active backlog and priorities.
+- `docs/snapshots/` — chronological session handoff notes.
 
 ---
-
-<!-- Last agent: Antigravity | Session: 2026-05-03 14:10 | Status: Inngest & Gemini AI Synthesis Integrated -->
-
-### 💎 Modernization & Automation (Session 5)
-- ✅ **Inngest Integration**: Added background job orchestration for complex workflows.
-- ✅ **Gemini 1.5 Flash**: Integrated AI synthesis for automated Discord guide imports.
-- ✅ **Glossary System**: Centralized `backend/core/glossary.json` for terminology consistency (EN/RU).
-- ✅ **Observability**: Optimized logging for HF Spaces with Rotating File support.
-- ✅ **Infrastructure Hardening**: Switched to standard PyJWT, implemented full-text search (FTS), and aiohttp session pooling.
-- ✅ **Documentation Sync**: Consolidated architectural updates into `docs/` folder.
-
-### 💎 Production Hardening (Session 6 - Current)
-- ✅ **Media Optimization**: Integrated `imgproxy` for on-the-fly resizing and WebP conversion.
-- ✅ **Wiki Git-Sync**: Implemented `GitSyncService` for automated .md backups to GitHub.
-- ✅ **Architectural Purge**: Moved all deployment scripts to `/tools/` and cleaned root directory.
-- ✅ **Content Strategy**: Prepared architecture for `Directus` headless CMS integration.
-- ✅ **Resilience**: Added non-blocking background tasks for secondary services (Git-Sync).
-
-### 💎 Final Stabilization & Linting Cleanup (Session 7 - Current)
-- ✅ **Zero-Lint State**: Resolved 70+ Ruff violations (E701, E712, F821, E722, E402, F841).
-- ✅ **Standardized Formatting**: Split all one-line `if/raise/return` statements for PEP8 compliance.
-- ✅ **Import Sanitization**: Fixed broken module-level imports and circular dependencies in bot handlers and tests.
-- ✅ **Resource Safety**: Removed unused local variables and properly closed file handles in storage services.
-- ✅ **Code Integrity**: Verified `redis_cache.py`, `hf_storage.py`, and `auth.py` are production-ready.
-- ✅ **Inngest Stability**: Consolidated health checks and ensured background workers have robust logging.
-
----
-
-### 💎 Final Hardening & Logic Restoration (Session 8 - Current)
-- ✅ **Logic Restoration**: Recovered full `normalize_icon_syntax` and `format_guide_text` in `utils.py`.
-- ✅ **Test Suite Stabilization**: Rewrote `test_api_endpoints.py` and `test_formatting.py` for modern service architecture.
-- ✅ **Performance**: Resolved N+1 queries in `GuideService.get_all` via `selectinload`.
-- ✅ **Service Sync**: Integrated `utils` into `DiscordGuideSynthesizer` for consistent icon mapping.
-
----
-
-<!-- Last agent: Antigravity | Session: 2026-05-04 05:00 | Status: Frontend Stabilization & Biome Compliance Complete -->
-
-### 💎 Frontend Stabilization & Biome Compliance (Session 9 - Current)
-- ✅ **Zero-Any Architecture**: Eliminated 100+ `any` type violations across core frontend modules (`DashboardTab`, `DiscordLabTab`, `AdminSidebar`, `IconSheet`, `ExportImport`, `AdminView`).
-- ✅ **Global Type Safety**: Implemented `frontend/src/global.d.ts` for standardized `window.Telegram` access, removing unsafe casts.
-- ✅ **Strict Query Typing**: Fully typed all React Query hooks in `queries.ts` and component-level fetchers with `Category`, `Guide`, and `Comment` interfaces.
-- ✅ **Standard Compliance**: Resolved Biome linting errors, updated import protocols to `node:path`, and migrated unsafe `isNaN` to `Number.isNaN`.
-- ✅ **Security Intent**: Explicitly documented and suppressed necessary `dangerouslySetInnerHTML` usages for Markdown rendering via Biome ignore comments.

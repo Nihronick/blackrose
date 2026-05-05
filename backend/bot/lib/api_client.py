@@ -11,7 +11,7 @@ class BotApiClient:
         if not self.base_url:
             logger.warning("API_URL is not configured.")
             return None
-            
+
         url = f"{self.base_url}{endpoint}"
         headers = {"X-Bot-Token": API_TOKEN}
         try:

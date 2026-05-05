@@ -16,10 +16,10 @@ class BotService:
     def init_bot(self):
         if self.bot:
             return
-        
+
         session = AiohttpSession(timeout=40.0)
         session._connector_init = {"family": socket.AF_INET}
-        
+
         # Use token from settings
         token = settings.BOT_TOKEN
         if not token:
@@ -28,13 +28,13 @@ class BotService:
 
         self.bot = Bot(token=token, session=session)
         self.dp = Dispatcher(storage=MemoryStorage())
-        
+
         # Register routers (Lazy import to avoid cycles)
         try:
             from bot.handlers.errors import router as errors_router
             from bot.handlers.miniapp import miniapp_router
             from bot.handlers.admin import admin_router
-            
+
             self.dp.include_router(errors_router)
             self.dp.include_router(miniapp_router)
             self.dp.include_router(admin_router)

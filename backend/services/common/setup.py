@@ -12,22 +12,22 @@ async def seed_initial_admin():
     # We need a method in member_service or a direct DB call to seed local admins
     # For now, let's assume we use member_service.upsert for Telegram admins
     # and we need a LocalAdminService for local logins.
-    
+
     admins_to_seed = []
-    
+
     if settings.INITIAL_ADMINS:
         for admin_str in settings.INITIAL_ADMINS.split(";"):
             if ":" in admin_str:
                 admins_to_seed.append(admin_str.strip())
-    
+
     if not admins_to_seed and settings.INITIAL_ADMIN and ":" in settings.INITIAL_ADMIN:
         admins_to_seed.append(settings.INITIAL_ADMIN.strip())
-        
+
     if not admins_to_seed:
         return
-    
+
     logger.info(f"Seeding {len(admins_to_seed)} local admin(s)...")
-    
+
     async with get_sessionmaker()() as session:
         for admin_str in admins_to_seed:
             try:
