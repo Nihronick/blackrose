@@ -1,4 +1,3 @@
-import { FC, FormEvent } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,6 +10,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { haptic } from '@/lib/haptic'
 import { AlertCircle, Loader2, Lock, User } from '@/lib/icons'
+import type { FC, FormEvent } from 'react'
 import type React from 'react'
 import { useState } from 'react'
 

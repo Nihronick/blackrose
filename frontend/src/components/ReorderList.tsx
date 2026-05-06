@@ -1,7 +1,7 @@
-import { ReactNode, DragEvent } from 'react';
 import { haptic } from '@/lib/haptic'
 import { GripVertical } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { DragEvent, ReactNode } from 'react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 

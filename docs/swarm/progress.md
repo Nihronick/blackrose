@@ -11,3 +11,5 @@
 | 2026-05-06 19:10 | Очистка репозитория | architect/developer | Удален мусор, обновлен .gitignore | [.gitignore](file:///.gitignore) |
 | 2026-05-06 19:15 | Аудит пакетов | auditor | Проверены __init__.py в backend/ | [backend/migrations/versions/__init__.py](file:///backend/migrations/versions/__init__.py) |
 | 2026-05-06 19:20 | Валидация SW-005 | Quality Validator | ✅ Пройдена | [.swarm/task_plan.md](file:///.swarm/task_plan.md) |
+| 2026-05-06 20:50 | Восстановление окружения | tester | Успешно (git clone, mkdir) | [sanity-gravity/](file:///sanity-gravity/) |
+| 2026-05-06 20:54 | Фикс Biome/Ruff CI | developer | Удален дубликат импорта ReactNode. | [frontend/src/features/admin/AdminGuideEditor.tsx](file:///frontend/src/features/admin/AdminGuideEditor.tsx) |

@@ -1,6 +1,6 @@
-import { FC } from 'react';
 import { Download, FileText } from '@/lib/icons'
 import { normalizeUrl, parseDocument } from '@/lib/utils'
+import type { FC } from 'react'
 
 export const DocBlock: FC<{ url: string }> = ({ url }) => {
   const normalizedUrl = normalizeUrl(url)

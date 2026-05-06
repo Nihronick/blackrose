@@ -1,6 +1,7 @@
 from functools import wraps
 from typing import Any, Callable
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
 from services.cache.redis_cache import cache_service
 from loguru import logger
 
@@ -40,7 +41,8 @@ def cached(expire: int = 300):
 
             # Store in cache
             if result is not None:
-                await cache_service.set(cache_key, result, expire=expire)
+                json_compatible = jsonable_encoder(result)
+                await cache_service.set(cache_key, json_compatible, expire=expire)
                 logger.debug(f"Cache stored for {cache_key}")
 
             return result

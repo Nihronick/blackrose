@@ -1,8 +1,8 @@
-import { FC, FormEvent } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { haptic } from '@/lib/haptic'
+import type { FC, FormEvent } from 'react'
 import type React from 'react'
 import { useState } from 'react'
 

@@ -1,8 +1,8 @@
-import { FC, PointerEvent } from 'react';
 import { useAppEnv } from '@/hooks/useAppEnv'
 import { haptic } from '@/lib/haptic'
 import { ArrowLeft, Menu } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { FC, PointerEvent } from 'react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 

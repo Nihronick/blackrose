@@ -1,7 +1,7 @@
-import { SyntheticEvent, FC } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { haptic } from '@/lib/haptic'
 import { Home } from '@/lib/icons'
+import type { FC, SyntheticEvent } from 'react'
 import type React from 'react'
 
 interface Category {

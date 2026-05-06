@@ -1,5 +1,5 @@
-import { FC } from 'react';
 import { normalizeUrl } from '@/lib/utils'
+import type { FC } from 'react'
 import type React from 'react'
 
 export interface IconPreviewProps {

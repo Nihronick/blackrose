@@ -53,3 +53,5 @@ final_import*.json
 logs/
 backend/trash/
 backend/experiments/
+sanity-gravity/
+skills/

@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +14,7 @@ import {
   User,
 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { FC } from 'react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 

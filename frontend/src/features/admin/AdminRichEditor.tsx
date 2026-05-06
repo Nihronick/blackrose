@@ -1,7 +1,7 @@
-import { ChangeEvent, FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Edit3, Eye, ImageIcon, Sparkles } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { ChangeEvent, FC } from 'react'
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IconSheet } from './IconSheet'

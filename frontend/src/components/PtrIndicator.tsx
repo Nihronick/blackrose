@@ -1,7 +1,7 @@
-import { FC } from 'react';
 import { PTR_THRESHOLD } from '@/hooks/usePullToRefresh'
 import { RefreshCw } from '@/lib/icons'
 import { motion } from 'framer-motion'
+import type { FC } from 'react'
 import type React from 'react'
 
 interface PtrIndicatorProps {

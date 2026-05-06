@@ -1,6 +1,6 @@
-import { ReactNode, FC } from 'react';
 import { Card } from '@/components/ui/card'
 import { ShieldAlert } from '@/lib/icons'
+import type { FC, ReactNode } from 'react'
 import type React from 'react'
 
 interface AccessDeniedViewProps {

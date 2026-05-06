@@ -1,4 +1,3 @@
-import { ElementType, FC, MouseEvent, RefObject } from 'react';
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import {
@@ -14,6 +13,7 @@ import {
   Strikethrough,
   Underline,
 } from '@/lib/icons'
+import type { ElementType, FC, MouseEvent, RefObject } from 'react'
 import React, { useCallback, useMemo } from 'react'
 import { IC } from './adminIcons'
 

@@ -15,9 +15,13 @@ if (Test-Path $deployDir) {
 # 2. Create clean structure
 New-Item -ItemType Directory -Path $deployDir | Out-Null
 
-# 3. Copy only backend files
+# 3. Copy only backend files (excluding venv and caches)
 Write-Host "Copying backend files..."
-Copy-Item "$ROOT/backend/*" $deployDir -Recurse -Force
+robocopy "$ROOT\backend" "$deployDir" /E /XD venv __pycache__ .pytest_cache .ruff_cache logs /XF .env | Out-Null
+# Robocopy exit codes < 8 mean success (0 = no files copied, 1 = files copied, etc)
+if ($LASTEXITCODE -ge 8) {
+    throw "Robocopy failed with exit code $LASTEXITCODE"
+}
 
 # 4. Deploy from isolated folder
 Push-Location $deployDir

@@ -1,4 +1,4 @@
-import { SyntheticEvent, FC } from 'react';
+import type { FC, SyntheticEvent } from 'react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { apiIconsGrouped } from '../lib/api'

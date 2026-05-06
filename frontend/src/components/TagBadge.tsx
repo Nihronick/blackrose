@@ -1,10 +1,10 @@
-import { FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { haptic } from '@/lib/haptic'
 import { Hash, Plus, X } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { FC } from 'react'
 import type React from 'react'
 import { useState } from 'react'
 
@@ -20,13 +20,7 @@ interface TagBadgeProps {
  * TagBadge refactored with TSX and shadcn/ui.
  * Support for active states, removal, and custom styling.
  */
-export const TagBadge: FC<TagBadgeProps> = ({
-  tag,
-  onClick,
-  onRemove,
-  active,
-  className,
-}) => {
+export const TagBadge: FC<TagBadgeProps> = ({ tag, onClick, onRemove, active, className }) => {
   return (
     <Badge
       variant={active ? 'default' : 'secondary'}

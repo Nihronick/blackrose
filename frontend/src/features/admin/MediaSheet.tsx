@@ -1,4 +1,3 @@
-import { ChangeEvent, FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,6 +15,7 @@ import {
   X,
 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { ChangeEvent, FC } from 'react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'

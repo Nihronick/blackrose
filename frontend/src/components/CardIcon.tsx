@@ -1,5 +1,5 @@
-import { SyntheticEvent, FC } from 'react';
 import { cn, normalizeUrl } from '@/lib/utils'
+import type { FC, SyntheticEvent } from 'react'
 import type React from 'react'
 
 interface CardIconProps {
@@ -12,12 +12,7 @@ interface CardIconProps {
 /**
  * Portable CardIcon with support for premium shadcn-style layouts.
  */
-export const CardIcon: FC<CardIconProps> = ({
-  url,
-  size = 48,
-  placeholder = '📁',
-  className,
-}) => {
+export const CardIcon: FC<CardIconProps> = ({ url, size = 48, placeholder = '📁', className }) => {
   return (
     <div
       className={cn(

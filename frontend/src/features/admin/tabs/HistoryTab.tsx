@@ -1,9 +1,9 @@
-import { FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { apiFetch } from '@/lib/api'
 import { ChevronRight, Clock, FileJson, User } from '@/lib/icons'
 import type { Guide, GuideHistory, HistoryResponse } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import type { FC } from 'react'
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 

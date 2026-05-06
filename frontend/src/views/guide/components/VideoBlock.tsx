@@ -1,7 +1,7 @@
-import { FC, MouseEvent } from 'react';
 import { Loader2, Maximize, Pause, PictureInPicture2, Play, Volume2, VolumeX } from '@/lib/icons'
 import { normalizeUrl, parseVideo } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
+import type { FC, MouseEvent } from 'react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 

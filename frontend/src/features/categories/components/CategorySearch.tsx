@@ -1,4 +1,3 @@
-import { SyntheticEvent, FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { haptic } from '@/lib/haptic'
@@ -8,6 +7,7 @@ import { normalizeUrl } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import type { FC, SyntheticEvent } from 'react'
 import type React from 'react'
 import { useMemo } from 'react'
 import { categoriesApi } from '../api'

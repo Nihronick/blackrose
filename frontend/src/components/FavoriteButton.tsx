@@ -1,8 +1,8 @@
-import { FC, MouseEvent } from 'react';
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import { Star } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { FC, MouseEvent } from 'react'
 import type React from 'react'
 
 interface FavoriteButtonProps {

@@ -1,8 +1,8 @@
-import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { handleTelegramLogin } from '@/lib/auth'
 import { ExternalLink, ShieldCheck } from '@/lib/icons'
+import type { FC } from 'react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 

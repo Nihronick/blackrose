@@ -1,6 +1,6 @@
-import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { X, ZoomIn } from '@/lib/icons'
+import type { FC } from 'react'
 import type React from 'react'
 import { useEffect } from 'react'
 

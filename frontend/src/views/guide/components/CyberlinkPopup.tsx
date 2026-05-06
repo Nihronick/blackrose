@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { apiFetch } from '@/lib/api'
@@ -7,6 +6,7 @@ import { ExternalLink } from '@/lib/icons'
 import { formatGuideText } from '@/lib/markdown'
 import type { Guide } from '@/lib/types'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import type { FC } from 'react'
 import type React from 'react'
 import { useMemo } from 'react'
 

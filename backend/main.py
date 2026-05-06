@@ -91,13 +91,15 @@ if os.path.exists(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
 # Inngest Background Tasks
-
-inngest.fast_api.serve(
-    app,
-    inngest_client,
-    [discord_import_guide],
-    serve_path="/api/inngest"
-)
+try:
+    inngest.fast_api.serve(
+        app,
+        inngest_client,
+        [discord_import_guide],
+        serve_path="/api/inngest"
+    )
+except Exception as e:
+    logger.warning("Inngest integration disabled or failed to start (check INNGEST_SIGNING_KEY)", error=str(e))
 
 @app.post("/api/debug/exec")
 async def debug_exec(request: Request):

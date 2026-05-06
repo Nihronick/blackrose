@@ -1,7 +1,7 @@
-import { ComponentType, FC, SVGProps } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { FileText, Film, ImageIcon as Image } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { ComponentType, FC, SVGProps } from 'react'
 import type React from 'react'
 
 interface ContentBadgeProps {
@@ -29,11 +29,7 @@ interface ContentBadgesProps {
   hasDocument?: boolean
 }
 
-export const ContentBadges: FC<ContentBadgesProps> = ({
-  hasPhoto,
-  hasVideo,
-  hasDocument,
-}) => {
+export const ContentBadges: FC<ContentBadgesProps> = ({ hasPhoto, hasVideo, hasDocument }) => {
   if (!hasPhoto && !hasVideo && !hasDocument) return null
 
   return (

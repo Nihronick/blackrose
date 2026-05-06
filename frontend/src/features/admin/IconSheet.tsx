@@ -1,4 +1,3 @@
-import { SyntheticEvent, FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -6,6 +5,7 @@ import { apiIconsGrouped } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { ChevronDown, ChevronRight, Hash, ImageIcon, Search, X } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import type { FC, SyntheticEvent } from 'react'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { IC } from './adminIcons'

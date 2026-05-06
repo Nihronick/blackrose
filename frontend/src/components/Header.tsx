@@ -1,9 +1,9 @@
-import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { useAppEnv } from '@/hooks/useAppEnv'
 import { haptic } from '@/lib/haptic'
 import { ChevronLeft } from '@/lib/icons'
 import type { AppLanguage } from '@/store'
+import type { FC } from 'react'
 import type React from 'react'
 
 interface HeaderProps {

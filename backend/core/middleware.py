@@ -49,6 +49,21 @@ def setup_honeybadger(app: FastAPI):
     try:
         from honeybadger import honeybadger
         from honeybadger.contrib.asgi import ASGIHoneybadger
+        import honeybadger.contrib.asgi as asgi_hb
+        
+        # Monkey-patch to fix KeyError caused by duplicate headers
+        def patched_get_headers(scope):
+            headers = {}
+            for raw_key, raw_value in scope.get("headers", []):
+                key = raw_key.decode("latin-1").lower()
+                value = raw_value.decode("latin-1")
+                if key in headers:
+                    headers[key] = headers[key] + ", " + value
+                else:
+                    headers[key] = value
+            return headers
+        asgi_hb._get_headers = patched_get_headers
+
         honeybadger.configure(api_key=settings.HONEYBADGER_API_KEY, environment=settings.ENVIRONMENT)
         app.add_middleware(ASGIHoneybadger)
         logger.info("Honeybadger enabled.")

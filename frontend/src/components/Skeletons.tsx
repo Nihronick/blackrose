@@ -1,5 +1,5 @@
-import { FC } from 'react';
 import { Skeleton } from '@/components/ui/skeleton'
+import type { FC } from 'react'
 import type React from 'react'
 
 export const SkeletonCard: FC = () => {
