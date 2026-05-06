@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="referrer" content="no-referrer-when-downgrade" />
+  <meta name="theme-color" content="#1c1c1e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <title>BlackRose — Slayer Legend Guides</title>
+  <meta name="description" content="База знаний и гайды по игре Slayer Legend. Калькуляторы навыков, снаряжения и интерактивные справочники." />
+  
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="BlackRose — Slayer Legend Guides" />
+  <meta property="og:description" content="Полное собрание гайдов и инструментов для игроков Slayer Legend." />
+  <meta property="og:image" content="https://nihronick.github.io/blackrose/og-image.png" />
+  <meta property="og:url" content="https://nihronick.github.io/blackrose/" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BlackRose — Slayer Legend Guides" />
+  <meta name="twitter:description" content="Полное собрание гайдов и инструментов для игроков Slayer Legend." />
+  <meta name="twitter:image" content="https://nihronick.github.io/blackrose/og-image.png" />
+
+  <link rel="icon" type="image/ico" href="favicon.ico" />
+  <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="BlackRose" />
+
+  <link rel="preconnect" href="https://telegram.org" crossorigin />
+  <link rel="dns-prefetch" href="https://telegram.org" />
+
+  <script>
+    // Telegram WebApp SDK — загружаем с ретраями
+    (function() {
+      var MAX_RETRIES = 3;
+      var attempt = 0;
+      function loadTgSdk() {
+        attempt++;
+        var s = document.createElement('script');
+        s.src = 'https://telegram.org/js/telegram-web-app.js';
+        s.async = true;
+        s.onload = function() {
+          window.__tgSdkLoaded = true;
+          window.dispatchEvent(new Event('tgSdkReady'));
+        };
+        s.onerror = function() {
+          s.remove();
+          if (attempt < MAX_RETRIES) {
+            setTimeout(loadTgSdk, attempt * 800);
+          } else {
+            window.__tgSdkFailed = true;
+            window.dispatchEvent(new Event('tgSdkReady'));
+          }
+        };
+        document.head.appendChild(s);
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadTgSdk);
+      } else {
+        loadTgSdk();
+      }
+    })();
+  </script>
+  <script type="module" crossorigin src="/assets/index-CZjaOKkp.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C5i5wZO2.css">
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>
