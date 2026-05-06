@@ -274,16 +274,64 @@ async def admin_lab_synthesize(body: LabImportIn, user=Depends(require_admin)):
 async def admin_lab_import(body: LabImportIn, user=Depends(require_admin)):
     """
     Triggers a background import task via Inngest.
+    Falls back to inline execution if Inngest is not configured.
     """
-    event = inngest.Event(
-        name="discord/guide.import",
-        data={
-            "messages": body.messages,
-            "category_key": body.category_key or "imported",
-            "title": body.title or "New Imported Guide",
-            "guide_key": body.guide_key,
-        },
-    )
-    await inngest_client.send(event)
+    import os
+    has_inngest = bool(os.getenv("INNGEST_SIGNING_KEY"))
 
-    return {"ok": True, "message": "Import task queued in background"}
+    category_key = body.category_key or "imported"
+    title = body.title or "New Imported Guide"
+    guide_key = body.guide_key
+
+    if has_inngest:
+        event = inngest.Event(
+            name="discord/guide.import",
+            data={
+                "messages": body.messages,
+                "category_key": category_key,
+                "title": title,
+                "guide_key": guide_key,
+            },
+        )
+        await inngest_client.send(event)
+        return {"ok": True, "message": "Import task queued in background"}
+
+    # Fallback: inline execution when Inngest is unavailable
+    try:
+        if body.use_ai:
+            synthesis = await discord_lab_service.synthesize_ai(body.messages)
+        else:
+            synthesis = discord_lab_service.synthesize(body.messages)
+
+        content = synthesis["content"]
+        raw_media = synthesis.get("media", [])
+
+        processed_media = []
+        for m in raw_media[:10]:
+            try:
+                url = m if isinstance(m, str) else m.get("url", "")
+                new_url = await media_service.import_from_url(url, folder="imported")
+                processed_media.append(new_url)
+            except Exception as e:
+                logger.error(f"Media import failed: {e}")
+
+        if not guide_key:
+            import uuid
+            guide_key = f"imported-{str(uuid.uuid4())[:8]}"
+
+        await guide_service.upsert(
+            key=guide_key,
+            data={
+                "category_key": category_key,
+                "title": title,
+                "text": normalize_icon_syntax(content),
+                "photo": [u for u in processed_media if u.endswith(('.webp', '.png', '.jpg'))],
+                "video": [u for u in processed_media if u.endswith(('.mp4', '.mov'))],
+                "sort_order": 0,
+            },
+        )
+        await cache_service.invalidate_all()
+        return {"ok": True, "message": "Import completed inline (Inngest unavailable)", "guide_key": guide_key}
+    except Exception as e:
+        logger.error(f"Inline import failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
