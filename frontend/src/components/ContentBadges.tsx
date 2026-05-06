@@ -1,15 +1,16 @@
+import { ComponentType, FC, SVGProps } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { FileText, Film, ImageIcon as Image } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import type React from 'react'
 
 interface ContentBadgeProps {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  icon: ComponentType<SVGProps<SVGSVGElement>>
   label: string
   className?: string
 }
 
-const ItemBadge: React.FC<ContentBadgeProps> = ({ icon: Icon, label, className }) => (
+const ItemBadge: FC<ContentBadgeProps> = ({ icon: Icon, label, className }) => (
   <Badge
     variant="secondary"
     className={cn(
@@ -28,7 +29,7 @@ interface ContentBadgesProps {
   hasDocument?: boolean
 }
 
-export const ContentBadges: React.FC<ContentBadgesProps> = ({
+export const ContentBadges: FC<ContentBadgesProps> = ({
   hasPhoto,
   hasVideo,
   hasDocument,

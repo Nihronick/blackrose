@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { apiFetch } from '@/lib/api'
@@ -17,7 +18,7 @@ interface CyberlinkPopupProps {
   onClose: () => void
 }
 
-export const CyberlinkPopup: React.FC<CyberlinkPopupProps> = ({
+export const CyberlinkPopup: FC<CyberlinkPopupProps> = ({
   guideKey,
   title,
   icon,

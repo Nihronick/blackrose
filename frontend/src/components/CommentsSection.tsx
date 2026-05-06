@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,7 +42,7 @@ interface CommentsSectionProps {
   guideKey: string
 }
 
-export const CommentsSection: React.FC<CommentsSectionProps> = ({ guideKey }) => {
+export const CommentsSection: FC<CommentsSectionProps> = ({ guideKey }) => {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')

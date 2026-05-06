@@ -1,7 +1,11 @@
 import urllib.parse
 import aiohttp
 from loguru import logger
-from bot.config import API_URL, API_TOKEN
+import os
+from core.config import settings
+
+API_TOKEN = settings.BOT_TOKEN
+API_URL = f"http://localhost:{os.getenv('PORT', '7860')}"
 
 class BotApiClient:
     def __init__(self, base_url: str = API_URL):

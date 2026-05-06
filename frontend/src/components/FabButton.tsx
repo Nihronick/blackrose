@@ -1,3 +1,4 @@
+import { FC, PointerEvent } from 'react';
 import { useAppEnv } from '@/hooks/useAppEnv'
 import { haptic } from '@/lib/haptic'
 import { ArrowLeft, Menu } from '@/lib/icons'
@@ -19,7 +20,7 @@ interface FabButtonProps {
  * Implements a "Hold for Menu" interaction with visual feedback and haptics.
  * Design is optimized for thumb-reachability on mobile devices.
  */
-export const FabButton: React.FC<FabButtonProps> = ({ visible, label, onBack, onHoldComplete }) => {
+export const FabButton: FC<FabButtonProps> = ({ visible, label, onBack, onHoldComplete }) => {
   const { isTMA } = useAppEnv()
   const [holding, setHolding] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -45,7 +46,7 @@ export const FabButton: React.FC<FabButtonProps> = ({ visible, label, onBack, on
     }
   }, [])
 
-  const onDown = (e: React.PointerEvent) => {
+  const onDown = (e: PointerEvent) => {
     // Only handle primary pointer (usually touch/left click)
     if (e.button !== 0 && e.pointerType === 'mouse') return
 
@@ -71,7 +72,7 @@ export const FabButton: React.FC<FabButtonProps> = ({ visible, label, onBack, on
     stopAnimation()
   }, [stopAnimation])
 
-  const onUp = (e: React.PointerEvent) => {
+  const onUp = (e: PointerEvent) => {
     if (holding || !triggered.current) {
       cancel()
       if (!triggered.current) {

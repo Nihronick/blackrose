@@ -1,10 +1,11 @@
+import { FC, MouseEvent } from 'react';
 import { Loader2, Maximize, Pause, PictureInPicture2, Play, Volume2, VolumeX } from '@/lib/icons'
 import { normalizeUrl, parseVideo } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 
-export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }) => {
+export const VideoBlock: FC<{ url: string; alt?: string }> = ({ url, alt }) => {
   const v = parseVideo(normalizeUrl(url))
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -39,14 +40,14 @@ export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }
     setIsPlaying(!isPlaying)
   }
 
-  const toggleMute = (e: React.MouseEvent) => {
+  const toggleMute = (e: MouseEvent) => {
     e.stopPropagation()
     if (!videoRef.current) return
     videoRef.current.muted = !isMuted
     setIsMuted(!isMuted)
   }
 
-  const togglePip = async (e: React.MouseEvent) => {
+  const togglePip = async (e: MouseEvent) => {
     e.stopPropagation()
     if (!videoRef.current) return
     try {
@@ -60,7 +61,7 @@ export const VideoBlock: React.FC<{ url: string; alt?: string }> = ({ url, alt }
     }
   }
 
-  const toggleFullscreen = (e: React.MouseEvent) => {
+  const toggleFullscreen = (e: MouseEvent) => {
     e.stopPropagation()
     if (!videoRef.current) return
     if (videoRef.current.requestFullscreen) {

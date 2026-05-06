@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +20,7 @@ interface TagBadgeProps {
  * TagBadge refactored with TSX and shadcn/ui.
  * Support for active states, removal, and custom styling.
  */
-export const TagBadge: React.FC<TagBadgeProps> = ({
+export const TagBadge: FC<TagBadgeProps> = ({
   tag,
   onClick,
   onRemove,
@@ -67,7 +68,7 @@ interface TagsListProps {
   className?: string
 }
 
-export const TagsList: React.FC<TagsListProps> = ({ tags, onTagClick, className }) => {
+export const TagsList: FC<TagsListProps> = ({ tags, onTagClick, className }) => {
   if (!Array.isArray(tags) || tags.length === 0) return null
   return (
     <div className={cn('flex flex-wrap gap-2', className)}>
@@ -83,7 +84,7 @@ interface TagEditorProps {
   onChange: (tags: string[]) => void
 }
 
-export const TagEditor: React.FC<TagEditorProps> = ({ tags, onChange }) => {
+export const TagEditor: FC<TagEditorProps> = ({ tags, onChange }) => {
   const [input, setInput] = useState('')
 
   const add = (raw: string) => {

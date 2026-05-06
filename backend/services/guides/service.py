@@ -337,11 +337,10 @@ class GuideService:
 
     @classmethod
     async def reorder(cls, order: list[dict]):
+        if not order:
+            return
         async with get_sessionmaker()() as session:
-            for item in order:
-                await session.execute(
-                    update(Guide).where(Guide.key == item["key"]).values(sort_order=item["sort_order"])
-                )
+            await session.execute(update(Guide), order)
             await session.commit()
 
     @classmethod
@@ -401,13 +400,10 @@ class CategoryService:
 
     @classmethod
     async def reorder(cls, order: list[dict]):
+        if not order:
+            return
         async with get_sessionmaker()() as session:
-            for item in order:
-                await session.execute(
-                    update(Category)
-                    .where(Category.key == item["key"])
-                    .values(sort_order=item["sort_order"])
-                )
+            await session.execute(update(Category), order)
             await session.commit()
 
     @classmethod

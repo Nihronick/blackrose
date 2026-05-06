@@ -1,3 +1,4 @@
+import { SyntheticEvent, FC } from 'react';
 import { cn, normalizeUrl } from '@/lib/utils'
 import type React from 'react'
 
@@ -11,7 +12,7 @@ interface CardIconProps {
 /**
  * Portable CardIcon with support for premium shadcn-style layouts.
  */
-export const CardIcon: React.FC<CardIconProps> = ({
+export const CardIcon: FC<CardIconProps> = ({
   url,
   size = 48,
   placeholder = '📁',
@@ -34,7 +35,7 @@ export const CardIcon: React.FC<CardIconProps> = ({
           className="object-contain"
           crossOrigin="anonymous"
           loading="lazy"
-          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+          onError={(e: SyntheticEvent<HTMLImageElement>) => {
             e.currentTarget.style.display = 'none'
           }}
         />

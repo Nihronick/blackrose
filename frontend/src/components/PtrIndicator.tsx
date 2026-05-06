@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { PTR_THRESHOLD } from '@/hooks/usePullToRefresh'
 import { RefreshCw } from '@/lib/icons'
 import { motion } from 'framer-motion'
@@ -12,7 +13,7 @@ interface PtrIndicatorProps {
  * PtrIndicator refactored with framer-motion for premium HIG feel.
  * Displays a tactile, responsive spinner that reacts to pull distance.
  */
-export const PtrIndicator: React.FC<PtrIndicatorProps> = ({ pullY, refreshing }) => {
+export const PtrIndicator: FC<PtrIndicatorProps> = ({ pullY, refreshing }) => {
   const rotation = (pullY / PTR_THRESHOLD) * 360
   const opacity = Math.min(pullY / 40, 1)
   const scale = refreshing ? 1 : Math.min(pullY / PTR_THRESHOLD, 1)

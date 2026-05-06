@@ -3,6 +3,8 @@ version: '3.8'
 services:
   backend:
     build: .
+    user: developer
+    command: sleep infinity
     volumes:
       - .:/app
     env_file:
@@ -12,6 +14,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
 
   db:
     image: postgres:15-alpine

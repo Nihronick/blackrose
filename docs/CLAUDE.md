@@ -1,3 +1,15 @@
+# 🚨 MANDATORY STOP — НЕ ПРОПУСКАТЬ
+
+Ты находишься в проекте BlackRose. Ты не имеешь права импровизировать.
+
+1. Прочитай `docs/swarm/task_plan.md` — узнай текущую миссию
+2. Прочитай `docs/swarm/findings.md` — узнай контекст
+3. Следуй роли согласно Trigger Table в этом файле
+4. Примени навыки из `skills/` согласно своей роли
+5. Пройди Quality Gate перед тем, как сказать "готово"
+
+Если ты проигнорируешь эти шаги, твоя работа будет немедленно отменена.
+
 # 🛠️ BlackRose: Project Guidelines & AI Context Management
 
 ## 🧠 Context Persistence (CRITICAL)
@@ -9,94 +21,184 @@ This project uses a "Snapshot & Handoff" system to ensure continuity between AI 
 Before starting ANY task, match it to the table below and **read the SKILL.md file** via `view_file`.
 Do NOT name-drop skills. Either read and follow them, or don't mention them.
 
-#### 🔧 Debugging & Troubleshooting
+## 🤖 BlackRose Swarm Protocol (Multi-Agent Consilium)
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| Bug, crash, unexpected behavior | `systematic-debugging` | `skills/systematic-debugging/SKILL.md` |
-| General debugging approach | `debugger` | `skills/debugger/SKILL.md` |
+### 🎭 Таблица триггеров ролей (Trigger Table)
 
-#### 🐍 Backend (FastAPI / Python)
+При получении задачи агент-диспетчер ОБЯЗАН сопоставить запрос с таблицей и разложить его на роли. Триггеры работают по принципу ИЛИ — срабатывание любого слова активирует роль.
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| API design decisions | `api-patterns` | `skills/api-patterns/SKILL.md` |
-| Backend architecture | `backend-architect` | `skills/backend-architect/SKILL.md` |
-| Pydantic models | `pydantic-models-py` | `skills/pydantic-models-py/SKILL.md` |
+| Роль | Триггеры (ключевые слова) | Обязательные навыки |
+|------|---------------------------|---------------------|
+| **architect** | спроектировать, api, эндпоинты, архитектура, схема, модель данных, контракт | `backend-architect`, `api-patterns`, `database-design` |
+| **developer** | написать, реализовать, код, функция, endpoint, имплементировать | `pydantic-models-py`, `database`, `systematic-debugging` |
+| **auditor** | безопасность, уязвимость, audit, проверка, OWASP, секреты, утечка | `security-auditor`, `vibe-code-auditor` |
+| **frontend** | компонент, UI, интерфейс, вёрстка, React, стили, Tailwind, анимация | `react-patterns`, `tailwind-patterns`, `react-component-performance` |
+| **tester** | тест, покрытие, TDD, проверить, валидация, pytest, e2e | `tdd-workflow`, `webapp-testing`, `verification-before-completion` |
 
-#### ⚛️ Frontend (React / TypeScript)
+### 🧠 KAG Protocol (Knowledge-Augmented Generation)
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| React hooks, composition, state | `react-patterns` | `skills/react-patterns/SKILL.md` |
-| **Named Imports Only** | (Internal Rule) | **Avoid `React.` namespace (use `{ FC, useState }`)** |
-| Tailwind CSS v4 patterns | `tailwind-patterns` | `skills/tailwind-patterns/SKILL.md` |
-| Component performance issues | `react-component-performance` | `skills/react-component-performance/SKILL.md` |
+Перед началом любой задачи агент-диспетчер ОБЯЗАН:
+1. Прочитать `skills/swarm-knowledge/SKILL.md`.
+2. Подтянуть README из репозиториев, соответствующих активным ролям миссии (через `read_url_content` для GitHub raw).
+3. Синтезировать полученные знания с контекстом проекта и закэшировать ключевые паттерны в `docs/swarm/mailboxes/{role}/inbox/cache.json`.
+4. Это гарантирует использование актуальных отраслевых стандартов (FastAPI, React 18, OWASP) вместо устаревших паттернов.
 
-#### 🗄️ Database (PostgreSQL / SQLAlchemy)
+### 🛠️ Environment & Infrastructure
+- **Sandbox**: Sanity-Gravity (Containerized Ubuntu/KasmVNC)
+- **URI**: `https://localhost:32769/`
+- **Backend API**: `http://localhost:8000`
+- **Debug Exec Protocol**: 
+  - Endpoint: `/api/debug/exec`
+  - Token: `sanity-gravity-agent-2026`
+  - Usage: Use this for any shell commands (rm, pytest, etc.) to bypass Windows host limitations.
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| Schema design, indexing | `database-design` | `skills/database-design/SKILL.md` |
-| SQL, migrations, queries | `database` | `skills/database/SKILL.md` |
+### 🔌 Initialization & Skill Injection (The Combine)
 
-#### 🚀 Deployment & DevOps
+При старте сессии или новой миссии агент ОБЯЗАН:
+1. Прочитать `ag.yaml` для понимания доступных ролей и ворклоув.
+2. Прочитай `docs/swarm/task_plan.md` и `docs/swarm/findings.md`.
+3. Активировать нужные навыки через `skills/catalog-map/SKILL.md`.
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| PowerShell scripts (Windows) | `powershell-windows` | `skills/powershell-windows/SKILL.md` |
-| Shell scripts (.sh, Docker) | `bash-scripting` | `skills/bash-scripting/SKILL.md` |
-| GitHub CLI, PRs, Actions | `github` | `skills/github/SKILL.md` |
+### 📜 Swarm Roles (The Combine)
+Агенты работают в цепочке: `architect → developer → auditor → tester → Quality Validator`.
+4. Если навык из каталога критически важен — имитировать его поведение, опираясь на триггеры и описание.
+5. Использовать `local_skills` из папки `skills/` как мастер-инструкции.
 
-#### 📝 Documentation & Planning
+### 📬 Mailbox System (Почтовые ящики агентов)
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| Writing docs, READMEs | `documentation` | `skills/documentation/SKILL.md` |
-| Creating task plans | `concise-planning` | `skills/concise-planning/SKILL.md` |
-| Implementation plans | `writing-plans` | `skills/writing-plans/SKILL.md` |
+Агенты общаются через файловую систему, чтобы не мешать друг другу при редактировании кода.
 
-#### 🔒 Security & Code Quality
+**Структура:** `docs/swarm/mailboxes/{роль}/inbox/` — непрочитанные сообщения, `processed/` — архив.
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| Security review | `security-auditor` | `skills/security-auditor/SKILL.md` |
-| AI-generated code audit | `vibe-code-auditor` | `skills/vibe-code-auditor/SKILL.md` |
-| Code review before merge | `requesting-code-review` | `skills/requesting-code-review/SKILL.md` |
-| Verify work is complete | `verification-before-completion` | `skills/verification-before-completion/SKILL.md` |
+**Формат сообщения (JSON):**
+```json
+{
+  "sender": "architect",
+  "receiver": "developer",
+  "timestamp": "2026-05-06T14:30:00Z",
+  "type": "task | question | review | block | approve",
+  "body": "Спроектировал API. Эндпоинты в docs/swarm/findings.md. Приступай к реализации.",
+  "attachments": ["docs/swarm/findings.md#эндпоинты"]
+}
+```
 
-#### 🧪 Testing
+**Правила:**
+1. Агент проверяет свой inbox каждые 10 итераций.
+2. Прочитанные сообщения перемещаются в `processed/`.
+3. Если агент получает `type: block`, он ОСТАНАВЛИВАЕТ работу и ждёт дальнейших инструкций от диспетчера.
 
-| Trigger | Skill | Path |
-| --- | --- | --- |
-| TDD workflow | `tdd-workflow` | `skills/tdd-workflow/SKILL.md` |
-| Browser/E2E testing | `webapp-testing` | `skills/webapp-testing/SKILL.md` |
+### 📋 Manus Protocol (Три бортовых журнала)
 
-#### ⚡ Default Methodology
+**task_plan.md** — чеклист задач. Создаётся в начале миссии, обновляется при завершении этапов.
 
-- **New features:** Read `writing-plans` → plan first, code second.
-- **Bug fixes:** Read `systematic-debugging` → diagnose first, fix second.
-- **Refactoring:** Read `vibe-code-auditor` → audit first, refactor second.
-- **Before any deploy:** Read `verification-before-completion`.
+**findings.md** — доска находок. Сюда пишут ВСЕ агенты, когда находят что-то важное (ошибки, решения, ссылки). Формат:
+```markdown
+### [Роль агента] [Тема]
+**Что:** [Находка]
+**Влияние:** [На что это влияет]
+```
 
-### 2. Session Entry
+**progress.md** — автоматический лог. Каждый агент при завершении этапа добавляет строку в таблицу.
 
-- **Read `CLAUDE.md`** first for the current project status and rules.
-- **Check `docs/todo.md`** to understand pending tasks.
-- **Review the last 2-3 files in `docs/snapshots/`** to understand the "why" behind recent changes.
+## 🛡️ Quality Gate (ПРОВЕРКА ПЕРЕД КАЖДЫМ ОТВЕТОМ)
 
-### 3. Session Exit (MANDATORY)
+Перед тем, как сказать "готово", агент обязан пройти этот чек-лист:
 
-Before ending the session, every AI agent MUST:
+- [ ] Я прочитал `CLAUDE.md` при входе в сессию?
+- [ ] Я проверил `task_plan.md` и знаю текущую миссию?
+- [ ] Я применил навыки, соответствующие моей роли (Trigger Table + `ag.yaml`)?
+- [ ] Я не нарушил ни одного Антипаттерна из `CLAUDE.md`?
+- [ ] Я обновил `progress.md` и `findings.md`?
+- [ ] Я создал snapshot в `docs/snapshots/` (если задача завершена)?
 
-1. **Update the "Current Status"** section at the bottom of this file.
-2. **Update `docs/todo.md`** (mark finished tasks, add new ones).
-3. **Create a Snapshot:** Save a summary to `docs/snapshots/YYYY-MM-DD_HHMM_summary.md`. Include:
-   - Main changes made.
-   - Technical debt or bugs discovered.
-   - Specific instructions for the next agent.
+Если хоть один пункт не выполнен — агент не говорит "готово", а возвращается к исправлению.
 
-### 4. 🧠 Project Brain: Principal-Level Architecture
+## ⏸️ MANDATORY CHECKPOINT
+Каждые 10 действий агент обязан остановиться и ответить на вопрос: "Следую ли я инструкциям из docs/?" Ответ должен быть со ссылкой на конкретный пункт из `CLAUDE.md`.
+
+## 🚫 Правило трёх ошибок
+Если Quality Gate трижды подряд находит нарушение одних и тех же инструкций из `docs/`, агент обязан прекратить работу и передать задачу человеку с пометкой [MANUAL_REVIEW_REQUIRED].
+
+### 📝 Synthesis Protocol (Session Wrap-up)
+ОБЯЗАТЕЛЬНЫЙ отчет в конце сессии:
+1. **Mission Status**: Текущий статус из `task_plan.md`.
+2. **Key Findings**: Кратко из `findings.md`.
+3. **Agent Contributions**: Какие роли были задействованы и что сделали.
+4. **Validation Gate Result**: Подтверждение прохождения чек-листа.
+5. **Next Step**: Что должен сделать следующий агент.
+
+### 🔄 Конфликт-менеджмент (если агенты не согласны)
+
+1. **По безопасности:** Приоритет `auditor`.
+2. **По архитектуре:** Приоритет `architect`.
+3. **По реализации:** Открытый спор в `findings.md` → решение принимает диспетчер.
+4. Финальное решение всегда записывается с пометкой `[RESOLVED]` и подписью принявшего решение агента.
+
+### 📦 Дефолтные цепочки (Quick Launch)
+
+**Фича «под ключ» (feature-fullstack):**
+`architect → [developer + frontend] → auditor → tester → gate`
+
+**Багфикс (bugfix):**
+`developer → tester → gate`
+
+**Рефакторинг (refactor):**
+`auditor → developer → tester → gate`
+
+**Аудит безопасности (security-audit):**
+`auditor → [опционально: developer для исправлений] → auditor → gate`
+
+---
+
+### 🧰 Categorized Skill Inventory (Swarm Expert Pool)
+
+#### 🎨 Frontend (UI/UX & Experience)
+| Role | Skill | Trigger Phrases |
+|------|-------|-----------------|
+| **UI Builder** | `react-patterns` | React components, hooks, lifecycle |
+| **Styler** | `tailwind-patterns` | CSS, Tailwind, Glassmorphism, Premium UI |
+| **A11y Auditor** | `ui-a11y` | Accessibility, WCAG, screen readers |
+| **Perf Optimizer** | `react-component-performance` | Slow UI, re-renders, hydration |
+
+#### ⚙️ Backend (API & Architecture)
+| Role | Skill | Trigger Phrases |
+|------|-------|-----------------|
+| **API Designer** | `api-patterns` | REST, JSON, Endpoints, Contracts |
+| **DB Manager** | `database-design` | PostgreSQL, Schema, Migrations, Neon |
+| **Auth Handler** | `auth-implementation` | JWT, TMA, HMAC, Security |
+| **Cache Architect** | `database` | Redis, Upstash, Background jobs |
+
+#### 🧪 Testing & Audit (QA)
+| Role | Skill | Trigger Phrases |
+|------|-------|-----------------|
+| **Unit Tester** | `tdd-workflow` | Tests, pytest, coverage, logic |
+| **E2E Tester** | `webapp-testing` | Playwright, browser tests, flows |
+| **Security Scanner** | `security-auditor` | Vulnerabilities, audit, secrets |
+| **Code Auditor** | `vibe-code-auditor` | Anti-patterns, code quality |
+
+#### 🏗️ DevOps (Infrastructure)
+| Role | Skill | Trigger Phrases |
+|------|-------|-----------------|
+| **Docker Specialist** | `bash-scripting` | Dockerfile, Linux, Sandbox, Environment |
+| **CI/CD Builder** | `github` | GitHub Actions, Workflows, Pipelines |
+| **Windows Engineer** | `powershell-windows` | PS1 scripts, Windows host tasks |
+| **Deployer** | `vercel-deployment` | Production deploy, Vercel, HF Spaces |
+
+---
+
+### 📝 Synthesis Protocol (Session Wrap-up)
+
+В конце каждой сессии агент-диспетчер ОБЯЗАН предоставить отчет в формате Synthesis:
+
+1. **Mission Status**: Итоговый статус из `task_plan.md`.
+2. **Key Findings**: 2-3 самых важных инсайта из `findings.md`.
+3. **Agent Contributions**: Что сделал каждый эксперт (architect, developer и т.д.).
+4. **Validation Gate Result**: Результат проверки Quality Gate.
+5. **Next Step**: Одна четкая задача для следующего захода.
+
+---
+
+### 5. 🧠 Project Brain: Principal-Level Architecture
 
 #### 💎 Principal-Level Technical Insights
 
@@ -206,9 +308,9 @@ frontend/
 *Deployed to Hugging Face Spaces (Docker/Supervisord)*
 
 - **API Entry (`main.py`)**: Lifespan-managed FastAPI app. Handles CORS, global exceptions, and integrates the Telegram Bot webhook.
-- **Persistence (`database.py`, `db_models.py`)**: Async SQLAlchemy 2.0 with Neon.tech (PostgreSQL). Uses `selectinload` for relationship hydration to prevent N+1.
-- **Media Engine (`storage.py`)**: Abstracted interface to Hugging Face Datasets. Handles multi-part uploads and CDN resolution.
-- **Security (`dependencies.py`)**: 
+- **Persistence (`core/db.py`, `db_models.py`)**: Async SQLAlchemy 2.0 with Neon.tech (PostgreSQL). Uses `selectinload` for relationship hydration to prevent N+1.
+- **Media Engine (`services/storage/hf_storage.py`)**: Abstracted interface to Hugging Face Datasets. Handles multi-part uploads and CDN resolution.
+- **Security (`core/auth.py`)**: 
     - `TMA Validation`: HMAC-SHA256 verification of Telegram initData.
     - `JWT Layer`: HS256 tokens with role-based claims (Admin vs Member).
 - **Background Worker (`workers/`, `services/`)**: ARQ-powered task queue for non-blocking operations (notifications, heavy processing).
@@ -556,11 +658,11 @@ If a task fails or a bug is introduced:
 ## 🛠️ Common Commands
 
 ```bash
-# Backend Dev (Local)
-cd backend && uvicorn main:app --reload --port 8000
-
-# Backend Dev (Docker — Recommended for Windows)
-docker-compose up --build
+# Backend Dev (Docker — MANDATORY)
+# Run locally within the Sanity-Gravity sandbox:
+# 1. Start sandbox: ./sanity-gravity/sanity-cli up
+# 2. Enter shell: ./sanity-gravity/sanity-cli shell
+# 3. Inside shell: uvicorn main:app --reload --port 8000
 
 # Управление файлами через Docker (если нужно удалить заблокированные файлы)
 docker exec -it blackrose-backend-1 rm -rf trash/Header.test.tsx
@@ -577,19 +679,23 @@ cd frontend && npm run dev
 - Auth flow uses short-lived JWT + refresh endpoint (`/api/auth/refresh`) with frontend silent refresh.
 - Import pipeline uses Inngest + Gemini and persists guides/media through service layer.
 - Deployment scripts are centralized in `tools/`.
+- **Docker Architecture**: Root Dockerfiles (dev/prod) fixed to support `backend/` directory structure.
+- **Performance**: N+1 issues in `reorder` operations fixed via SQLAlchemy executemany.
 
 ### Operational constraints (must be considered in every change)
+- **LOCAL VENV DEPRECATED**: Windows-native development (venv/npm) is no longer supported due to host constraints. Use the `sanity-gravity` container for all tasks.
+- **SANDBOX ACCESS**: Fully operational. Agent has direct terminal and browser access via the KasmVNC environment.
 - HF Spaces free tier has limited CPU/RAM and may degrade under heavy media workflows.
 - Discord CDN URLs are short-lived; import UX must remain fast and explicit.
 - HF Dataset public resolve is eventually consistent (short delay before new media is visible).
 
 ### Current technical debt
-- `reorder_categories/guides` still performs N+1 updates.
+- **Terminal/Browser Access**: Requires switch to `Shiritai/sanity-gravity` (Kasm/XFCE) to run tests.
 - Documentation is being normalized to match real file locations and runtime behavior.
 - Multi-service chain (API + worker + bot + media + sync) increases blast radius for regressions.
 
 ### Source of truth for next tasks
 - `docs/todo.md` — active backlog and priorities.
-- `docs/snapshots/` — chronological session handoff notes.
+- `docs/snapshots/2026-05-06_0555_environment_blocker_handoff.md` — latest handoff note.
 
 ---

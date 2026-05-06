@@ -1,3 +1,4 @@
+import { FC, MouseEvent } from 'react';
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import { Star } from '@/lib/icons'
@@ -15,13 +16,13 @@ interface FavoriteButtonProps {
  * FavoriteButton refactored with TSX and premium shadcn/ui visuals.
  * Includes haptic feedback and scale animations on toggle.
  */
-export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
+export const FavoriteButton: FC<FavoriteButtonProps> = ({
   isFav,
   onToggle,
   size = 40,
   className,
 }) => {
-  const handle = (e: React.MouseEvent) => {
+  const handle = (e: MouseEvent) => {
     e.stopPropagation()
     haptic.success?.()
     onToggle()

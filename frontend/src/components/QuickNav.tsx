@@ -1,3 +1,4 @@
+import { SyntheticEvent, FC } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { haptic } from '@/lib/haptic'
 import { Home } from '@/lib/icons'
@@ -20,7 +21,7 @@ interface QuickNavProps {
  * QuickNav refactored with shadcn/ui Sheet and Lucide icons.
  * Premium mobile-first search/navigation component.
  */
-export const QuickNav: React.FC<QuickNavProps> = ({ categories, onSelect, onHome, onClose }) => {
+export const QuickNav: FC<QuickNavProps> = ({ categories, onSelect, onHome, onClose }) => {
   return (
     <Sheet open onOpenChange={onClose}>
       <SheetContent side="bottom" className="rounded-t-[32px] px-6 pb-12 pt-8">
@@ -46,7 +47,7 @@ export const QuickNav: React.FC<QuickNavProps> = ({ categories, onSelect, onHome
                     src={cat.icon}
                     alt=""
                     className="size-8 object-contain"
-                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
                       e.currentTarget.style.display = 'none'
                     }}
                   />

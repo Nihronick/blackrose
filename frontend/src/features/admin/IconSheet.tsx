@@ -1,3 +1,4 @@
+import { SyntheticEvent, FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -28,7 +29,7 @@ interface IconSheetProps {
 /**
  * IconSheet — Improved icon picker drawer for the rich editor.
  */
-export const IconSheet: React.FC<IconSheetProps> = ({ onInsert, onClose }) => {
+export const IconSheet: FC<IconSheetProps> = ({ onInsert, onClose }) => {
   const [groups, setGroups] = useState<IconGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
@@ -150,7 +151,7 @@ export const IconSheet: React.FC<IconSheetProps> = ({ onInsert, onClose }) => {
                           height={28}
                           className="object-contain"
                           loading="lazy"
-                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                          onError={(e: SyntheticEvent<HTMLImageElement>) => {
                             e.currentTarget.style.opacity = '0.2'
                           }}
                         />

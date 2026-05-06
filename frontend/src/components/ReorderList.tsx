@@ -1,3 +1,4 @@
+import { ReactNode, DragEvent } from 'react';
 import { haptic } from '@/lib/haptic'
 import { GripVertical } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -7,7 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 interface ReorderListProps<T> {
   items: T[]
   onReorder: (newItems: T[]) => void
-  renderItem: (item: T, index: number) => React.ReactNode
+  renderItem: (item: T, index: number) => ReactNode
 }
 
 export function ReorderList<T extends { key: string }>({
@@ -27,7 +28,7 @@ export function ReorderList<T extends { key: string }>({
     }
   }, [items, dragIdx])
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, idx: number) => {
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, idx: number) => {
     setDragIdx(idx)
     // @ts-ignore
     dragNode.current = e.currentTarget
@@ -44,13 +45,13 @@ export function ReorderList<T extends { key: string }>({
     haptic.light?.()
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, idx: number) => {
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, idx: number) => {
     e.preventDefault()
     if (idx === dragIdx) return
     setOverIdx(idx)
   }
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, idx: number) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>, idx: number) => {
     e.preventDefault()
     if (dragIdx === null || dragIdx === idx) return
 

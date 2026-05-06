@@ -50,6 +50,6 @@ frontend/.env
 *.tmp
 *.temp
 final_import*.json
-scripts/
+logs/
 backend/trash/
 backend/experiments/

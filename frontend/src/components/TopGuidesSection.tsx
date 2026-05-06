@@ -1,3 +1,4 @@
+import { SyntheticEvent, FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,7 +27,7 @@ interface TopGuidesSectionProps {
 /**
  * TopGuidesSection refactored with TSX, Suspense, and premium visuals.
  */
-export const TopGuidesSection: React.FC<TopGuidesSectionProps> = ({ onSelectGuide }) => {
+export const TopGuidesSection: FC<TopGuidesSectionProps> = ({ onSelectGuide }) => {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -110,7 +111,7 @@ const GuidesList = ({ onSelectGuide }: TopGuidesSectionProps) => {
                     src={normalizeUrl(g.icon_url)}
                     alt=""
                     className="size-9 object-contain drop-shadow-sm"
-                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    onError={(e: SyntheticEvent<HTMLImageElement>) => {
                       e.currentTarget.style.display = 'none'
                     }}
                   />

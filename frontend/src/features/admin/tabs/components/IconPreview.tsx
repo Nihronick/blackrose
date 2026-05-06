@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { normalizeUrl } from '@/lib/utils'
 import type React from 'react'
 
@@ -5,7 +6,7 @@ export interface IconPreviewProps {
   url?: string
 }
 
-export const IconPreview: React.FC<IconPreviewProps> = ({ url }) => {
+export const IconPreview: FC<IconPreviewProps> = ({ url }) => {
   if (!url)
     return (
       <div className="flex size-9 items-center justify-center rounded-xl bg-muted text-[10px] font-bold text-muted-foreground/40">

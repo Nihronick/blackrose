@@ -1,3 +1,4 @@
+import { ChangeEvent, FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { AlertCircle, CheckCircle2, Database, Download, Upload } from '@/lib/icons'
@@ -20,7 +21,7 @@ interface ImportResponse {
 /**
  * ExportImport — Tool for backing up and restoring database content via JSON.
  */
-export const ExportImport: React.FC = () => {
+export const ExportImport: FC = () => {
   const [exporting, setExporting] = useState(false)
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<string | null>(null)
@@ -49,7 +50,7 @@ export const ExportImport: React.FC = () => {
     }
   }
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setImporting(true)

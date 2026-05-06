@@ -1,7 +1,8 @@
+import { ComponentPropsWithoutRef } from 'react';
 import { cn } from '@/lib/utils'
 import * as React from 'react'
 
-const Label = React.forwardRef<HTMLLabelElement, React.ComponentPropsWithoutRef<'label'>>(
+const Label = React.forwardRef<HTMLLabelElement, ComponentPropsWithoutRef<'label'>>(
   ({ className, ...props }, ref) => (
     // biome-ignore lint/a11y/noLabelWithoutControl: This is a generic Shadcn wrapper component.
     <label

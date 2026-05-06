@@ -1,3 +1,4 @@
+import { FC, FormEvent } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,13 +22,13 @@ interface AdminLoginModalProps {
 /**
  * AdminLoginModal refactored with shadcn/ui components and RemoteData.
  */
-export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ onSuccess, onClose }) => {
+export const AdminLoginModal: FC<AdminLoginModalProps> = ({ onSuccess, onClose }) => {
   const [user, setUser] = useState('')
   const [pass, setPass] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)

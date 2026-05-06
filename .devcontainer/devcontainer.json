@@ -1,0 +1,21 @@
+{
+    "name": "BlackRose Dev Sandbox",
+    "dockerComposeFile": [
+        "../docker-compose.dev.yml"
+    ],
+    "service": "backend",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "tamasfe.even-better-toml"
+            ]
+        }
+    },
+    "remoteUser": "developer"
+}

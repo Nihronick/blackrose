@@ -1,12 +1,13 @@
+import { ReactNode, FC } from 'react';
 import { Card } from '@/components/ui/card'
 import { ShieldAlert } from '@/lib/icons'
 import type React from 'react'
 
 interface AccessDeniedViewProps {
-  message?: React.ReactNode
+  message?: ReactNode
 }
 
-export const AccessDeniedView: React.FC<AccessDeniedViewProps> = ({ message }) => {
+export const AccessDeniedView: FC<AccessDeniedViewProps> = ({ message }) => {
   return (
     <div className="flex flex-col items-center justify-center p-8 bg-background animate-in fade-in duration-500 min-h-[60vh]">
       <Card className="w-full max-w-sm p-10 flex flex-col items-center text-center space-y-6 border-none bg-card/40 backdrop-blur-md shadow-2xl rounded-[32px] ring-1 ring-border/5">

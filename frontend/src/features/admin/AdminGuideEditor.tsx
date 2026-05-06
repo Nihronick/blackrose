@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { TagEditor } from '@/components/TagBadge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -214,7 +215,7 @@ interface UrlListEditorProps {
   value: string[]
   onChange: (val: string[]) => void
   hint?: string
-  icon?: React.ReactNode
+  icon?: ReactNode
 }
 
 const UrlListEditor: FC<UrlListEditorProps> = ({ label, value, onChange, hint, icon }) => {

@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { handleTelegramLogin } from '@/lib/auth'
@@ -22,7 +23,7 @@ interface WebLoginViewProps {
   onSuccess?: (result: unknown) => void
 }
 
-export const WebLoginView: React.FC<WebLoginViewProps> = ({ onSuccess }) => {
+export const WebLoginView: FC<WebLoginViewProps> = ({ onSuccess }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

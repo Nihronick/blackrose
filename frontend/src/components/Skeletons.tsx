@@ -1,7 +1,8 @@
+import { FC } from 'react';
 import { Skeleton } from '@/components/ui/skeleton'
 import type React from 'react'
 
-export const SkeletonCard: React.FC = () => {
+export const SkeletonCard: FC = () => {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card p-4">
       <Skeleton className="size-14 rounded-2xl shrink-0" />
@@ -14,7 +15,7 @@ export const SkeletonCard: React.FC = () => {
   )
 }
 
-export const SkeletonList: React.FC<{ count?: number }> = ({ count = 6 }) => {
+export const SkeletonList: FC<{ count?: number }> = ({ count = 6 }) => {
   return (
     <div className="grid grid-cols-1 gap-4 px-5 py-6">
       {Array.from({ length: count }).map((_, i) => (
@@ -24,7 +25,7 @@ export const SkeletonList: React.FC<{ count?: number }> = ({ count = 6 }) => {
   )
 }
 
-export const SkeletonGuide: React.FC = () => {
+export const SkeletonGuide: FC = () => {
   return (
     <div className="flex flex-col gap-6 px-6 py-8">
       <div className="flex flex-col items-center gap-4">

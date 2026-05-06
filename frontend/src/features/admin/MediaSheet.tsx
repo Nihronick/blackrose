@@ -1,3 +1,4 @@
+import { ChangeEvent, FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -36,7 +37,7 @@ interface MediaSheetProps {
   onClose: () => void
 }
 
-export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => {
+export const MediaSheet: FC<MediaSheetProps> = ({ onInsert, onClose }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'gallery'>('upload')
   const [loading, setLoading] = useState(false)
   const [url, setUrl] = useState('')
@@ -62,7 +63,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ onInsert, onClose }) => 
     }
   }, [activeTab])
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 

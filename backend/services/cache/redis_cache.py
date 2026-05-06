@@ -41,6 +41,35 @@ class RedisCacheService:
                 self._redis = None
                 return None
 
+    async def get(self, key: str) -> Any | None:
+        r = await self.get_client()
+        if not r:
+            return None
+        try:
+            raw = await r.get(key)
+            return json.loads(raw) if raw else None
+        except Exception as e:
+            logger.error(f"Redis GET error for {key}: {e}")
+            return None
+
+    async def set(self, key: str, value: Any, expire: int = 300):
+        r = await self.get_client()
+        if not r:
+            return
+        try:
+            await r.setex(key, expire, json.dumps(value))
+        except Exception as e:
+            logger.error(f"Redis SET error for {key}: {e}")
+
+    async def delete(self, key: str):
+        r = await self.get_client()
+        if not r:
+            return
+        try:
+            await r.delete(key)
+        except Exception as e:
+            logger.error(f"Redis DELETE error for {key}: {e}")
+
     async def get_categories(self) -> dict | None:
         r = await self.get_client()
         if not r:
@@ -79,6 +108,9 @@ class RedisCacheService:
             return
         try:
             await r.delete(f"{self.prefix_guide}{key}")
+            keys = await r.keys(f"cache:*/guide/{key}*")
+            if keys:
+                await r.delete(*keys)
         except Exception:
             pass
 
@@ -94,6 +126,11 @@ class RedisCacheService:
             keys = await r.keys(f"{self.prefix_guide}*")
             if keys:
                 await r.delete(*keys)
+            
+            # Clear API cached responses
+            api_keys = await r.keys("cache:*")
+            if api_keys:
+                await r.delete(*api_keys)
         except Exception:
             pass
 

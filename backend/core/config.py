@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     DEEPL_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
+    # Inngest Background Jobs
+    INNGEST_SIGNING_KEY: str = ""
+    INNGEST_EVENT_KEY: str = ""
+
     # Media Optimization (imgproxy)
     IMGPROXY_URL: str = "" # e.g. "https://img.blackrose.ru"
     IMGPROXY_KEY: str = ""

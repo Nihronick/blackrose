@@ -1,0 +1,290 @@
+# ag.yaml — BlackRose Full-Stack Consilium (Комбайн)
+name: blackrose-consilium
+description: Полный консилиум full-stack агентов для 100% отработки задач от идеи до продакшена
+
+# ============================================================
+# 🎭 Роли агентов (навыки из skills_catalog.md)
+# ============================================================
+
+agents:
+  architect:
+    description: Архитектор решений, проектирует API, схемы БД, контракты
+    trigger_words:
+      - спроектировать
+      - архитектура
+      - API
+      - эндпоинты
+      - схема
+      - модель данных
+      - контракт
+      - c4
+      - ADR
+    skills_from_catalog:
+      - software-architecture
+      - architect-review
+      - architecture
+      - architecture-decision-records
+      - c4-architecture-c4-architecture
+      - backend-architect
+      - api-patterns
+      - api-design-principles
+      - database-design
+      - database-architect
+    local_skills:
+      - skills/backend-architect/SKILL.md
+      - skills/api-patterns/SKILL.md
+
+  developer:
+    description: Разработчик бэкенда, пишет production-ready код на FastAPI + SQLAlchemy
+    trigger_words:
+      - написать
+      - реализовать
+      - код
+      - функция
+      - endpoint
+      - имплементировать
+      - исправить
+      - починить
+    skills_from_catalog:
+      - fastapi-pro
+      - python-pro
+      - backend-dev-guidelines
+      - python-fastapi-development
+      - pydantic-models-py
+      - fastapi-templates
+      - sql-pro
+      - postgres-best-practices
+      - database
+      - async-python-patterns
+      - error-handling-patterns
+    local_skills:
+      - skills/pydantic-models-py/SKILL.md
+      - skills/database/SKILL.md
+      - skills/systematic-debugging/SKILL.md
+
+  auditor:
+    description: Аудитор безопасности и качества кода, проверяет на уязвимости и антипаттерны
+    trigger_words:
+      - безопасность
+      - аудит
+      - уязвимость
+      - OWASP
+      - секреты
+      - утечка
+      - проверить
+      - ревью
+    skills_from_catalog:
+      - security-auditor
+      - "007"
+      - security-audit
+      - api-security-best-practices
+      - code-review-checklist
+      - vibe-code-auditor
+      - production-code-audit
+      - find-bugs
+      - codebase-audit-pre-push
+      - secrets-management
+      - api-security-testing
+      - web-security-testing
+    local_skills:
+      - skills/security-auditor/SKILL.md
+      - skills/vibe-code-auditor/SKILL.md
+
+  frontend:
+    description: Разработчик фронтенда, React/TypeScript/Tailwind, pixel-perfect UI
+    trigger_words:
+      - компонент
+      - UI
+      - интерфейс
+      - вёрстка
+      - React
+      - Tailwind
+      - стили
+      - анимация
+      - фронтенд
+      - страница
+    skills_from_catalog:
+      - frontend-developer
+      - react-patterns
+      - react-best-practices
+      - frontend-dev-guidelines
+      - tailwind-patterns
+      - tailwind-design-system
+      - typescript-pro
+      - react-component-performance
+      - frontend-api-integration-patterns
+      - design-taste-frontend
+      - baseline-ui
+      - react-state-management
+    local_skills:
+      - skills/react-patterns/SKILL.md
+      - skills/tailwind-patterns/SKILL.md
+      - skills/react-component-performance/SKILL.md
+
+  tester:
+    description: Инженер по тестированию, TDD, pytest, E2E, гарантия качества
+    trigger_words:
+      - тест
+      - тестирование
+      - покрытие
+      - TDD
+      - pytest
+      - проверить
+      - валидация
+      - e2e
+      - quality
+    skills_from_catalog:
+      - testing-patterns
+      - tdd-workflow
+      - webapp-testing
+      - python-testing-patterns
+      - e2e-testing-patterns
+      - e2e-testing
+      - test-driven-development
+      - test-fixing
+      - unit-testing-test-generate
+      - verification-before-completion
+      - lint-and-validate
+    local_skills:
+      - skills/tdd-workflow/SKILL.md
+      - skills/webapp-testing/SKILL.md
+      - skills/verification-before-completion/SKILL.md
+
+# ============================================================
+# 🔄 Workflows (цепочки отработки задач)
+# ============================================================
+
+workflows:
+  # Полный цикл: новая фича
+  fullstack-feature:
+    description: Разработка фичи «под ключ» — от архитектуры до деплоя
+    steps:
+      - agent: architect
+        task: Спроектировать архитектуру и API для фичи
+        output: task_plan.md, архитектурное описание в findings.md
+      - agent: developer
+        task: Реализовать бэкенд по архитектуре
+        depends_on: architect
+        output: код, миграции, документация API
+      - agent: frontend
+        task: Реализовать фронтенд-компоненты под API
+        depends_on: architect
+        output: компоненты, стили
+      - agent: auditor
+        task: Провести аудит безопасности всего написанного кода
+        depends_on: [developer, frontend]
+        on_failure: return_to_previous
+      - agent: tester
+        task: Написать и запустить тесты, проверить интеграцию
+        depends_on: auditor
+        on_failure: return_to_previous
+      - agent: tester
+        task: Quality Gate — финальная валидация перед деплоем
+        depends_on: tester
+        gate: true
+    max_iterations: 3
+
+  # Быстрый багфикс
+  bugfix:
+    description: Исправление бага с проверкой безопасности
+    steps:
+      - agent: developer
+        task: Найти причину и исправить баг
+        output: исправленный код
+      - agent: auditor
+        task: Проверить фикс на безопасность
+        depends_on: developer
+      - agent: tester
+        task: Написать тест на баг и прогнать существующие тесты
+        depends_on: auditor
+        gate: true
+    max_iterations: 2
+
+  # Рефакторинг
+  refactor:
+    description: Безопасный рефакторинг с полным аудитом
+    steps:
+      - agent: auditor
+        task: Провести аудит кода, найти проблемные места
+        output: список проблем в findings.md
+      - agent: developer
+        task: Выполнить рефакторинг согласно аудиту
+        depends_on: auditor
+      - agent: tester
+        task: Проверить, что тесты проходят
+        depends_on: developer
+        gate: true
+    max_iterations: 2
+
+  # Аудит безопасности
+  security-audit:
+    description: Полный аудит безопасности существующего кода
+    steps:
+      - agent: auditor
+        task: Провести полный аудит безопасности (OWASP Top 10, секреты, SQLi, XSS)
+        output: отчёт в findings.md с пометкой [SECURITY]
+      - agent: developer
+        task: Исправить все найденные уязвимости
+        depends_on: auditor
+        optional: true
+      - agent: auditor
+        task: Повторный аудит после исправлений
+        depends_on: developer
+        gate: true
+    max_iterations: 2
+
+# ============================================================
+# 🛡️ Quality Gate (единые правила для всех workflow)
+# ============================================================
+
+quality_gate:
+  required_checks:
+    - name: Аудит безопасности
+      agent: auditor
+      rule: Пройти проверку по OWASP Top 10, утечкам секретов, SQLi, XSS
+      skill: security-auditor
+    - name: Тесты проходят
+      agent: tester
+      rule: Все существующие и новые тесты должны проходить (pytest, npm run build)
+      skill: tdd-workflow
+    - name: Manus Protocol обновлён
+      agent: tester
+      rule: task_plan.md, findings.md, progress.md должны быть актуальны
+    - name: Нет антипаттернов
+      agent: auditor
+      rule: Сверить с разделом «Антипаттерны» в CLAUDE.md
+      skill: vibe-code-auditor
+
+# ============================================================
+# 📬 Mailbox System (настройки)
+# ============================================================
+
+mailbox:
+  base_path: docs/swarm/mailboxes
+  roles:
+    - architect
+    - developer
+    - auditor
+    - frontend
+    - tester
+  message_schema:
+    fields:
+      - sender: string
+      - receiver: string
+      - timestamp: ISO8601
+      - type: task | question | review | block | approve
+      - body: string
+      - attachments: array of file paths
+
+# ============================================================
+# ⚙️ Глобальные ограничения
+# ============================================================
+
+global:
+  max_iterations_total: 5
+  timeout_per_agent_minutes: 30
+  cache_skills: true
+  auto_load_catalog: docs/skills_catalog.md
+  mandatory_skills_before_task:
+    - skills/sentinel/SKILL.md
+

@@ -1,3 +1,4 @@
+import { ChangeEvent, FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { Edit3, Eye, ImageIcon, Sparkles } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -68,7 +69,7 @@ interface RichEditorProps {
   placeholder?: string
 }
 
-export const RichEditor: React.FC<RichEditorProps> = ({
+export const RichEditor: FC<RichEditorProps> = ({
   value = '',
   onChange,
   rows = 16,
@@ -179,7 +180,7 @@ export const RichEditor: React.FC<RichEditorProps> = ({
   )
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    (e: ChangeEvent<HTMLTextAreaElement>) => {
       const raw = e.target.value
       const norm = normalizeIcons(raw)
       if (norm !== raw) {

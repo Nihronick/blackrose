@@ -19,6 +19,7 @@ from services.common.utils import format_guide_text
 from models.db_models import LocalAdmin
 from models.schemas import CommentIn
 from core.db import get_sessionmaker
+from core.cache import cached
 
 router = APIRouter(tags=["public"])
 logger = get_logger("blackrose.api.public")
@@ -65,25 +66,22 @@ async def auth(request: Request):
     }
 
 @router.get("/categories")
-async def categories(user=Depends(require_public_user)):
-    cached = await cache_service.get_categories()
-    if cached:
-        return cached
-
+@cached(expire=3600)
+async def categories(request: Request, user=Depends(require_public_user)):
     cats = await category_service.get_all()
-    result = {"categories": cats}
-    await cache_service.set_categories(result)
-    return result
+    return {"categories": cats}
 
 @router.get("/guide/{key}")
-async def guide(key: str, user=Depends(require_public_user)):
+@cached(expire=300)
+async def guide(key: str, request: Request, user=Depends(require_public_user)):
     g = await guide_service.get_by_key(key)
     if not g:
         raise HTTPException(status_code=404, detail="Guide not found")
     return g
 
 @router.get("/category/{key}")
-async def category_guides(key: str, user=Depends(require_public_user)):
+@cached(expire=600)
+async def category_guides(key: str, request: Request, user=Depends(require_public_user)):
     items = await guide_service.get_by_category(key)
     return {"items": items}
 

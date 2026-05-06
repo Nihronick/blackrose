@@ -1,0 +1,17 @@
+docs:
+ARCHITECTURE.md
+CLAUDE.md
+DEPLOY.md
+MOBILE.md
+RISKS.md
+TESTING.md
+frontend_enhancement_plan.md
+media_restoration.md
+plans
+todo.md
+
+docs/plans:
+2026-05-02-simplification-stabilization.md
+2026-05-04-backend-stabilization.md
+hf_migration_handoff.md
+media_restoration_plan.md

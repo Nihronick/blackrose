@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { useAppEnv } from '@/hooks/useAppEnv'
 import { haptic } from '@/lib/haptic'
@@ -10,7 +11,7 @@ interface HeaderProps {
   onBack?: () => void
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, onBack }) => {
+export const Header: FC<HeaderProps> = ({ title, onBack }) => {
   const { isTMA } = useAppEnv()
   const showBackButton = onBack && !isTMA
 

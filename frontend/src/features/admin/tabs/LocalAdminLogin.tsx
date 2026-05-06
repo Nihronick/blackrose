@@ -1,3 +1,4 @@
+import { FC, FormEvent } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,13 +11,13 @@ interface LocalAdminLoginProps {
   onBack?: () => void
 }
 
-export const LocalAdminLogin: React.FC<LocalAdminLoginProps> = ({ onSuccess, onBack }) => {
+export const LocalAdminLogin: FC<LocalAdminLoginProps> = ({ onSuccess, onBack }) => {
   const [user, setUser] = useState('')
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErr('')

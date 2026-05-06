@@ -1,7 +1,8 @@
+import { FC } from 'react';
 import { Download, FileText } from '@/lib/icons'
 import { normalizeUrl, parseDocument } from '@/lib/utils'
 
-export const DocBlock: React.FC<{ url: string }> = ({ url }) => {
+export const DocBlock: FC<{ url: string }> = ({ url }) => {
   const normalizedUrl = normalizeUrl(url)
   const d = parseDocument(normalizedUrl)
   if (!d) return null

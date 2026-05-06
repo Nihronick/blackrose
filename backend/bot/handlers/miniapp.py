@@ -16,9 +16,12 @@ from aiogram.types import (
     ReplyKeyboardRemove,
     WebAppInfo,
 )
-from bot.config import ADMIN_USERS, MINIAPP_URL
+from core.config import settings
 from loguru import logger
 from bot.lib.api_client import api_client
+
+MINIAPP_URL = settings.MINIAPP_URL or settings.FRONTEND_URL
+ADMIN_USERS = settings.admin_user_ids
 
 miniapp_router = Router()
 

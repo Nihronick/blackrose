@@ -1,3 +1,4 @@
+import { ElementType, FC, MouseEvent, RefObject } from 'react';
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import {
@@ -18,7 +19,7 @@ import { IC } from './adminIcons'
 
 interface ToolbarItem {
   icon?: string
-  lucide?: React.ElementType
+  lucide?: ElementType
   html?: string
   title: string
   wrap?: [string, string]
@@ -69,12 +70,12 @@ const TOOLBAR: ToolbarConfig[] = [
 ]
 
 interface RichEditorToolbarProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  textareaRef: RefObject<HTMLTextAreaElement | null>
   value: string
   onChange: (val: string) => void
 }
 
-const RichEditorToolbar: React.FC<RichEditorToolbarProps> = ({ textareaRef, value, onChange }) => {
+const RichEditorToolbar: FC<RichEditorToolbarProps> = ({ textareaRef, value, onChange }) => {
   const apply = useCallback(
     (item: ToolbarItem) => {
       const el = textareaRef.current
@@ -114,7 +115,7 @@ const RichEditorToolbar: React.FC<RichEditorToolbarProps> = ({ textareaRef, valu
   )
 
   const handleMouseDown = useCallback(
-    (item: ToolbarItem) => (ev: React.MouseEvent) => {
+    (item: ToolbarItem) => (ev: MouseEvent) => {
       ev.preventDefault()
       apply(item)
     },

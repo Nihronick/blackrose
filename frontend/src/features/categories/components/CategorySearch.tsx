@@ -1,3 +1,4 @@
+import { SyntheticEvent, FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { haptic } from '@/lib/haptic'
@@ -26,7 +27,7 @@ interface CategorySearchProps {
   categories: Category[]
 }
 
-export const CategorySearch: React.FC<CategorySearchProps> = ({
+export const CategorySearch: FC<CategorySearchProps> = ({
   query,
   onSelectGuide,
   onTagClick,
@@ -75,7 +76,7 @@ export const CategorySearch: React.FC<CategorySearchProps> = ({
                       src={normalizeUrl(item.icon)}
                       alt=""
                       className="size-10 object-contain drop-shadow-sm"
-                      onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                      onError={(e: SyntheticEvent<HTMLImageElement>) => {
                         e.currentTarget.style.display = 'none'
                       }}
                     />

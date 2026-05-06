@@ -30,20 +30,25 @@ class TranslationService:
         if not text:
             return ""
 
-        # Cascade: HF -> Gemini -> Google
-        if settings.HF_TOKEN:
-            res = await TranslationService._translate_hf(text, settings.HF_TOKEN)
-            if res:
-                return res
-
-        # Check for GEMINI_API_KEY from environment or settings
+        # Cascade: Gemini -> Google -> HF (Fallback)
         gemini_key = os.getenv("GEMINI_API_KEY") or settings.GEMINI_API_KEY
         if gemini_key:
             res = await TranslationService._translate_gemini(text, gemini_key)
             if res:
                 return res
 
-        return await TranslationService._translate_google(text)
+        # Fast fallback
+        res = await TranslationService._translate_google(text)
+        if res and res != text:
+            return res
+            
+        # Heavy HF fallback (Serverless Qwen 72B)
+        if settings.HF_TOKEN:
+            hf_res = await TranslationService._translate_hf(text, settings.HF_TOKEN)
+            if hf_res:
+                return hf_res
+                
+        return res
 
     @staticmethod
     async def _translate_hf(text: str, token: str) -> str | None:

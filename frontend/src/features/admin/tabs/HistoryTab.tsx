@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Badge } from '@/components/ui/badge'
 import { apiFetch } from '@/lib/api'
 import { ChevronRight, Clock, FileJson, User } from '@/lib/icons'
@@ -6,7 +7,7 @@ import { cn } from '@/lib/utils'
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-export const HistoryTab: React.FC = () => {
+export const HistoryTab: FC = () => {
   const [guides, setGuides] = useState<Guide[]>([])
   const [selected, setSelected] = useState<Guide | null>(null)
   const [history, setHistory] = useState<GuideHistory[]>([])

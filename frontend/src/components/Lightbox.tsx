@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Button } from '@/components/ui/button'
 import { X, ZoomIn } from '@/lib/icons'
 import type React from 'react'
@@ -8,7 +9,7 @@ interface LightboxProps {
   onClose: () => void
 }
 
-export const Lightbox: React.FC<LightboxProps> = ({ src, onClose }) => {
+export const Lightbox: FC<LightboxProps> = ({ src, onClose }) => {
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()

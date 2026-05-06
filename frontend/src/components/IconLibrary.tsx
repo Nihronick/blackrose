@@ -1,3 +1,4 @@
+import { SyntheticEvent, FC } from 'react';
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { apiIconsGrouped } from '../lib/api'
@@ -20,7 +21,7 @@ interface IconGroup {
  * IconLibrary — Directory of all icons grouped by category.
  * Clicking an icon copies {{key}} to clipboard.
  */
-export const IconLibrary: React.FC = () => {
+export const IconLibrary: FC = () => {
   const [groups, setGroups] = useState<IconGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -182,7 +183,7 @@ export const IconLibrary: React.FC = () => {
                         height={32}
                         className="object-contain"
                         loading="lazy"
-                        onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                        onError={(e: SyntheticEvent<HTMLImageElement>) => {
                           e.currentTarget.style.opacity = '0.2'
                         }}
                       />
