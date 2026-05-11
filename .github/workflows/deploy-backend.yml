@@ -1,0 +1,44 @@
+name: Deploy Backend to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          
+      - name: Push to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global credential.helper store
+          echo "https://user:$HF_TOKEN@huggingface.co" > ~/.git-credentials
+          
+          # Create deployment directory
+          mkdir -p .deploy
+          
+          # Copy backend files
+          cp -r backend/* .deploy/
+          cp Dockerfile .deploy/
+          
+          cd .deploy
+          git init
+          git checkout -b main
+          git add .
+          git commit -m "Deploy from GitHub Actions (Commit: ${{ github.sha }})"
+          
+          # Force push to HF Spaces
+          git remote add space https://huggingface.co/spaces/Nihronick/blackrose-backend
+          git push --force space main

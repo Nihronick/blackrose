@@ -44,13 +44,10 @@ Do NOT name-drop skills. Either read and follow them, or don't mention them.
 4. Это гарантирует использование актуальных отраслевых стандартов (FastAPI, React 18, OWASP) вместо устаревших паттернов.
 
 ### 🛠️ Environment & Infrastructure
-- **Sandbox**: Sanity-Gravity (Containerized Ubuntu/KasmVNC)
-- **URI**: `https://localhost:32769/`
+- **Sandbox**: VS Code DevContainers (`.devcontainer/devcontainer.json`) + Docker Compose (`docker-compose.dev.yml`).
 - **Backend API**: `http://localhost:8000`
-- **Debug Exec Protocol**: 
-  - Endpoint: `/api/debug/exec`
-  - Token: `sanity-gravity-agent-2026`
-  - Usage: Use this for any shell commands (rm, pytest, etc.) to bypass Windows host limitations.
+- **Frontend**: `http://localhost:5173`
+- **Workflow**: Open the project in DevContainers. No host-level `venv` or Python installation is required.
 
 ### 🔌 Initialization & Skill Injection (The Combine)
 
@@ -408,21 +405,16 @@ frontend/
 
 ## 🚀 Deployment Protocol
 
-### Rule #1: Isolation
-
-**NEVER** use `git add .` in the project root for deployments.
-All deployments use isolated `.deploy_temp_*` directories.
+Deployment is fully automated via **GitHub Actions**. Manual deployment scripts (`tools/deploy-*.ps1`) are deprecated.
 
 ### Backend → Hugging Face Spaces
-
-- **Script:** `.\tools\deploy-backend.ps1`
-- **What happens:** Creates `.deploy_temp_backend/`, copies `backend/*` into it, `git init`, force pushes to HF.
+- **Trigger:** Push to `main` modifying `backend/` or `Dockerfile`.
+- **Workflow:** `.github/workflows/deploy-backend.yml` force pushes to `Nihronick/blackrose-backend` Space.
 - **Target:** `https://huggingface.co/spaces/Nihronick/blackrose-backend`
 
 ### Frontend → GitHub Pages
-
-- **Script:** `.\tools\deploy-frontend.ps1`
-- **What happens:** Runs `npm install && npm run build` in `frontend/`, copies `dist/*` to `.deploy_temp_frontend/`, force pushes to `gh-pages`.
+- **Trigger:** Push to `main` modifying `frontend/`.
+- **Workflow:** `.github/workflows/deploy-frontend.yml` builds with Vite and pushes to the `gh-pages` branch.
 - **Target:** `https://nihronick.github.io/blackrose/`
 
 ### Pre-Deploy Checklist
@@ -456,12 +448,10 @@ Before running any deploy script:
                     │  backend/   ← Python     │
                     │  frontend/  ← React/TS   │
                     │  docs/      ← CLAUDE.md  │
-                    │  scripts/   ← automation │
                     └────────┬────────┬────────┘
                              │        │
-                    deploy-  │        │  deploy-
-                    backend  │        │  frontend
-                    .ps1     │        │  .ps1
+                     GitHub  │        │  GitHub
+                     Action  │        │  Action
                              ▼        ▼
               ┌──────────────┐  ┌─────────────────┐
               │ HF Space     │  │ gh-pages branch  │
@@ -476,7 +466,7 @@ Before running any deploy script:
               backend.hf.space
 ```
 
-**Правило:** Весь код коммитится в `main`. Деплой-скрипты **сами** извлекают нужную часть и пушат в целевой репозиторий. Никогда не пушить `main` напрямую в HF или `gh-pages`.
+**Правило:** Весь код коммитится в `main`. GitHub Actions **сами** извлекают нужную часть и пушат в целевой репозиторий. Никогда не пушить напрямую в HF или `gh-pages`.
 
 ### What Gets Committed to `main`
 
@@ -486,12 +476,12 @@ Before running any deploy script:
 - ✅ Root configs (`pyproject.toml`, `pyrightconfig.json`, `.gitattributes`)
 - ❌ **Never:** `node_modules/`, `.env`, `__pycache__/`, `.deploy_temp_*/`
 
-### What Goes to HF Space (via `tools/deploy-backend.ps1`)
+### What Goes to HF Space (via GitHub Actions)
 
-- ✅ Everything inside `backend/` — Python code, Dockerfile, requirements.txt, supervisord.conf
-- ❌ **Not:** `frontend/`, `docs/`, `scripts/`, root configs
+- ✅ Everything inside `backend/` — Python code, requirements.txt, supervisord.conf, plus root `Dockerfile`.
+- ❌ **Not:** `frontend/`, `docs/`, root configs
 
-### What Goes to `gh-pages` (via `tools/deploy-frontend.ps1`)
+### What Goes to `gh-pages` (via GitHub Actions)
 
 - ✅ Only `frontend/dist/` after `npm run build`
 - ❌ **Not:** source code, backend, docs — only the production build
@@ -658,16 +648,11 @@ If a task fails or a bug is introduced:
 ## 🛠️ Common Commands
 
 ```bash
-# Backend Dev (Docker — MANDATORY)
-# Run locally within the Sanity-Gravity sandbox:
-# 1. Start sandbox: ./sanity-gravity/sanity-cli up
-# 2. Enter shell: ./sanity-gravity/sanity-cli shell
-# 3. Inside shell: uvicorn main:app --reload --port 8000
+# Backend Dev (DevContainers — MANDATORY)
+# Open project in VS Code DevContainers, then:
+make dev-backend    # API на localhost:8000
 
-# Управление файлами через Docker (если нужно удалить заблокированные файлы)
-docker exec -it blackrose-backend-1 rm -rf trash/Header.test.tsx
-
-# Frontend Dev
+# Frontend Dev (in a separate terminal inside DevContainer)
 cd frontend && npm run dev
 ```
 
@@ -683,14 +668,12 @@ cd frontend && npm run dev
 - **Performance**: N+1 issues in `reorder` operations fixed via SQLAlchemy executemany.
 
 ### Operational constraints (must be considered in every change)
-- **LOCAL VENV DEPRECATED**: Windows-native development (venv/npm) is no longer supported due to host constraints. Use the `sanity-gravity` container for all tasks.
-- **SANDBOX ACCESS**: Fully operational. Agent has direct terminal and browser access via the KasmVNC environment.
-- HF Spaces free tier has limited CPU/RAM and may degrade under heavy media workflows.
+- **LOCAL VENV DEPRECATED**: Windows-native development (venv/npm) is no longer supported due to host constraints. Use **VS Code DevContainers** for all tasks.
+- HF Spaces free tier has limited CPU/RAM and may degrade under heavy media workflows (do not overload the worker).
 - Discord CDN URLs are short-lived; import UX must remain fast and explicit.
 - HF Dataset public resolve is eventually consistent (short delay before new media is visible).
 
 ### Current technical debt
-- **Terminal/Browser Access**: Requires switch to `Shiritai/sanity-gravity` (Kasm/XFCE) to run tests.
 - Documentation is being normalized to match real file locations and runtime behavior.
 - Multi-service chain (API + worker + bot + media + sync) increases blast radius for regressions.
 
