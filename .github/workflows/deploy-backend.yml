@@ -31,7 +31,8 @@ jobs:
           
           # Copy backend files
           cp -r backend/* .deploy/
-          cp Dockerfile .deploy/
+          # Copy the Hugging Face specific Dockerfile
+          cp backend/Dockerfile.hf .deploy/Dockerfile
           
           cd .deploy
           git init
