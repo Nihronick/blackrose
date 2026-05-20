@@ -31,41 +31,9 @@
   <link rel="manifest" href="site.webmanifest" />
   <meta name="apple-mobile-web-app-title" content="BlackRose" />
 
-  <link rel="preconnect" href="https://telegram.org" crossorigin />
-  <link rel="dns-prefetch" href="https://telegram.org" />
-
-  <script>
-    // Telegram WebApp SDK — загружаем с ретраями
-    (function() {
-      var MAX_RETRIES = 3;
-      var attempt = 0;
-      function loadTgSdk() {
-        attempt++;
-        var s = document.createElement('script');
-        s.src = 'https://telegram.org/js/telegram-web-app.js';
-        s.async = true;
-        s.onload = function() {
-          window.__tgSdkLoaded = true;
-          window.dispatchEvent(new Event('tgSdkReady'));
-        };
-        s.onerror = function() {
-          s.remove();
-          if (attempt < MAX_RETRIES) {
-            setTimeout(loadTgSdk, attempt * 800);
-          } else {
-            window.__tgSdkFailed = true;
-            window.dispatchEvent(new Event('tgSdkReady'));
-          }
-        };
-        document.head.appendChild(s);
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadTgSdk);
-      } else {
-        loadTgSdk();
-      }
-    })();
-  </script>
+  <!-- Layui UI Library -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.8/css/layui.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.8/layui.js"></script>
 </head>
 <body>
   <div id="root"></div>

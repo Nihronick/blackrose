@@ -77,13 +77,8 @@ async function apiRaw<T>(
 
   const res = await fetch(`${BASE}${endpoint}`, options)
 
-  // Silent refresh flow for web JWT mode only.
-  if (
-    res.status === 401 &&
-    !hasRetried &&
-    !headers['X-Telegram-Init-Data'] &&
-    !endpoint.includes('/api/auth/refresh')
-  ) {
+  // Silent refresh flow on 401.
+  if (res.status === 401 && !hasRetried && !endpoint.includes('/api/auth/refresh')) {
     const refreshToken = getStoredRefreshToken()
     if (refreshToken) {
       const refreshRes = await fetch(`${BASE}/api/auth/refresh`, {

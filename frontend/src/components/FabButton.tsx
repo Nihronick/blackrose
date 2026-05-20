@@ -1,4 +1,3 @@
-import { useAppEnv } from '@/hooks/useAppEnv'
 import { haptic } from '@/lib/haptic'
 import { ArrowLeft, Menu } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -21,7 +20,6 @@ interface FabButtonProps {
  * Design is optimized for thumb-reachability on mobile devices.
  */
 export const FabButton: FC<FabButtonProps> = ({ visible, label, onBack, onHoldComplete }) => {
-  const { isTMA } = useAppEnv()
   const [holding, setHolding] = useState(false)
   const [progress, setProgress] = useState(0)
   const timer = useRef<NodeJS.Timeout | null>(null)
@@ -77,12 +75,7 @@ export const FabButton: FC<FabButtonProps> = ({ visible, label, onBack, onHoldCo
       cancel()
       if (!triggered.current) {
         haptic.medium?.()
-        // В телеге тап сразу открывает меню, так как "Назад" уже есть нативный
-        if (isTMA) {
-          onHoldComplete?.()
-        } else {
-          onBack?.()
-        }
+        onBack?.()
       }
     }
   }
@@ -112,7 +105,7 @@ export const FabButton: FC<FabButtonProps> = ({ visible, label, onBack, onHoldCo
         onPointerCancel={cancel}
         onContextMenu={(e) => e.preventDefault()}
         style={{ touchAction: 'none' }}
-        aria-label={isTMA ? 'Открыть меню навигации' : `Вернуться назад к ${label}`}
+        aria-label={`Вернуться назад к ${label}`}
       >
         <div
           className="absolute inset-0 bg-white/20 transition-opacity"
@@ -122,12 +115,8 @@ export const FabButton: FC<FabButtonProps> = ({ visible, label, onBack, onHoldCo
           }}
         />
 
-        {isTMA ? (
-          <Menu className={cn('size-4 transition-transform', holding && 'scale-110')} />
-        ) : (
-          <ArrowLeft className={cn('size-4 transition-transform', holding && '-translate-x-1')} />
-        )}
-        <span className="tracking-tight">{isTMA ? 'Меню' : label}</span>
+        <ArrowLeft className={cn('size-4 transition-transform', holding && '-translate-x-1')} />
+        <span className="tracking-tight">{label}</span>
 
         {/* Subtle hint that fades in on hover (wide screens) or long-press start */}
         <span

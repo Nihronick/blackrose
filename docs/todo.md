@@ -7,15 +7,13 @@
 ## 📋 Стратегический бэклог (для планирования будущих миссий)
 
 ### 🚀 High Priority
-- [ ] **Redis Migration**: Move from local/internal Redis to Upstash for persistence.
 - [ ] **Load Testing**: Execute k6/locust suite for 200+ concurrent users.
 - [ ] **Backup Automation**: Configure scheduled Neon.tech logical backups.
 
 ### 🛠️ Features
-- [ ] **Discord Lab Sync**: Refine the mapping between Discord channel IDs and Website categories.
-- [ ] **Media Resolution**: Configure automatic media resolution for old Discord links.
-- [ ] **Global Search**: Implement global search indexing in background.
+- [x] **Discord Lab Sync**: Refined mapping between Discord channel IDs and Website categories.
+- [x] **Media Resolution**: Configured automatic media downloading/proxying to avoid expired Discord links.
+- [x] **Global Search**: Implemented full-text search indexing in PostgreSQL (`tsvector`) and added search UI.
 
 ### 🛡️ Reliability
-- [ ] **Admin Auth Hardening**: Finalize Telegram TMA HMAC validation across all sensitive endpoints.
-- [ ] **Error Monitoring**: Integrate Honeybadger or Sentry for production error tracking.
+- [ ] **Error Monitoring**: Backend integration for Honeybadger/Sentry (Frontend is already implemented).

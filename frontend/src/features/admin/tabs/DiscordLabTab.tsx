@@ -23,6 +23,14 @@ interface DiscordMessage {
   }
   timestamp: string
   attachments?: DiscordAttachment[]
+  channel_id?: string
+}
+
+// TODO: Укажите здесь реальные ID каналов Discord и соответствующие им ключи категорий
+const CHANNEL_TO_CATEGORY: Record<string, string> = {
+  '123456789012345678': 'builds',
+  '987654321098765432': 'guides',
+  '111111111111111111': 'news',
 }
 
 interface SynthesisResult {
@@ -74,6 +82,15 @@ export const DiscordLabTab: FC = () => {
         const sorted = [...parsed].sort(
           (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         )
+
+        const firstMsgChannel = sorted.find((m) => m.channel_id)?.channel_id
+        if (firstMsgChannel && CHANNEL_TO_CATEGORY[firstMsgChannel]) {
+          const matchedCategory = CHANNEL_TO_CATEGORY[firstMsgChannel]
+          // Проверяем, существует ли такая категория
+          if (categories.some((c) => c.key === matchedCategory)) {
+            setSelectedCategory(matchedCategory)
+          }
+        }
 
         synthesizedContent = sorted
           .map((m) => {
@@ -148,7 +165,9 @@ export const DiscordLabTab: FC = () => {
         }))
 
         try {
-          const uploadRes = await apiImportMedia(file.url, `imported/discord/${Date.now()}`)
+          const uploadRes = (await apiImportMedia(file.url, `imported/discord/${Date.now()}`)) as {
+            url?: string
+          }
 
           if (uploadRes?.url) {
             finalContent = finalContent.replace(file.url, uploadRes.url)

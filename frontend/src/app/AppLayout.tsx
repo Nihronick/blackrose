@@ -16,6 +16,9 @@ const AdminLoginModal = lazy(() =>
   import('@/components/AdminLoginModal').then((m) => ({ default: m.AdminLoginModal }))
 )
 const QuickNav = lazy(() => import('@/components/QuickNav').then((m) => ({ default: m.QuickNav })))
+const GlobalSearch = lazy(() =>
+  import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch }))
+)
 
 interface AppLayoutProps {
   children: ReactNode
@@ -26,8 +29,8 @@ type AppSheet = { type: 'login' } | { type: 'quickNav' }
 export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { push } = useAppNavigation()
-  const { isTMA, tg } = useAppEnv()
-  const { isAdmin, cats, theme, setTheme, setIsAdmin } = useAppStore()
+  const { isTMA } = useAppEnv()
+  const { isAdmin, cats, theme, setTheme, setIsAdmin, setSearchOpen } = useAppStore()
   const { handleBack } = useTelegramBackButton()
   const sheet = useSheet<AppSheet>()
   const [logoFailed, setLogoFailed] = useState(false)
@@ -77,6 +80,14 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                 <span className="text-xl font-black uppercase tracking-tighter">BlackRose</span>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 rounded-2xl"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <SearchIcon className="size-5 text-muted-foreground" />
+                </Button>
                 {isAdmin ? (
                   <Button
                     variant="ghost"
@@ -171,10 +182,25 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
             />
           </Suspense>
         )}
+
+        <Suspense fallback={null}>
+          <GlobalSearch />
+        </Suspense>
       </div>
     </MotionConfig>
   )
 }
+
+const SearchIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+)
 
 const ThemeIcon = ({ theme }: { theme: string }) => {
   if (theme === 'light') return <SunIcon />

@@ -13,24 +13,14 @@ export interface User {
 
 export type AuthMode = 'telegram' | 'web' | 'guest'
 
-export function getTelegramInitData(): string {
-  const initData = window.Telegram?.WebApp?.initData
-  return typeof initData === 'string' ? initData : ''
-}
-
-export function hasTelegramWebApp(): boolean {
-  return !!window.Telegram?.WebApp
-}
-
 export function getMode(): AuthMode {
-  if (hasTelegramWebApp()) return 'telegram'
-  if (getStoredToken()) return 'web'
-  return 'guest'
-}
-
-export function isTelegram(): boolean {
-  const initData = getTelegramInitData()
-  return !!initData && initData.length > 0
+  if (
+    typeof window !== 'undefined' &&
+    (window as any).Telegram?.WebApp?.initData
+  ) {
+    return 'telegram'
+  }
+  return getStoredToken() ? 'web' : 'guest'
 }
 
 export function getStoredToken(): string {
@@ -75,9 +65,9 @@ export function clearStoredToken(): void {
 
 export function logout(): void {
   clearStoredToken()
-  if (window.Telegram?.WebApp) {
+  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
     // В TMA выход = закрытие приложения
-    window.Telegram.WebApp.close()
+    (window as any).Telegram.WebApp.close()
   } else {
     // В вебе просто рефреш для сброса стейта
     window.location.href = '/'
@@ -91,6 +81,22 @@ export function getStoredUser(): O.Option<User> {
   } catch {
     return O.none
   }
+}
+
+export function getTelegramInitData(): string {
+  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
+    return (window as any).Telegram.WebApp.initData
+  }
+  return ''
+}
+
+export function hasTelegramWebApp(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp
+}
+
+export function isTelegram(): boolean {
+  const initData = getTelegramInitData()
+  return !!initData && initData.length > 0
 }
 
 export function getAuthHeaders() {
@@ -111,6 +117,7 @@ export function getAuthHeaders() {
 
   return headers
 }
+
 interface TelegramUser {
   id: number
   first_name: string

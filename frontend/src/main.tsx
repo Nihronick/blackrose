@@ -7,6 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppEnvProvider } from './hooks/useAppEnv'
 import { initTheme } from './lib/theme'
 import './index.css'
+import './lib/layui-components'
 // import '@fontsource-variable/geist'
 
 import Honeybadger from '@honeybadger-io/js'
@@ -16,7 +17,7 @@ if (HB_API_KEY) {
   Honeybadger.configure({
     apiKey: HB_API_KEY,
     environment: import.meta.env.PROD ? 'production' : 'development',
-    reportData: !!window.Telegram?.WebApp?.initData,
+    reportData: import.meta.env.PROD,
   })
   window.addEventListener('error', (e) => {
     if (e.error) Honeybadger.notify(e.error)

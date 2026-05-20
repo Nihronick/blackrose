@@ -304,6 +304,10 @@ async def admin_lab_import(body: LabImportIn, user=Depends(require_admin)):
             synthesis = discord_lab_service.synthesize(body.messages)
 
         content = synthesis["content"]
+        
+        # Resolve inline Discord URLs in markdown
+        content = await media_service.resolve_inline_media(content, folder="imported")
+        
         raw_media = synthesis.get("media", [])
 
         processed_media = []

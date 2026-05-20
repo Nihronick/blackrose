@@ -4,6 +4,8 @@ import tempfile
 import hmac
 import hashlib
 import base64
+import re
+import asyncio
 from urllib.parse import urlparse
 from core.config import settings
 from core.logging import get_logger
@@ -37,6 +39,50 @@ class MediaService:
             finally:
                 if os.path.exists(tmp_path):
                     os.remove(tmp_path)
+
+    @staticmethod
+    async def resolve_inline_media(content: str, folder: str = "imported") -> str:
+        """
+        Finds Discord attachment URLs in text, downloads them to our storage, 
+        and replaces the original URLs in the text with our persistent URLs.
+        """
+        if not content:
+            return content
+
+        # Find all discord attachment URLs (both cdn and media domains)
+        # Supports URLs that might be inside markdown like ![image](url) or plain text
+        pattern = r'(https?://(?:cdn|media)\.discordapp\.(?:com|net)/attachments/[^\s\)"\'>]+)'
+        urls = list(set(re.findall(pattern, content)))
+        
+        if not urls:
+            return content
+            
+        logger.info(f"Found {len(urls)} inline media URLs to resolve")
+        
+        async def _resolve_single(url: str) -> tuple[str, str]:
+            try:
+                clean_url = url.rstrip('.,;!') 
+                new_url = await MediaService.import_from_url(clean_url, folder)
+                return url, new_url
+            except Exception as e:
+                logger.error(f"Failed to resolve inline media {url}: {e}")
+                return url, url 
+
+        # Limit concurrency to 5 to avoid overloading network/storage
+        semaphore = asyncio.Semaphore(5)
+        async def _bounded_resolve(url: str):
+            async with semaphore:
+                return await _resolve_single(url)
+
+        tasks = [_bounded_resolve(u) for u in urls]
+        results = await asyncio.gather(*tasks)
+        
+        new_content = content
+        for old_url, new_url in results:
+            if old_url != new_url:
+                new_content = new_content.replace(old_url, new_url)
+                
+        return new_content
 
     @staticmethod
     def get_optimized_url(url: str, width: int = 0, height: int = 0, extension: str = "webp") -> str:

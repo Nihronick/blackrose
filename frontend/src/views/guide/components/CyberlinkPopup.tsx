@@ -64,8 +64,9 @@ export const CyberlinkPopup: FC<CyberlinkPopupProps> = ({
         </div>
 
         <SheetFooter className="p-6 border-t bg-muted/20">
-          <Button
-            className="w-full h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/20"
+          <layui-button
+            type="primary"
+            class="w-full h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/20 flex items-center justify-center cursor-pointer"
             onClick={() => {
               haptic.select()
               onOpen(guideKey, preview?.title, preview?.icon)
@@ -74,7 +75,7 @@ export const CyberlinkPopup: FC<CyberlinkPopupProps> = ({
           >
             <ExternalLink className="mr-2 size-5" />
             Открыть полный гайд
-          </Button>
+          </layui-button>
         </SheetFooter>
       </SheetContent>
     </Sheet>

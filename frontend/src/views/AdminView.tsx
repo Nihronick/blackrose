@@ -13,7 +13,6 @@ import {
 } from '@/features/admin/AdminTabs'
 import { AdminSidebar } from '@/features/admin/components/AdminSidebar'
 import { apiFetch } from '@/lib/api'
-import { isTelegram } from '@/lib/auth'
 import {
   AlertCircle,
   BarChart3,
@@ -32,10 +31,17 @@ import {
 } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { type FC, Suspense, useCallback, useEffect, useState } from 'react'
+import { type ComponentType, type FC, Suspense, useCallback, useEffect, useState } from 'react'
 
 interface AdminViewProps {
   onClose: () => void
+}
+
+interface AdminTab {
+  id: string
+  label: string
+  title: string
+  icon: ComponentType<{ className?: string }>
 }
 
 const TABS: readonly AdminTab[] = [
@@ -133,26 +139,11 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
               <>
                 <div className="space-y-2">
                   <div className="text-sm font-bold text-foreground/80 leading-relaxed">
-                    Для доступа к панели управления необходимо войти через Telegram или локальный
-                    аккаунт.
-                  </div>
-                  <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed">
-                    Команда в боте:{' '}
-                    <code className="bg-muted px-1.5 py-0.5 rounded text-primary font-bold">
-                      /admin
-                    </code>
+                    Для доступа к панели управления необходимо войти.
                   </div>
                 </div>
                 <div className="w-[1px] h-4 bg-border/20 mx-auto" />
-                {!isTelegram() ? (
-                  <LocalAdminLogin onSuccess={() => window.location.reload()} />
-                ) : (
-                  <div className="text-center p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                    <p className="text-xs font-bold text-primary italic">
-                      Используйте команду /admin в боте для обновления прав
-                    </p>
-                  </div>
-                )}
+                <LocalAdminLogin onSuccess={() => window.location.reload()} />
               </>
             ) : (
               <div className="flex flex-col items-center text-center gap-4 py-4">
@@ -239,7 +230,7 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
                 {activeTab?.id === 'guides' && (
                   <GuidesTab
                     categories={categories}
-                    importedGuide={importedGuide}
+                    importedGuide={importedGuide || undefined}
                     onImportProcessed={() => setImportedGuide(null)}
                   />
                 )}

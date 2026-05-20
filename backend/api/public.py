@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from core.auth import (
     require_public_user,
-    require_telegram_user,
+    require_user,
     jwt_decode,
     jwt_encode,
     jwt_refresh_encode,
-    verify_telegram_login_widget,
     verify_password,
 )
 from core.config import settings
@@ -115,42 +114,7 @@ async def recent_comments(user=Depends(require_public_user)):
     comments = await guide_service.get_recent_comments(limit=10)
     return {"comments": comments}
 
-@router.post("/auth/web-login")
-async def web_login(request: Request):
-    body = await request.json()
-    user = verify_telegram_login_widget(body)
-    if not user:
-        raise HTTPException(status_code=403, detail="Invalid auth")
 
-    access_token = jwt_encode(user, expires_in=900, token_type="access")
-    refresh_token = jwt_refresh_encode({"id": user["id"]})
-    return {
-        "token": access_token,
-        "refresh_token": refresh_token,
-        "expires_in": 900,
-        "user_id": user["id"],
-        "is_admin": user["id"] in settings.admin_user_ids,
-        **user,
-    }
-
-@router.post("/auth/tma-login")
-async def tma_login(request: Request):
-    user = await require_telegram_user(request)
-    is_admin = await _is_admin(user)
-    access_token = jwt_encode(
-        {"id": user.get("id", 0), "first_name": user.get("first_name", ""), "is_admin": is_admin},
-        expires_in=900,
-        token_type="access",
-    )
-    refresh_token = jwt_refresh_encode({"id": int(user.get("id", 0) or 0)})
-    return {
-        "token": access_token,
-        "refresh_token": refresh_token,
-        "expires_in": 900,
-        "user_id": int(user.get("id", 0) or 0),
-        "first_name": user.get("first_name", ""),
-        "is_admin": is_admin,
-    }
 
 @router.get("/auth/web-check")
 async def web_check(request: Request):
@@ -287,7 +251,7 @@ async def sitemap():
 
 async def _try_get_user(request: Request) -> dict | None:
     try:
-        return await require_telegram_user(request)
+        return await require_user(request)
     except HTTPException:
         return None
 

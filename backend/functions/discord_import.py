@@ -33,6 +33,12 @@ async def discord_import_guide(ctx: inngest.Context):
     content = synthesis["content"]
     raw_media = synthesis["media"]
 
+    # Step 1.5: Resolve inline media in markdown
+    content = await ctx.step.run(
+        "resolve-inline-media",
+        lambda: media_service.resolve_inline_media(content, folder="imported")
+    )
+
     # Step 2: Media Processing (HF Uploads)
     processed_media = []
     if raw_media:

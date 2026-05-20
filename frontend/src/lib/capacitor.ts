@@ -38,8 +38,6 @@ export const hapticLight = async () => {
   if (isNative()) {
     const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
     await Haptics.impact({ style: ImpactStyle.Light })
-  } else if (window.Telegram?.WebApp?.initData && window.Telegram.WebApp.HapticFeedback) {
-    window.Telegram.WebApp.HapticFeedback.impactOccurred('light')
   }
 }
 
@@ -47,8 +45,6 @@ export const hapticMedium = async () => {
   if (isNative()) {
     const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
     await Haptics.impact({ style: ImpactStyle.Medium })
-  } else if (window.Telegram?.WebApp?.initData && window.Telegram.WebApp.HapticFeedback) {
-    window.Telegram.WebApp.HapticFeedback.impactOccurred('medium')
   }
 }
 

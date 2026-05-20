@@ -1,7 +1,7 @@
 {
     "name": "BlackRose Dev Sandbox",
     "dockerComposeFile": [
-        "../docker-compose.dev.yml"
+        "../docker-compose.yml"
     ],
     "service": "backend",
     "workspaceFolder": "/app",

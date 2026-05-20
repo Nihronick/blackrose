@@ -4,12 +4,15 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiRecentComments, apiRecentGuides, apiTopGuides } from '@/lib/api'
 import { apiFetch, apiGetCategories } from '@/lib/api'
+import { getStoredUser } from '@/lib/auth'
 import { haptic } from '@/lib/haptic'
 import { ChevronRight, Clock, Eye, MessageCircle, Sparkles, TrendingUp } from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { normalizeUrl } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import * as O from 'fp-ts/Option'
+import { pipe } from 'fp-ts/function'
 import { motion } from 'framer-motion'
 import { type FC, useRef } from 'react'
 
@@ -27,7 +30,11 @@ interface HomeDashboardProps {
 
 export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectCategory }) => {
   const language = useAppStore((state) => state.language)
-  const userName = window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Слеер'
+  const userName = pipe(
+    getStoredUser(),
+    O.map((u) => u.first_name),
+    O.getOrElse(() => 'Слеер')
+  )
 
   // Queries
   const { data: topGuidesData, isLoading: topLoading } = useQuery({
@@ -287,6 +294,43 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Layui Roadmap & Updates */}
+      <section className="flex flex-col gap-4">
+        <div className="px-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-primary animate-pulse" />
+            <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70">
+              Дорожная карта & Обновления
+            </h3>
+          </div>
+        </div>
+
+        <div className="px-5">
+          <div className="rounded-[32px] border border-border/10 bg-muted/10 p-6 shadow-soft">
+            <layui-timeline>
+              <layui-timeline-item time="Май 2026" title="Версия 2.0.0 — Новая Эра">
+                <p className="text-xs text-muted-foreground mt-1">
+                  • Внедрение Layui Web Components для оптимизации взаимодействия на смартфонах и ПК.<br />
+                  • Оптимизация авторизации для безбарьерного гостевого входа и бесшовного Mini App опыта.<br />
+                  • 100% покрытие ключевых тестов производительности и стабильности.
+                </p>
+              </layui-timeline-item>
+              <layui-timeline-item time="Апрель 2026" title="Версия 1.5.0 — Интеграция Лаборатории">
+                <p className="text-xs text-muted-foreground mt-1">
+                  • Добавлен раздел Discord-лаборатории для симуляции сражений.<br />
+                  • Улучшена глубина кеширования и производительности запросов.
+                </p>
+              </layui-timeline-item>
+              <layui-timeline-item time="В разработке" title="Будущие обновления">
+                <p className="text-xs text-muted-foreground mt-1">
+                  • Интерактивные калькуляторы характеристик и симуляторы билдов с графиками в реальном времени.
+                </p>
+              </layui-timeline-item>
+            </layui-timeline>
           </div>
         </div>
       </section>

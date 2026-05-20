@@ -1,14 +1,5 @@
-import { useAppEnv } from '@/hooks/useAppEnv'
-import { apiFetch, apiPost } from '@/lib/api'
-import {
-  clearStoredToken,
-  getMode,
-  getStoredUser,
-  getTelegramInitData,
-  hasTelegramWebApp,
-  isTelegram,
-  setStoredToken,
-} from '@/lib/auth'
+import { apiFetch } from '@/lib/api'
+import { clearStoredToken, getMode, getStoredUser } from '@/lib/auth'
 import { applyLanguageKey } from '@/lib/language'
 import { useAppStore } from '@/store'
 import * as O from 'fp-ts/Option'
@@ -19,55 +10,17 @@ import { useNavigate } from 'react-router-dom'
 export const useAppInitialization = () => {
   const navigate = useNavigate()
   const { language, setIsAdmin } = useAppStore()
-  const inTelegram = hasTelegramWebApp()
 
   useEffect(() => {
     let isCancelled = false
-    let retryTimer: number | null = null
-    let attempts = 0
-    const maxAttempts = 8
-
-    const scheduleRetry = () => {
-      if (isCancelled || attempts >= maxAttempts) return
-      attempts += 1
-      retryTimer = window.setTimeout(doAuth, 450)
-    }
 
     const doAuth = async () => {
       if (isCancelled) return
 
       const mode = getMode()
-      const initData = getTelegramInitData()
 
-      // 1. Если в TMA — обмениваем данные на JWT (Exchange Strategy)
-      if (initData) {
-        try {
-          interface TmaLoginResponse {
-            token: string
-            refresh_token?: string
-            user_id: number
-            first_name: string
-            is_admin: boolean
-          }
-          const data = await apiPost<TmaLoginResponse>('/api/auth/tma-login', {})
-          if (data?.token && !isCancelled) {
-            setStoredToken(
-              data.token,
-              {
-                id: data.user_id,
-                first_name: data.first_name,
-                is_admin: data.is_admin,
-              },
-              data.refresh_token
-            )
-            if (data.is_admin) setIsAdmin(true)
-          }
-        } catch (e) {
-          console.warn('TMA JWT Exchange failed, falling back to initData only:', e)
-        }
-      }
-      // 2. Веб-режим: сразу применяем сохранённый токен
-      else if (mode === 'web') {
+      // Web mode: apply stored user immediately
+      if (mode === 'web') {
         pipe(
           getStoredUser(),
           O.map((user) => {
@@ -76,7 +29,7 @@ export const useAppInitialization = () => {
         )
       }
 
-      // Тихая проверка актуальности на бэкенде
+      // Silent backend check for token validity
       apiFetch<{ is_admin?: boolean }>('/api/auth/web-check')
         .then((data) => {
           if (isCancelled) return
@@ -84,9 +37,6 @@ export const useAppInitialization = () => {
         })
         .catch((e) => {
           if (e.message?.includes('Сессия истекла')) clearStoredToken()
-
-          // Telegram SDK может инициализироваться с задержкой: даём несколько попыток.
-          if (inTelegram && !getTelegramInitData()) scheduleRetry()
         })
     }
 
@@ -113,23 +63,14 @@ export const useAppInitialization = () => {
       navigate(`/guide/${encodeURIComponent(guideKey)}`)
     }
 
-    const tgWindow = window as unknown as Window & {
-      __tgSdkLoaded?: boolean
-      __tgSdkFailed?: boolean
-    }
-    tgWindow.addEventListener('tgSdkReady', doAuth)
-    if (tgWindow.__tgSdkLoaded || tgWindow.__tgSdkFailed) doAuth()
-    else if (!inTelegram) setTimeout(doAuth, 100)
-    else scheduleRetry()
-
+    // Run auth immediately — no SDK to wait for
+    doAuth()
     openDeepLink()
 
     return () => {
       isCancelled = true
-      if (retryTimer) window.clearTimeout(retryTimer)
-      tgWindow.removeEventListener('tgSdkReady', doAuth)
     }
-  }, [language, navigate, setIsAdmin, inTelegram])
+  }, [language, navigate, setIsAdmin])
 
   useEffect(() => {
     navigator.serviceWorker?.register?.('sw.js').catch(() => {})

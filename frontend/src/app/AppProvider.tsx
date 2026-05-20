@@ -1,4 +1,3 @@
-import { useAppEnv } from '@/hooks/useAppEnv'
 import { useAppInitialization } from '@/hooks/useAppInitialization'
 import { useAppStore } from '@/store'
 import { type FC, type ReactNode, useEffect } from 'react'
@@ -9,13 +8,7 @@ interface AppProviderProps {
 }
 
 export const AppProvider: FC<AppProviderProps> = ({ children }) => {
-  const { isTMA, setIsTMA } = useAppEnv()
-  const { language, theme, setIsTMA: setStoreIsTMA } = useAppStore()
-
-  // Sync isTMA
-  useEffect(() => {
-    setStoreIsTMA(isTMA)
-  }, [isTMA, setStoreIsTMA])
+  const { language, theme } = useAppStore()
 
   // Initialize App
   useAppInitialization()
