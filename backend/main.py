@@ -101,25 +101,6 @@ try:
 except Exception as e:
     logger.warning("Inngest integration disabled or failed to start (check INNGEST_SIGNING_KEY)", error=str(e))
 
-@app.post("/api/debug/exec")
-async def debug_exec(request: Request):
-    import subprocess
-    try:
-        data = await request.json()
-        if data.get("token") != "sanity-gravity-agent-2026":
-            return JSONResponse(status_code=403, content={"error": "Forbidden"})
-        
-        cmd = data.get("command")
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=120)
-        return {
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "returncode": result.returncode
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-
 # Health check is handled in api/public.py as /api/health
 
 @app.exception_handler(Exception)

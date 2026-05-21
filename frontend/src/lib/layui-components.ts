@@ -168,7 +168,9 @@ class LayuiTimelineItem extends HTMLElement {
 
     if (title) {
       const titleText = document.createElement('p')
-      titleText.innerHTML = `<strong>${title}</strong>`
+      const strong = document.createElement('strong')
+      strong.textContent = title
+      titleText.appendChild(strong)
       content.appendChild(titleText)
     }
 
