@@ -8,7 +8,7 @@ import json
 import hmac
 import hashlib
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 from main import app
 from core.config import settings

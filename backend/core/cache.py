@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable
+from typing import Callable
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from services.cache.redis_cache import cache_service
