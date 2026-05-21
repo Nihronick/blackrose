@@ -36,50 +36,129 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="rounded-[32px] border border-border/10 bg-card p-6 shadow-soft"
+          className="rounded-[32px] border border-border/10 bg-card p-6 shadow-soft relative overflow-hidden"
         >
-          <layui-timeline>
-            <layui-timeline-item time="Май 2026" title="Версия 3.3.0 — Премиальный дизайн">
-              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                • ⚡ <strong>Новая типографика</strong>: Внедрена профессиональная пара шрифтов
-                <strong> Manrope + Montserrat</strong> с идеальным отображением кириллицы на всех
-                экранах.
-                <br />• 🧭 <strong>Удобная навигация</strong>: Проектная карта перенесена в
-                отдельный раздел в шапке Mini App и браузера.
-                <br />• 🧼 <strong>Чистота дашборда</strong>: Убрали лишнее дублирование категорий и
-                блоков для более сфокусированного и эстетичного интерфейса.
-                <br />• 🐛 <strong>Стабильность W3C</strong>: Исправлен баг двойной отрисовки
-                элементов таймлайна при переходах.
-              </p>
-            </layui-timeline-item>
+          <div className="relative flex flex-col gap-8 pl-8">
+            {/* Vertical timeline line */}
+            <div className="absolute left-[7px] top-2.5 bottom-2.5 w-[2px] bg-gradient-to-b from-primary via-violet-500/50 to-muted/20" />
 
-            <layui-timeline-item time="Апрель 2026" title="Версия 2.0.0 — Интеграция Layui">
-              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                • 🛡️ <strong>Layui Web Components</strong>: Оптимизировано взаимодействие интерфейса
-                на мобильных устройствах и десктопах.
-                <br />• 🔑 <strong>Гостевой вход</strong>: Оптимизация авторизации для безбарьерного
-                гостевого входа в Telegram Mini App.
-              </p>
-            </layui-timeline-item>
+            {[
+              {
+                time: 'Май 2026',
+                title: 'Версия 3.3.0 — Премиальный дизайн',
+                active: true,
+                content: (
+                  <ul className="space-y-1.5 mt-1 text-[11px] text-muted-foreground/90 leading-relaxed">
+                    <li>
+                      • ⚡ <strong>Новая типографика</strong>: Внедрена профессиональная пара
+                      шрифтов <strong>Manrope + Montserrat</strong> с идеальным отображением
+                      кириллицы на всех экранах.
+                    </li>
+                    <li>
+                      • 🧭 <strong>Удобная навигация</strong>: Проектная карта перенесена в
+                      отдельный раздел в шапке Mini App и браузера.
+                    </li>
+                    <li>
+                      • 🧼 <strong>Чистота дашборда</strong>: Убрали лишнее дублирование категорий и
+                      блоков для более сфокусированного и эстетичного интерфейса.
+                    </li>
+                    <li>
+                      • 🐛 <strong>Стабильность W3C</strong>: Полностью исправили баг двойной
+                      отрисовки элементов таймлайна при переходах.
+                    </li>
+                  </ul>
+                ),
+              },
+              {
+                time: 'Апрель 2026',
+                title: 'Версия 2.0.0 — Оптимизация Mini App',
+                active: false,
+                content: (
+                  <ul className="space-y-1.5 mt-1 text-[11px] text-muted-foreground/90 leading-relaxed">
+                    <li>
+                      • 🛡️ <strong>Интерфейс под мобильные</strong>: Оптимизировано взаимодействие
+                      элементов на смартфонах и ПК-версиях.
+                    </li>
+                    <li>
+                      • 🔑 <strong>Безбарьерный вход</strong>: Оптимизация авторизации для
+                      мгновенного гостевого входа в Telegram Mini App.
+                    </li>
+                  </ul>
+                ),
+              },
+              {
+                time: 'Март 2026',
+                title: 'Версия 1.5.0 — Discord-Лаборатория',
+                active: false,
+                content: (
+                  <ul className="space-y-1.5 mt-1 text-[11px] text-muted-foreground/90 leading-relaxed">
+                    <li>
+                      • 🧪 <strong>Синхронизация билдов</strong>: Добавлен раздел
+                      Discord-лаборатории для симуляции сражений.
+                    </li>
+                    <li>
+                      • 💾 <strong>Кеширование данных</strong>: Улучшена скорость загрузки гайдов за
+                      счет адаптивного кеширования.
+                    </li>
+                  </ul>
+                ),
+              },
+              {
+                time: 'В разработке',
+                title: 'Будущие планы',
+                pulsing: true,
+                content: (
+                  <ul className="space-y-1.5 mt-1 text-[11px] text-muted-foreground/90 leading-relaxed">
+                    <li>
+                      • 📊 <strong>Калькуляторы характеристик</strong>: Интерактивный симулятор
+                      параметров снаряжения с наглядными графиками.
+                    </li>
+                    <li>
+                      • 🌐 <strong>Интеграция с комьюнити</strong>: Возможность делиться своими
+                      сборками прямо в один клик.
+                    </li>
+                  </ul>
+                ),
+              },
+            ].map((item, index) => (
+              <div key={index} className="relative flex flex-col gap-1.5">
+                {/* Timeline node */}
+                <div className="absolute -left-[31px] top-1 flex items-center justify-center">
+                  {item.pulsing ? (
+                    <div className="relative flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-background" />
+                    </div>
+                  ) : item.active ? (
+                    <div className="size-4 rounded-full bg-primary border-2 border-background shadow-glow animate-pulse" />
+                  ) : (
+                    <div className="size-4 rounded-full bg-muted-foreground/30 border-2 border-background" />
+                  )}
+                </div>
 
-            <layui-timeline-item time="Март 2026" title="Версия 1.5.0 — Discord-Лаборатория">
-              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                • 🧪 <strong>Синхронизация билдов</strong>: Добавлен раздел Discord-лаборатории для
-                симуляции сражений.
-                <br />• 💾 <strong>Кеширование данных</strong>: Улучшена скорость загрузки гайдов за
-                счет адаптивного кеширования.
-              </p>
-            </layui-timeline-item>
+                {/* Time header */}
+                <span
+                  className={`text-[10px] font-black uppercase tracking-widest leading-none ${
+                    item.active
+                      ? 'text-primary'
+                      : item.pulsing
+                        ? 'text-emerald-400'
+                        : 'text-muted-foreground/60'
+                  }`}
+                >
+                  {item.time}
+                </span>
 
-            <layui-timeline-item time="В разработке" title="Будущие планы">
-              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                • 📊 <strong>Калькуляторы характеристик</strong>: Интерактивный симулятор параметров
-                снаряжения с наглядными графиками.
-                <br />• 🌐 <strong>Интеграция с комьюнити</strong>: Возможность делиться своими
-                сборками прямо в один клик.
-              </p>
-            </layui-timeline-item>
-          </layui-timeline>
+                {/* Card Title */}
+                <h4 className="text-[13px] font-black tracking-normal leading-snug font-heading text-foreground/90">
+                  {item.title}
+                </h4>
+
+                {/* Content */}
+                {item.content}
+              </div>
+            ))}
+          </div>
         </motion.div>
 
         {/* Premium Support Project Card */}

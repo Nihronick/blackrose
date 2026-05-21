@@ -20,12 +20,9 @@ export const DocBlock: FC<{ url: string }> = ({ url }) => {
       <div className="flex-1 min-w-0">
         <div className="truncate text-sm font-bold text-foreground">{d.name}</div>
         <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1.5 mt-1">
-          <layui-badge
-            color="cyan"
-            class="text-[9px] font-semibold py-0.5 px-1.5 uppercase rounded-md"
-          >
+          <span className="text-[9px] font-semibold py-0.5 px-1.5 uppercase rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
             {d.ext}
-          </layui-badge>{' '}
+          </span>{' '}
           Document
         </div>
       </div>

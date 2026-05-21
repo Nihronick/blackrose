@@ -1,15 +1,16 @@
 import { FabButton } from '@/components/FabButton'
 import { Header } from '@/components/Header'
 import { Button } from '@/components/ui/button'
+import { useCategories } from '@/hooks/queries'
 import { useAppEnv } from '@/hooks/useAppEnv'
 import { useSheet } from '@/hooks/useSheet'
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton'
 import { haptic } from '@/lib/haptic'
-import { Compass } from '@/lib/icons'
+import { Compass, History, Home, Star } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
-import { type FC, type ReactNode, Suspense, lazy, useMemo, useState } from 'react'
+import { type FC, type ReactNode, Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
 
@@ -31,10 +32,17 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { push } = useAppNavigation()
   const { isTMA } = useAppEnv()
-  const { isAdmin, cats, theme, setTheme, setIsAdmin, setSearchOpen } = useAppStore()
+  const { data: categoriesData } = useCategories()
+  const { isAdmin, cats, theme, setTheme, setIsAdmin, setSearchOpen, setCats } = useAppStore()
   const { handleBack } = useTelegramBackButton()
   const sheet = useSheet<AppSheet>()
   const [logoFailed, setLogoFailed] = useState(false)
+
+  useEffect(() => {
+    if (categoriesData && Array.isArray(categoriesData)) {
+      setCats(categoriesData)
+    }
+  }, [categoriesData, setCats])
 
   const isHome = location.pathname === '/'
   const isCategory = location.pathname.startsWith('/category/')
@@ -60,7 +68,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="app-shell flex h-[var(--tg-viewport-stable-height,100dvh)] flex-col overflow-hidden bg-background text-foreground">
+      <div className="app-shell flex h-[var(--tg-viewport-stable-height,100dvh)] w-full max-w-[1200px] mx-auto md:border-x md:border-border/10 md:shadow-2xl flex-col overflow-hidden bg-background text-foreground relative">
         {!isHome && location.pathname !== '/admin' ? (
           <Header title={headerTitle} onBack={handleBack} />
         ) : (
@@ -79,9 +87,23 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                     <span className="text-lg font-black text-foreground">B</span>
                   )}
                 </div>
-                <span className="text-xl font-black uppercase tracking-tighter">BlackRose</span>
+                <span className="text-xl font-black uppercase tracking-normal text-foreground">
+                  BlackRose
+                </span>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 rounded-2xl group/compass"
+                  onClick={() => {
+                    haptic.light()
+                    push({ type: 'roadmap' })
+                  }}
+                  aria-label="Дорожная карта"
+                >
+                  <Compass className="size-5 text-muted-foreground group-hover/compass:text-primary transition-all duration-300 group-hover/compass:rotate-45" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -89,18 +111,6 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   onClick={() => setSearchOpen(true)}
                 >
                   <SearchIcon className="size-5 text-muted-foreground" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-10 rounded-2xl"
-                  onClick={() => {
-                    haptic.light()
-                    push({ type: 'roadmap' })
-                  }}
-                  title="Дорожная карта"
-                >
-                  <Compass className="size-5 text-muted-foreground transition-transform hover:rotate-12 duration-300" />
                 </Button>
                 {isAdmin ? (
                   <Button
@@ -136,7 +146,10 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
           </header>
         )}
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
+        {/* Main Content Area */}
+        <main
+          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history'].includes(location.pathname) ? 'pb-28' : ''}`}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -150,6 +163,61 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
             </motion.div>
           </AnimatePresence>
         </main>
+
+        {/* Floating Premium Bottom Navigation Tab Bar */}
+        {['/', '/favorites', '/history'].includes(location.pathname) && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 py-2.5 rounded-[28px] shadow-2xl shrink-0">
+            <div className="flex w-full items-center justify-around">
+              {[
+                { path: '/', label: 'Главная', icon: Home, route: { type: 'home' } as const },
+                {
+                  path: '/favorites',
+                  label: 'Избранное',
+                  icon: Star,
+                  route: { type: 'favorites' } as const,
+                },
+                {
+                  path: '/history',
+                  label: 'История',
+                  icon: History,
+                  route: { type: 'history' } as const,
+                },
+              ].map((tab) => {
+                const Icon = tab.icon
+                const isActive = location.pathname === tab.path
+                return (
+                  <button
+                    key={tab.path}
+                    type="button"
+                    className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all duration-300 relative ${
+                      isActive
+                        ? 'text-primary'
+                        : 'text-muted-foreground/60 hover:text-foreground/80'
+                    }`}
+                    onClick={() => {
+                      haptic.light()
+                      push(tab.route)
+                    }}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-tab"
+                        className="absolute inset-0 bg-primary/10 rounded-2xl -z-10"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <Icon
+                      className={`size-5 transition-transform duration-300 ${isActive ? 'scale-110 stroke-[2.5px]' : 'scale-100'}`}
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-wider font-heading leading-none">
+                      {tab.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <FabButton
           visible={fabVisible}

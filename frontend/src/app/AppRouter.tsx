@@ -7,6 +7,7 @@ import { type FC, Suspense, lazy } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
 // Lazy views
+const HomeView = lazy(() => import('@/views/HomeView'))
 const CategoriesView = lazy(() => import('@/views/CategoriesView'))
 const FavoritesView = lazy(() =>
   import('@/views/FavoritesView').then((m) => ({ default: m.FavoritesView }))
@@ -52,11 +53,18 @@ export const AppRouter: FC = () => {
         <Route
           path="/"
           element={
-            <CategoriesView
+            <HomeView
               onSelectCategory={(cat) => push({ type: 'category', id: cat.key })}
               onSelectGuide={handleOpenGuide}
+            />
+          }
+        />
+        <Route
+          path="/categories"
+          element={
+            <CategoriesView
+              onSelectCategory={(cat) => push({ type: 'category', id: cat.key })}
               onCategoriesLoaded={setCats}
-              onTagClick={(tag: string) => push({ type: 'tag', tag })}
             />
           }
         />

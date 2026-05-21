@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useSubscriptions } from '@/hooks/useSubscriptions'
 import { apiFetch } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { Bell, ChevronRight } from '@/lib/icons'
+import { Bell, ChevronRight, Database, Folder, RefreshCw, ShieldAlert } from '@/lib/icons'
 import { normalizeUrl, pluralize } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { type FC, type SyntheticEvent, useRef } from 'react'
@@ -39,7 +39,7 @@ export const CategoryList: FC<CategoryListProps> = ({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-5 px-5 pb-32 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 pt-6 sm:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="h-[104px] rounded-[32px] border border-border/10 skeleton" />
         ))}
@@ -48,13 +48,42 @@ export const CategoryList: FC<CategoryListProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 px-5 pb-32 pt-6 sm:grid-cols-2 lg:grid-cols-3 stagger-in">
+    <div className="grid grid-cols-1 gap-5 pt-6 sm:grid-cols-2 lg:grid-cols-3 stagger-in">
       {categories.length === 0 ? (
-        <div className="col-span-full py-20 text-center opacity-40">
-          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-3xl bg-muted/40">
-            <ChevronRight className="size-8 rotate-90" />
-          </div>
-          <p className="text-lg font-bold">Ничего не найдено</p>
+        <div className="col-span-full py-10 w-full">
+          <Card className="glass-card relative overflow-hidden rounded-[32px] border border-border/10 bg-gradient-to-br from-primary/5 via-card/50 to-transparent p-8 text-center shadow-glow transition-all duration-300">
+            {/* Pulsing decoration lights */}
+            <div className="absolute -right-8 -top-8 size-32 bg-primary/10 rounded-full blur-[45px] animate-pulse" />
+            <div className="absolute -left-12 -bottom-12 size-36 bg-violet-500/5 rounded-full blur-[50px]" />
+
+            <div className="relative z-10 flex flex-col items-center gap-4">
+              <div className="flex size-16 items-center justify-center rounded-[24px] bg-primary/10 border border-primary/20 shadow-inner text-primary">
+                <Database className="size-8 text-primary animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-base font-black tracking-normal text-foreground font-heading">
+                  Разделы не найдены
+                </h4>
+                <p className="text-xs font-medium text-muted-foreground/80 max-w-md mx-auto mt-2 leading-relaxed">
+                  Похоже, база данных пуста или находится в процессе загрузки. Пожалуйста, обновите
+                  страницу или попробуйте позже.
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 h-10 rounded-2xl bg-primary/10 border-primary/20 text-primary font-bold px-6 hover:bg-primary/15 hover:border-primary/40 transition-all active:scale-95 shadow-soft font-heading flex items-center gap-2 cursor-pointer"
+                onClick={() => {
+                  haptic.medium()
+                  window.location.reload()
+                }}
+              >
+                <RefreshCw className="size-4 animate-spin-slow" />
+                <span>Обновить</span>
+              </Button>
+            </div>
+          </Card>
         </div>
       ) : (
         categories.map((item) => {
@@ -82,11 +111,11 @@ export const CategoryList: FC<CategoryListProps> = ({
                       }}
                     />
                   ) : (
-                    <span className="text-3xl">📁</span>
+                    <Folder className="size-6 text-primary" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="truncate text-lg font-black tracking-tight text-foreground/90">
+                  <h3 className="truncate text-lg font-black tracking-normal text-foreground/90">
                     {item.title}
                   </h3>
                   <div className="mt-1 flex items-center gap-2">

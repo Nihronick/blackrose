@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 
 export type Route =
   | { type: 'home' }
+  | { type: 'categories' }
   | { type: 'category'; id: string }
   | { type: 'guide'; id: string }
   | { type: 'tag'; tag: string }
@@ -24,6 +25,9 @@ export const useAppNavigation = () => {
       switch (route.type) {
         case 'home':
           navigate('/')
+          break
+        case 'categories':
+          navigate('/categories')
           break
         case 'category':
           navigate(`/category/${route.id}`)

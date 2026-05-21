@@ -1,12 +1,25 @@
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { BrandIcon } from '@/components/ui/BrandIcon'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CategoryList } from '@/features/categories'
+import type { Category } from '@/features/categories'
 import { apiRecentComments, apiRecentGuides, apiTopGuides } from '@/lib/api'
-import { apiFetch, apiGetCategories } from '@/lib/api'
+import { apiFetch } from '@/lib/api'
 import { getStoredUser } from '@/lib/auth'
 import { haptic } from '@/lib/haptic'
-import { ChevronRight, Clock, Eye, MessageCircle, Sparkles, TrendingUp } from '@/lib/icons'
+import {
+  BookOpen,
+  ChevronRight,
+  Clock,
+  Eye,
+  FileText,
+  LayoutGrid,
+  MessageCircle,
+  Sparkles,
+  TrendingUp,
+} from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { normalizeUrl } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -16,20 +29,16 @@ import { pipe } from 'fp-ts/function'
 import { motion } from 'framer-motion'
 import { type FC, useRef } from 'react'
 
-interface Category {
-  key: string
-  title: string
-  icon: string
-  guides_count: number
-}
-
 interface HomeDashboardProps {
   onSelectGuide: (key: string, title?: string, icon?: string) => void
   onSelectCategory: (category: Category) => void
 }
 
 export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectCategory }) => {
-  const language = useAppStore((state) => state.language)
+  const { language, cats } = useAppStore((state) => ({
+    language: state.language,
+    cats: state.cats,
+  }))
   const userName = pipe(
     getStoredUser(),
     O.map((u) => u.first_name),
@@ -50,11 +59,6 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
   const { data: recentCommentsData, isLoading: commentsLoading } = useQuery({
     queryKey: ['recent-comments'],
     queryFn: apiRecentComments,
-  })
-
-  const { data: categoriesData, isLoading: catsLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn: apiGetCategories,
   })
 
   const topGuides = (topGuidesData?.results || []).filter((g) => isLanguageKey(g.key, language))
@@ -80,7 +84,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
   return (
     <div className="flex flex-col gap-8 pb-4 stagger-in">
       {/* 1. Hero Welcome */}
-      <section className="px-5 pt-2">
+      <section className="pt-2">
         <div className="relative overflow-hidden rounded-[40px] mesh-bg p-8 border border-primary/20 shadow-2xl shadow-primary/10 transition-transform duration-500 hover:scale-[1.01]">
           {/* Animated background pulse */}
           <div className="absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
@@ -93,10 +97,20 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
                 Live Updates
               </span>
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-foreground mb-2 leading-none">
-              Привет, <span className="text-primary">{userName}!</span>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-normal text-foreground mb-3 leading-snug font-heading">
+              Привет,{' '}
+              <span
+                className="bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent"
+                style={{
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                {userName}!
+              </span>
             </h1>
-            <p className="text-[15px] font-medium text-muted-foreground/80 leading-snug max-w-[260px]">
+            <p className="text-[15px] font-medium text-muted-foreground/80 leading-snug max-w-md sm:max-w-xl">
               {recentGuides.length > 0
                 ? `У нас появилось ${recentGuides.length} новых гайдов. Пора стать сильнее!`
                 : 'Сегодня отличный день, чтобы изучить что-то новое.'}
@@ -105,200 +119,231 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
         </div>
       </section>
 
-      {/* 2. Popular Guides (Horizontal) */}
-      <section className="flex flex-col gap-4">
-        <div className="px-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="size-4 text-primary" />
-            <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70">
-              Популярное
-            </h3>
-          </div>
-        </div>
-
-        <div className="flex gap-4 overflow-x-auto px-5 scrollbar-premium pb-4">
-          {topLoading
-            ? [...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-44 w-36 shrink-0 rounded-[24px] bg-muted/40" />
-              ))
-            : topGuides.map((g) => (
-                <motion.div
-                  key={g.key}
-                  whileTap={{ scale: 0.96 }}
-                  className="w-36 shrink-0 cursor-pointer"
-                  onMouseEnter={() => prefetchGuide(g.key)}
-                  onTouchStart={() => prefetchGuide(g.key)}
-                  onClick={() => {
-                    haptic.light()
-                    onSelectGuide(g.key, g.title, g.icon_url)
-                  }}
-                >
-                  <Card className="h-full border-border/10 glass-card rounded-[24px] overflow-hidden flex flex-col transition-all duration-300 hover:shadow-glow hover:border-primary/20">
-                    <div className="relative aspect-square p-4 bg-muted/20 flex items-center justify-center">
-                      <div className="size-16 rounded-2xl bg-background shadow-lg flex items-center justify-center p-2">
-                        {g.icon_url ? (
-                          <img
-                            src={normalizeUrl(g.icon_url)}
-                            alt=""
-                            className="size-12 object-contain"
-                          />
-                        ) : (
-                          <span className="text-2xl">📖</span>
-                        )}
-                      </div>
-                      <Badge className="absolute top-2 right-2 h-5 rounded-full bg-primary/20 text-[9px] font-black text-primary px-1.5 border-0">
-                        {g.views >= 1000 ? `${(g.views / 1000).toFixed(1)}k` : g.views}
-                      </Badge>
-                    </div>
-                    <CardContent className="p-3 flex-1">
-                      <h4 className="text-[13px] font-black tracking-tight leading-tight line-clamp-2">
-                        {g.title}
-                      </h4>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-        </div>
-      </section>
-
-      {/* 3. Newest Updates */}
-      <section className="flex flex-col gap-4">
-        <div className="px-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4 text-emerald-400" />
-            <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70">
-              Новинки
-            </h3>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 px-5">
-          {recentLoading
-            ? [...Array(2)].map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-2xl bg-muted/40" />
-              ))
-            : recentGuides.slice(0, 3).map((g) => (
-                <motion.div
-                  key={g.key}
-                  whileTap={{ scale: 0.98 }}
-                  className="group cursor-pointer rounded-2xl border border-border/5 bg-muted/20 p-4 transition-all hover:bg-muted/30 hover:border-primary/10 hover:shadow-soft"
-                  onMouseEnter={() => prefetchGuide(g.key)}
-                  onTouchStart={() => prefetchGuide(g.key)}
-                  onClick={() => {
-                    haptic.light()
-                    onSelectGuide(g.key, g.title, g.icon_url)
-                  }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="size-12 shrink-0 rounded-xl bg-background flex items-center justify-center p-2 shadow-sm">
-                      {g.icon_url ? (
-                        <img
-                          src={normalizeUrl(g.icon_url)}
-                          alt=""
-                          className="size-8 object-contain"
-                        />
-                      ) : (
-                        <span className="text-xl">📄</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-[14px] font-black tracking-tight leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-                        {g.title}
-                      </h4>
-                      <p className="mt-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-                        {g.updated_at && !Number.isNaN(new Date(g.updated_at).getTime())
-                          ? `Обновлено: ${new Date(g.updated_at).toLocaleDateString()}`
-                          : 'Недавно'}
-                      </p>
-                    </div>
-                    <ChevronRight className="size-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                  </div>
-                </motion.div>
-              ))}
-        </div>
-      </section>
-
-      {/* 4. Community Pulse (Latest Comments) */}
-      <section className="flex flex-col gap-4">
-        <div className="px-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="size-4 text-amber-400" />
-            <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70">
-              Пульс сообщества
-            </h3>
-          </div>
-        </div>
-
-        <div className="px-5">
-          <div className="rounded-[32px] border border-border/10 bg-muted/10 p-6 shadow-soft">
-            {commentsLoading ? (
-              <Skeleton className="h-32 w-full rounded-2xl bg-muted/40" />
-            ) : recentComments.length === 0 ? (
-              <p className="text-center py-4 text-xs font-medium text-muted-foreground/40 italic">
-                Здесь пока тихо...
-              </p>
-            ) : (
-              <div className="flex flex-col gap-6">
-                {recentComments.map((c) => (
-                  <div key={c.id} className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="size-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-black text-primary uppercase">
-                        {(c.first_name || 'U').charAt(0)}
-                      </div>
-                      <span className="text-[11px] font-black text-foreground/80">
-                        {c.first_name || 'Участник'}
-                      </span>
-                      <span className="text-[9px] font-medium text-muted-foreground/40">
-                        • {c.guide_title}
-                      </span>
-                    </div>
-                    <p className="text-xs font-medium text-muted-foreground leading-relaxed line-clamp-2">
-                      "{c.text}"
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Support Project Premium Banner */}
-      <section className="px-5 pb-6">
-        <div className="relative overflow-hidden rounded-[32px] border border-primary/20 bg-muted/10 p-6 shadow-glow transition-transform duration-300 hover:scale-[1.01]">
-          <div className="absolute -right-10 -top-10 size-32 bg-primary/10 rounded-full blur-[45px]" />
-          <div className="absolute -left-10 -bottom-10 size-32 bg-primary/5 rounded-full blur-[40px]" />
-
-          <div className="relative z-10 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-2xl bg-primary/15 flex items-center justify-center text-lg shadow-soft">
-                ❤️
-              </div>
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
-                  Поддержать проект
-                </h4>
-                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
-                  Развитие BlackRose
-                </p>
+      {/* Main Grid: Col-8 (Left) & Col-4 (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column (8 grid-spans) */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
+          {/* 2. Popular Guides (Horizontal) */}
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="size-4 text-primary" />
+                <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
+                  Популярное
+                </h3>
               </div>
             </div>
-            <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-              BlackRose разрабатывается и поддерживается сообществом. Ваша поддержка помогает нам
-              оплачивать серверы и быстрее выпускать новые калькуляторы и гайды!
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              className="w-full h-11 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-glow active:scale-95"
-              onClick={() => {
-                haptic.medium()
-                window.open('https://dalink.to/nihronick', '_blank')
-              }}
-            >
-              Поддержать BlackRose
-            </motion.button>
-          </div>
+
+            <div className="flex gap-4 overflow-x-auto scrollbar-premium pb-4 no-scrollbar lg:scrollbar-premium">
+              {topLoading
+                ? [...Array(3)].map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="h-44 w-[200px] sm:w-[240px] min-w-[200px] sm:min-w-[240px] flex-shrink-0 rounded-[24px] bg-muted/40"
+                    />
+                  ))
+                : topGuides.map((g) => (
+                    <motion.div
+                      key={g.key}
+                      whileTap={{ scale: 0.96 }}
+                      whileHover={{ y: -6 }}
+                      className="w-[200px] sm:w-[240px] min-w-[200px] sm:min-w-[240px] flex-shrink-0 cursor-pointer group"
+                      onMouseEnter={() => prefetchGuide(g.key)}
+                      onTouchStart={() => prefetchGuide(g.key)}
+                      onClick={() => {
+                        haptic.light()
+                        onSelectGuide(g.key, g.title, g.icon_url)
+                      }}
+                    >
+                      <Card className="h-full border-border/10 glass-card rounded-[24px] overflow-hidden flex flex-col transition-all duration-300 hover:shadow-glow hover:border-primary/20">
+                        <div className="relative h-28 bg-gradient-to-br from-primary/10 via-muted/5 to-transparent flex items-center justify-center p-4">
+                          <div className="size-16 rounded-2xl bg-background shadow-lg flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-300">
+                            {g.icon_url ? (
+                              <img
+                                src={normalizeUrl(g.icon_url)}
+                                alt=""
+                                className="size-12 object-contain"
+                              />
+                            ) : (
+                              <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-violet-500/5 border border-primary/20 shadow-inner">
+                                <BookOpen className="size-6 text-primary animate-pulse" />
+                              </div>
+                            )}
+                          </div>
+                          <Badge className="absolute top-2 right-2 h-5 rounded-full bg-primary/20 text-[9px] font-black text-primary px-1.5 border-0">
+                            {g.views >= 1000 ? `${(g.views / 1000).toFixed(1)}k` : g.views}
+                          </Badge>
+                        </div>
+                        <CardContent className="p-4 flex-1 flex flex-col justify-center">
+                          <h4 className="text-[13px] font-black tracking-normal leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 font-heading">
+                            {g.title}
+                          </h4>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+            </div>
+          </section>
+
+          {/* 3. Newest Updates */}
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="size-4 text-emerald-400" />
+                <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
+                  Новинки
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {recentLoading
+                ? [...Array(2)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full rounded-2xl bg-muted/40" />
+                  ))
+                : recentGuides.slice(0, 3).map((g) => (
+                    <motion.div
+                      key={g.key}
+                      whileTap={{ scale: 0.98 }}
+                      className="group cursor-pointer rounded-2xl border border-border/5 bg-muted/20 p-4 transition-all hover:bg-muted/30 hover:border-primary/10 hover:shadow-soft"
+                      onMouseEnter={() => prefetchGuide(g.key)}
+                      onTouchStart={() => prefetchGuide(g.key)}
+                      onClick={() => {
+                        haptic.light()
+                        onSelectGuide(g.key, g.title, g.icon_url)
+                      }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="size-12 shrink-0 rounded-xl bg-background flex items-center justify-center p-2 shadow-sm">
+                          {g.icon_url ? (
+                            <img
+                              src={normalizeUrl(g.icon_url)}
+                              alt=""
+                              className="size-8 object-contain"
+                            />
+                          ) : (
+                            <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/20 shadow-inner">
+                              <FileText className="size-4 text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[14px] font-black tracking-normal leading-snug line-clamp-1 group-hover:text-primary transition-colors font-heading">
+                            {g.title}
+                          </h4>
+                          <p className="mt-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+                            {g.updated_at && !Number.isNaN(new Date(g.updated_at).getTime())
+                              ? `Обновлено: ${new Date(g.updated_at).toLocaleDateString()}`
+                              : 'Недавно'}
+                          </p>
+                        </div>
+                        <ChevronRight className="size-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                      </div>
+                    </motion.div>
+                  ))}
+            </div>
+          </section>
         </div>
+
+        {/* Right Column (4 grid-spans) */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
+          {/* 5. Support Project Premium Banner - Moved here to look like a sidebar panel on desktop */}
+          <section className="flex flex-col">
+            <Card className="relative overflow-hidden rounded-[32px] border border-primary/20 bg-gradient-to-br from-primary/5 via-card/50 to-transparent p-6 shadow-glow hover:border-primary/30 transition-all duration-300">
+              <div className="absolute -right-8 -top-8 size-32 bg-primary/10 rounded-full blur-[40px] animate-pulse" />
+              <div className="absolute -left-12 -bottom-12 size-36 bg-violet-500/5 rounded-full blur-[50px]" />
+
+              <div className="relative z-10 flex flex-col gap-5">
+                <div className="flex items-center gap-3.5">
+                  <div className="size-11 rounded-[20px] bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shadow-inner shrink-0 animate-bounce">
+                    <BrandIcon name="patreon" size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-foreground font-heading">
+                      Поддержать проект
+                    </h4>
+                    <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider mt-0.5">
+                      Развитие BlackRose
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs font-medium text-muted-foreground/80 leading-relaxed">
+                  BlackRose разрабатывается и поддерживается сообществом. Ваша поддержка помогает
+                  нам оплачивать серверы и быстрее выпускать новые калькуляторы и гайды!
+                </p>
+
+                <div className="flex flex-col gap-2 mt-2">
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="w-full h-11 rounded-2xl bg-gradient-to-r from-primary to-violet-500 text-primary-foreground font-black text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-glow active:scale-95 border border-primary/20 font-heading cursor-pointer flex items-center justify-center gap-2"
+                    onClick={() => {
+                      haptic.medium()
+                      window.open('https://dalink.to/nihronick', '_blank')
+                    }}
+                  >
+                    <span>Поддержать проект</span>
+                  </motion.button>
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          {/* 4. Community Pulse (Latest Comments) */}
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="size-4 text-amber-400" />
+                <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
+                  Пульс сообщества
+                </h3>
+              </div>
+            </div>
+
+            <div className="rounded-[32px] border border-border/10 bg-muted/10 p-6 shadow-soft">
+              {commentsLoading ? (
+                <Skeleton className="h-32 w-full rounded-2xl bg-muted/40" />
+              ) : recentComments.length === 0 ? (
+                <p className="text-center py-4 text-xs font-medium text-muted-foreground/40 italic">
+                  Здесь пока тихо...
+                </p>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {recentComments.map((c) => (
+                    <div key={c.id} className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="size-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-black text-primary uppercase">
+                          {(c.first_name || 'U').charAt(0)}
+                        </div>
+                        <span className="text-[11px] font-black text-foreground/80">
+                          {c.first_name || 'Участник'}
+                        </span>
+                        <span className="text-[9px] font-medium text-muted-foreground/40">
+                          • {c.guide_title}
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium text-muted-foreground leading-relaxed line-clamp-2">
+                        "{c.text}"
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* 6. Categories List at the bottom */}
+      <section className="flex flex-col gap-4 mt-4">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="size-4 text-primary" />
+          <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
+            Категории
+          </h3>
+        </div>
+        <CategoryList categories={cats || []} onSelectCategory={onSelectCategory} />
       </section>
     </div>
   )

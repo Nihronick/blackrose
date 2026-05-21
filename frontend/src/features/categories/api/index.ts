@@ -7,9 +7,16 @@ export const categoriesApi = {
     TE.tryCatch(
       async () => {
         const payload = await apiFetch<Category[] | { categories?: Category[] }>('/api/categories')
-        if (Array.isArray(payload)) return payload as Category[]
-        if (Array.isArray(payload?.categories)) return payload.categories as Category[]
-        return []
+        const items = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.categories)
+            ? payload.categories
+            : []
+        return items.map((c: Category) => ({
+          ...c,
+          icon: c.icon || c.icon_url,
+          icon_url: c.icon_url || c.icon,
+        })) as Category[]
       },
       (err) => (err instanceof Error ? err : new Error(String(err)))
     ),

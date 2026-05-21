@@ -2,6 +2,7 @@ export interface Category {
   key: string
   title: string
   icon?: string
+  icon_url?: string
   count?: number
 }
 

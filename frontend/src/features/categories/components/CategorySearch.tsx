@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { haptic } from '@/lib/haptic'
-import { ChevronRight, Folder } from '@/lib/icons'
+import { ChevronRight, FileText, Folder, Search } from '@/lib/icons'
 import { isLanguageKey } from '@/lib/language'
 import { normalizeUrl } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -51,11 +51,29 @@ export const CategorySearch: FC<CategorySearchProps> = ({
   const getCatTitle = (key: string) => categories?.find((c) => c.key === key)?.title ?? key
 
   return (
-    <div className="grid grid-cols-1 gap-5 px-5 pb-32 pt-6">
+    <div className="grid grid-cols-1 gap-5 pt-6">
       {filteredResults.length === 0 ? (
-        <div className="py-20 text-center opacity-40">
-          <Folder className="mx-auto mb-4 size-16 opacity-20" />
-          <p className="text-lg font-bold">Ничего не найдено</p>
+        <div className="col-span-full py-10 w-full animate-in fade-in duration-300">
+          <Card className="glass-card relative overflow-hidden rounded-[32px] border border-border/10 bg-gradient-to-br from-primary/5 via-card/50 to-transparent p-8 text-center shadow-glow">
+            {/* Pulsing decoration lights */}
+            <div className="absolute -right-8 -top-8 size-32 bg-primary/10 rounded-full blur-[45px] animate-pulse" />
+            <div className="absolute -left-12 -bottom-12 size-36 bg-violet-500/5 rounded-full blur-[50px]" />
+
+            <div className="relative z-10 flex flex-col items-center gap-4">
+              <div className="flex size-16 items-center justify-center rounded-[24px] bg-primary/10 border border-primary/20 shadow-inner text-primary">
+                <Search className="size-8 text-primary animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-base font-black tracking-normal text-foreground font-heading">
+                  Ничего не найдено
+                </h4>
+                <p className="text-xs font-medium text-muted-foreground/80 max-w-sm mx-auto mt-2 leading-relaxed">
+                  Мы обыскали всю базу знаний, но не смогли найти совпадений для вашего запроса.
+                  Попробуйте ввести другие ключевые слова.
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
       ) : (
         filteredResults.map((item) => (
@@ -81,9 +99,7 @@ export const CategorySearch: FC<CategorySearchProps> = ({
                       }}
                     />
                   ) : (
-                    <motion.span layoutId={`guide-icon-${item.key}`} className="text-2xl">
-                      📄
-                    </motion.span>
+                    <FileText className="size-6 text-primary" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
