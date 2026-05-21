@@ -20,6 +20,7 @@ const TagResultsView = lazy(() =>
   import('@/views/TagResultsView').then((m) => ({ default: m.TagResultsView }))
 )
 const AdminView = lazy(() => import('@/views/AdminView').then((m) => ({ default: m.AdminView })))
+const RoadmapView = lazy(() => import('@/views/RoadmapView'))
 
 const ViewLoader = () => (
   <div className="flex h-full flex-col overflow-hidden px-5 pt-8">
@@ -90,6 +91,7 @@ export const AppRouter: FC = () => {
           path="/history"
           element={<HistoryView history={history} onSelectGuide={handleOpenGuide} />}
         />
+        <Route path="/roadmap" element={<RoadmapView onSelectGuide={handleOpenGuide} />} />
         <Route path="/admin" element={<AdminView onClose={() => push({ type: 'home' })} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

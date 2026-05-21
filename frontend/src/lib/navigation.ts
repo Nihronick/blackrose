@@ -14,6 +14,7 @@ export type Route =
   | { type: 'favorites' }
   | { type: 'history' }
   | { type: 'admin' }
+  | { type: 'roadmap' }
 
 export const useAppNavigation = () => {
   const navigate = useNavigate()
@@ -41,6 +42,9 @@ export const useAppNavigation = () => {
           break
         case 'admin':
           navigate('/admin')
+          break
+        case 'roadmap':
+          navigate('/roadmap')
           break
       }
     },

@@ -18,6 +18,7 @@ export {
   ChevronRight,
   Clock,
   Code,
+  Compass,
   Copy,
   Database,
   Download,

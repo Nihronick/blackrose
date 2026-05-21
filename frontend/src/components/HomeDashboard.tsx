@@ -105,41 +105,6 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
         </div>
       </section>
 
-      {/* 1.5. Featured Categories (Horizontal) */}
-      <section className="flex flex-col gap-4">
-        <div className="px-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-amber-400" />
-            <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70">
-              Категории
-            </h3>
-          </div>
-        </div>
-
-        <div className="flex gap-3 overflow-x-auto px-5 scrollbar-none pb-2">
-          {catsLoading
-            ? [...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-10 w-24 shrink-0 rounded-full bg-muted/40" />
-              ))
-            : (categoriesData?.categories || []).map((c: Category) => (
-                <motion.button
-                  key={c.key}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    haptic.light()
-                    onSelectCategory(c)
-                  }}
-                  className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-border/10 bg-muted/20 px-4 transition-all hover:bg-muted/30 hover:border-primary/20"
-                >
-                  <span className="text-sm">{c.icon || '📁'}</span>
-                  <span className="text-[11px] font-black uppercase tracking-wider text-foreground/80 whitespace-nowrap">
-                    {c.title}
-                  </span>
-                </motion.button>
-              ))}
-        </div>
-      </section>
-
       {/* 2. Popular Guides (Horizontal) */}
       <section className="flex flex-col gap-4">
         <div className="px-5 flex items-center justify-between">
@@ -298,42 +263,40 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
         </div>
       </section>
 
-      {/* 5. Layui Roadmap & Updates */}
-      <section className="flex flex-col gap-4">
-        <div className="px-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-primary animate-pulse" />
-            <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70">
-              Дорожная карта & Обновления
-            </h3>
-          </div>
-        </div>
+      {/* 5. Support Project Premium Banner */}
+      <section className="px-5 pb-6">
+        <div className="relative overflow-hidden rounded-[32px] border border-primary/20 bg-muted/10 p-6 shadow-glow transition-transform duration-300 hover:scale-[1.01]">
+          <div className="absolute -right-10 -top-10 size-32 bg-primary/10 rounded-full blur-[45px]" />
+          <div className="absolute -left-10 -bottom-10 size-32 bg-primary/5 rounded-full blur-[40px]" />
 
-        <div className="px-5">
-          <div className="rounded-[32px] border border-border/10 bg-muted/10 p-6 shadow-soft">
-            <layui-timeline>
-              <layui-timeline-item time="Май 2026" title="Версия 2.0.0 — Новая Эра">
-                <p className="text-xs text-muted-foreground mt-1">
-                  • Внедрение Layui Web Components для оптимизации взаимодействия на смартфонах и
-                  ПК.
-                  <br />• Оптимизация авторизации для безбарьерного гостевого входа и бесшовного
-                  Mini App опыта.
-                  <br />• 100% покрытие ключевых тестов производительности и стабильности.
+          <div className="relative z-10 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-2xl bg-primary/15 flex items-center justify-center text-lg shadow-soft">
+                ❤️
+              </div>
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
+                  Поддержать проект
+                </h4>
+                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                  Развитие BlackRose
                 </p>
-              </layui-timeline-item>
-              <layui-timeline-item time="Апрель 2026" title="Версия 1.5.0 — Интеграция Лаборатории">
-                <p className="text-xs text-muted-foreground mt-1">
-                  • Добавлен раздел Discord-лаборатории для симуляции сражений.
-                  <br />• Улучшена глубина кеширования и производительности запросов.
-                </p>
-              </layui-timeline-item>
-              <layui-timeline-item time="В разработке" title="Будущие обновления">
-                <p className="text-xs text-muted-foreground mt-1">
-                  • Интерактивные калькуляторы характеристик и симуляторы билдов с графиками в
-                  реальном времени.
-                </p>
-              </layui-timeline-item>
-            </layui-timeline>
+              </div>
+            </div>
+            <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+              BlackRose разрабатывается и поддерживается сообществом. Ваша поддержка помогает нам
+              оплачивать серверы и быстрее выпускать новые калькуляторы и гайды!
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              className="w-full h-11 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-glow active:scale-95"
+              onClick={() => {
+                haptic.medium()
+                window.open('https://dalink.to/nihronick', '_blank')
+              }}
+            >
+              Поддержать BlackRose
+            </motion.button>
           </div>
         </div>
       </section>

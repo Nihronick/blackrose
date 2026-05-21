@@ -5,6 +5,7 @@ import { useAppEnv } from '@/hooks/useAppEnv'
 import { useSheet } from '@/hooks/useSheet'
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton'
 import { haptic } from '@/lib/haptic'
+import { Compass } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
@@ -46,6 +47,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
     if (path === '/favorites') return 'Избранное'
     if (path === '/history') return 'История'
     if (path === '/admin') return 'Админ-панель'
+    if (path === '/roadmap') return 'Дорожная карта'
     if (path.startsWith('/category/')) {
       const id = path.split('/').pop()
       const cat = cats?.find((c) => c.key === id)
@@ -87,6 +89,18 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   onClick={() => setSearchOpen(true)}
                 >
                   <SearchIcon className="size-5 text-muted-foreground" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 rounded-2xl"
+                  onClick={() => {
+                    haptic.light()
+                    push({ type: 'roadmap' })
+                  }}
+                  title="Дорожная карта"
+                >
+                  <Compass className="size-5 text-muted-foreground transition-transform hover:rotate-12 duration-300" />
                 </Button>
                 {isAdmin ? (
                   <Button

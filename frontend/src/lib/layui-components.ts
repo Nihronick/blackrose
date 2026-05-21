@@ -3,7 +3,11 @@
  */
 
 class LayuiButton extends HTMLElement {
+  private _rendered = false
+
   connectedCallback() {
+    if (this._rendered) return
+    this._rendered = true
     const type = this.getAttribute('type') || 'default'
     const size = this.getAttribute('size') || 'md'
     const radius = this.hasAttribute('radius')
@@ -47,7 +51,11 @@ class LayuiButton extends HTMLElement {
 }
 
 class LayuiBadge extends HTMLElement {
+  private _rendered = false
+
   connectedCallback() {
+    if (this._rendered) return
+    this._rendered = true
     const color = this.getAttribute('color') || 'default'
     const rim = this.hasAttribute('rim')
 
@@ -80,7 +88,11 @@ class LayuiBadge extends HTMLElement {
 }
 
 class LayuiCard extends HTMLElement {
+  private _rendered = false
+
   connectedCallback() {
+    if (this._rendered) return
+    this._rendered = true
     const title = this.getAttribute('title') || ''
 
     const card = document.createElement('div')
@@ -150,7 +162,11 @@ class LayuiProgress extends HTMLElement {
 }
 
 class LayuiTimeline extends HTMLElement {
+  private _rendered = false
+
   connectedCallback() {
+    if (this._rendered) return
+    this._rendered = true
     const list = document.createElement('ul')
     list.className = 'layui-timeline'
 
@@ -166,7 +182,11 @@ class LayuiTimeline extends HTMLElement {
 }
 
 class LayuiTimelineItem extends HTMLElement {
+  private _rendered = false
+
   connectedCallback() {
+    if (this._rendered) return
+    this._rendered = true
     const time = this.getAttribute('time') || ''
     const title = this.getAttribute('title') || ''
 
