@@ -14,7 +14,7 @@ from functions.discord_import import discord_import_guide
 from services.cache.redis_cache import cache_service
 from core.db import init_db, close_pool
 from core.middleware import setup_cors, add_security_headers, setup_honeybadger
-from api import admin, public, bot
+from api import admin, public, bot, webhook_ingest
 from services.notifications.bot_service import bot_service
 from core.http import http_client
 
@@ -83,6 +83,7 @@ app.middleware("http")(add_security_headers)
 # Routers
 app.include_router(public.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(webhook_ingest.router, prefix="/api")
 app.include_router(bot.router)
 
 # Static files for frontend (Production)

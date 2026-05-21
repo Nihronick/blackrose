@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     WEBHOOK_URL: str = ""
     WEBHOOK_SECRET: str = ""
     WEBHOOK_PATH: str = "/bot/webhook"
+    INGEST_TOKEN: str = "dev_ingest_token"
 
     # Error Reporting
     HONEYBADGER_API_KEY: str = ""

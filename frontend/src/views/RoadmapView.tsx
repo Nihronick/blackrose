@@ -1,3 +1,4 @@
+import { BrandIcon } from '@/components/ui/BrandIcon'
 import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import { Sparkles } from '@/lib/icons'
@@ -44,7 +45,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
                 <strong> Manrope + Montserrat</strong> с идеальным отображением кириллицы на всех
                 экранах.
                 <br />• 🧭 <strong>Удобная навигация</strong>: Проектная карта перенесена в
-                отдельный удобный раздел в шапке Mini App и браузера.
+                отдельный раздел в шапке Mini App и браузера.
                 <br />• 🧼 <strong>Чистота дашборда</strong>: Убрали лишнее дублирование категорий и
                 блоков для более сфокусированного и эстетичного интерфейса.
                 <br />• 🐛 <strong>Стабильность W3C</strong>: Исправлен баг двойной отрисовки
@@ -93,8 +94,8 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
           <div className="absolute -right-10 -top-10 size-32 rounded-full bg-primary/25 blur-[55px]" />
 
           <div className="relative z-10 flex flex-col items-center text-center gap-4">
-            <div className="size-16 rounded-[24px] bg-primary/10 flex items-center justify-center text-3xl shadow-soft">
-              ❤️
+            <div className="size-16 rounded-[24px] bg-primary/10 flex items-center justify-center shadow-soft">
+              <BrandIcon name="patreon" size={32} className="text-primary animate-pulse" />
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="text-base font-black tracking-tight text-foreground uppercase">
@@ -106,15 +107,61 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
               </p>
             </div>
             <Button
-              className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest transition-all duration-300 hover:shadow-glow hover:scale-[1.02] active:scale-95"
+              className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest transition-all duration-300 hover:shadow-glow hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
               onClick={() => {
                 haptic.medium()
                 window.open('https://dalink.to/nihronick', '_blank')
               }}
             >
+              <BrandIcon name="qiwi" size={16} />
               Поддержать BlackRose
             </Button>
-            <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+
+            {/* Social Brand Badges from thesvg */}
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
+                className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
+                onClick={() => {
+                  haptic.light()
+                  window.open('https://t.me/blackrose', '_blank')
+                }}
+              >
+                <BrandIcon name="telegram" size={20} />
+              </button>
+              <button
+                type="button"
+                className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
+                onClick={() => {
+                  haptic.light()
+                  window.open('https://discord.gg/blackrose', '_blank')
+                }}
+              >
+                <BrandIcon name="discord" size={20} />
+              </button>
+              <button
+                type="button"
+                className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
+                onClick={() => {
+                  haptic.light()
+                  window.open('https://github.com/Nihronick/blackrose', '_blank')
+                }}
+              >
+                <BrandIcon name="github" size={20} />
+              </button>
+              <button
+                type="button"
+                className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
+                onClick={() => {
+                  haptic.light()
+                  window.open('https://boosty.to/blackrose', '_blank')
+                }}
+              >
+                <BrandIcon name="boosty" size={20} />
+              </button>
+            </div>
+
+            <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-2">
               BlackRose v3.3 • 2026
             </p>
           </div>

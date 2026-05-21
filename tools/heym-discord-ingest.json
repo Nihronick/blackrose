@@ -1,0 +1,66 @@
+{
+  "name": "BlackRose - Discord Guide Ingestion",
+  "description": "Automatically parses new guide entries from official Discord channels, structures the content using an LLM, and triggers our FastAPI secure webhook endpoint.",
+  "nodes": [
+    {
+      "id": "discord-event-trigger",
+      "type": "discord.onMessage",
+      "name": "Discord Message Listener",
+      "position": { "x": 100, "y": 200 },
+      "parameters": {
+        "channelId": "123456789012345678",
+        "filter": "starts_with:!guide"
+      }
+    },
+    {
+      "id": "llm-formatter",
+      "type": "openai.chat",
+      "name": "LLM Guide Formatter",
+      "position": { "x": 350, "y": 200 },
+      "parameters": {
+        "model": "gpt-4o",
+        "systemPrompt": "You are a professional game database parser for the BlackRose knowledge base. Given a Discord message representing an game guide (e.g. for Slayer Legend), extract the following information and output it strictly in JSON format:\n{\n  \"guide_key\": \"kebab-case-unique-key\",\n  \"category_key\": \"kebab-case-category\",\n  \"title\": \"Guide Title\",\n  \"icon_url\": \"Optional icon URL if found, otherwise null\",\n  \"text\": \"Fully formatted markdown guide text. Optimize list structures and bold styling. Keep standard game asset URLs and item images exactly as provided in the original text to avoid breaking assets!\"\n}",
+        "userPrompt": "Message content:\n{{discord-event-trigger.content}}\nEmbed image/icon:\n{{discord-event-trigger.embeds[0].thumbnail.url}}"
+      }
+    },
+    {
+      "id": "json-parser",
+      "type": "utility.parseJson",
+      "name": "JSON Parser",
+      "position": { "x": 600, "y": 200 },
+      "parameters": {
+        "input": "{{llm-formatter.text}}"
+      }
+    },
+    {
+      "id": "webhook-sender",
+      "type": "http.request",
+      "name": "FastAPI Webhook Trigger",
+      "position": { "x": 850, "y": 200 },
+      "parameters": {
+        "method": "POST",
+        "url": "https://spaces.huggingface.co/spaces/Nihronick/blackrose-backend/api/webhook/ingest",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Ingest-Token": "{{env.INGEST_TOKEN}}"
+        },
+        "body": {
+          "guide_key": "{{json-parser.guide_key}}",
+          "category_key": "{{json-parser.category_key}}",
+          "title": "{{json-parser.title}}",
+          "icon_url": "{{json-parser.icon_url}}",
+          "text": "{{json-parser.text}}",
+          "photo": [],
+          "video": [],
+          "document": [],
+          "sort_order": 0
+        }
+      }
+    }
+  ],
+  "connections": [
+    { "from": "discord-event-trigger", "to": "llm-formatter" },
+    { "from": "llm-formatter", "to": "json-parser" },
+    { "from": "json-parser", "to": "webhook-sender" }
+  ]
+}
