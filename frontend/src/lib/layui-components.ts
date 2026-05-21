@@ -10,20 +10,30 @@ class LayuiButton extends HTMLElement {
 
     const btn = document.createElement('button')
     btn.className = `layui-btn ${
-      type === 'primary' ? 'layui-btn-normal' :
-      type === 'warm' ? 'layui-btn-warm' :
-      type === 'danger' ? 'layui-btn-danger' :
-      type === 'disabled' ? 'layui-btn-disabled' :
-      type === 'outline' ? 'layui-btn-primary' : 'layui-btn-primary'
+      type === 'primary'
+        ? 'layui-btn-normal'
+        : type === 'warm'
+          ? 'layui-btn-warm'
+          : type === 'danger'
+            ? 'layui-btn-danger'
+            : type === 'disabled'
+              ? 'layui-btn-disabled'
+              : type === 'outline'
+                ? 'layui-btn-primary'
+                : 'layui-btn-primary'
     } ${
-      size === 'lg' ? 'layui-btn-lg' :
-      size === 'sm' ? 'layui-btn-sm' :
-      size === 'xs' ? 'layui-btn-xs' : ''
+      size === 'lg'
+        ? 'layui-btn-lg'
+        : size === 'sm'
+          ? 'layui-btn-sm'
+          : size === 'xs'
+            ? 'layui-btn-xs'
+            : ''
     } ${radius ? 'layui-btn-radius' : ''}`
-    
+
     const customClass = this.getAttribute('class')
     if (customClass) btn.className += ` ${customClass}`
-    
+
     const style = this.getAttribute('style')
     if (style) btn.setAttribute('style', style)
 
@@ -43,12 +53,19 @@ class LayuiBadge extends HTMLElement {
 
     const span = document.createElement('span')
     span.className = `${rim ? 'layui-badge-rim' : 'layui-badge'} ${
-      color === 'green' ? 'layui-bg-green' :
-      color === 'blue' ? 'layui-bg-blue' :
-      color === 'orange' ? 'layui-bg-orange' :
-      color === 'red' ? 'layui-bg-red' :
-      color === 'cyan' ? 'layui-bg-cyan' :
-      color === 'black' ? 'layui-bg-black' : ''
+      color === 'green'
+        ? 'layui-bg-green'
+        : color === 'blue'
+          ? 'layui-bg-blue'
+          : color === 'orange'
+            ? 'layui-bg-orange'
+            : color === 'red'
+              ? 'layui-bg-red'
+              : color === 'cyan'
+                ? 'layui-bg-cyan'
+                : color === 'black'
+                  ? 'layui-bg-black'
+                  : ''
     }`
 
     const customClass = this.getAttribute('class')
@@ -114,10 +131,15 @@ class LayuiProgress extends HTMLElement {
 
     const bar = document.createElement('div')
     bar.className = `layui-progress-bar ${
-      color === 'red' ? 'layui-bg-red' :
-      color === 'orange' ? 'layui-bg-orange' :
-      color === 'green' ? 'layui-bg-green' :
-      color === 'cyan' ? 'layui-bg-cyan' : 'layui-bg-blue'
+      color === 'red'
+        ? 'layui-bg-red'
+        : color === 'orange'
+          ? 'layui-bg-orange'
+          : color === 'green'
+            ? 'layui-bg-green'
+            : color === 'cyan'
+              ? 'layui-bg-cyan'
+              : 'layui-bg-blue'
     }`
     bar.style.width = percent
     bar.setAttribute('lay-percent', percent)

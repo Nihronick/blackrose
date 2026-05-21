@@ -24,6 +24,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git config --global credential.helper store
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
           echo "https://user:$HF_TOKEN@huggingface.co" > ~/.git-credentials
           
           # Create deployment directory
@@ -35,8 +37,7 @@ jobs:
           cp backend/Dockerfile.hf .deploy/Dockerfile
           
           cd .deploy
-          git init
-          git checkout -b main
+          git init -b main
           git add .
           git commit -m "Deploy from GitHub Actions (Commit: ${{ github.sha }})"
           

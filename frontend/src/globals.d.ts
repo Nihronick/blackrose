@@ -1,3 +1,4 @@
+import type React from 'react'
 import type { HTMLAttributes } from 'react'
 
 declare global {
@@ -5,6 +6,12 @@ declare global {
     Capacitor?: {
       getPlatform: () => string
       isNativePlatform: () => boolean
+    }
+    Telegram?: {
+      WebApp?: {
+        initData: string
+        close: () => void
+      }
     }
   }
 
@@ -15,8 +22,8 @@ declare global {
         size?: 'lg' | 'md' | 'sm' | 'xs'
         radius?: boolean | string
         class?: string
-        style?: any
-        onClick?: any
+        style?: React.CSSProperties
+        onClick?: React.MouseEventHandler<HTMLElement>
       }
       'layui-badge': HTMLAttributes<HTMLElement> & {
         color?: 'green' | 'blue' | 'orange' | 'red' | 'cyan' | 'black' | 'default'

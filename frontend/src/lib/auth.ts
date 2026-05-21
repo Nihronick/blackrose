@@ -14,10 +14,7 @@ export interface User {
 export type AuthMode = 'telegram' | 'web' | 'guest'
 
 export function getMode(): AuthMode {
-  if (
-    typeof window !== 'undefined' &&
-    (window as any).Telegram?.WebApp?.initData
-  ) {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
     return 'telegram'
   }
   return getStoredToken() ? 'web' : 'guest'
@@ -65,9 +62,9 @@ export function clearStoredToken(): void {
 
 export function logout(): void {
   clearStoredToken()
-  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
     // В TMA выход = закрытие приложения
-    (window as any).Telegram.WebApp.close()
+    window.Telegram.WebApp.close()
   } else {
     // В вебе просто рефреш для сброса стейта
     window.location.href = '/'
@@ -84,14 +81,14 @@ export function getStoredUser(): O.Option<User> {
 }
 
 export function getTelegramInitData(): string {
-  if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
-    return (window as any).Telegram.WebApp.initData
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
+    return window.Telegram.WebApp.initData
   }
   return ''
 }
 
 export function hasTelegramWebApp(): boolean {
-  return typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp
+  return typeof window !== 'undefined' && !!window.Telegram?.WebApp
 }
 
 export function isTelegram(): boolean {
