@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   <title>BlackRose — Slayer Legend Guides</title>
   <meta name="description" content="База знаний и гайды по игре Slayer Legend. Калькуляторы навыков, снаряжения и интерактивные справочники." />
   
@@ -18,7 +18,7 @@
   <meta property="og:title" content="BlackRose — Slayer Legend Guides" />
   <meta property="og:description" content="Полное собрание гайдов и инструментов для игроков Slayer Legend." />
   <meta property="og:image" content="https://nihronick.github.io/blackrose/og-image.png" />
-  <meta property="og:url" content="https://nihronick.github.io/blackrose/" />
+  <meta property="og:url" content="https://blackrosesl.me/" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="BlackRose — Slayer Legend Guides" />
@@ -34,10 +34,23 @@
   <!-- Layui UI Library -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.8/css/layui.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.8/layui.js"></script>
-  <script type="module" crossorigin src="/assets/index-BJ5ei1Cn.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BZ-vHjJO.css">
+  <script type="module" crossorigin src="/assets/index-DEetF6KK.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BjAM4QjG.css">
 </head>
 <body>
+  <!-- GitHub Pages SPA redirect decoder (works with 404.html) -->
+  <script>
+    (function(l) {
+      if (l.search[1] === '/') {
+        var decoded = l.search.slice(1).split('&').map(function(s) {
+          return s.replace(/~and~/g, '&')
+        }).join('?');
+        window.history.replaceState(null, null,
+          l.pathname.slice(0, -1) + decoded + l.hash
+        );
+      }
+    }(window.location))
+  </script>
   <div id="root"></div>
 </body>
 </html>
