@@ -41,7 +41,7 @@ export const TagResultsView: FC<TagResultsViewProps> = ({ tag, onSelectGuide }) 
   )
 
   return (
-    <div className="view-scroll flex-1 overflow-y-auto px-5 py-6">
+    <div className="view-scroll flex-1 overflow-y-auto container-padding py-4 sm:py-6">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
           <Hash className="size-5" />
@@ -124,5 +124,3 @@ export const TagResultsView: FC<TagResultsViewProps> = ({ tag, onSelectGuide }) 
     </div>
   )
 }
-
-export default TagResultsView

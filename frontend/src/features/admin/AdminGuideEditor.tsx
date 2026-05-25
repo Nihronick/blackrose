@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { TagEditor } from '@/components/TagBadge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'

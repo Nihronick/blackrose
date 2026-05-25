@@ -15,5 +15,3 @@ export const App: FC = () => {
     </ErrorBoundary>
   )
 }
-
-export default App

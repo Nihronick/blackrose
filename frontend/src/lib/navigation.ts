@@ -16,6 +16,8 @@ export type Route =
   | { type: 'history' }
   | { type: 'admin' }
   | { type: 'roadmap' }
+  | { type: 'profile' }
+  | { type: 'search' }
 
 export const useAppNavigation = () => {
   const navigate = useNavigate()
@@ -49,6 +51,12 @@ export const useAppNavigation = () => {
           break
         case 'roadmap':
           navigate('/roadmap')
+          break
+        case 'profile':
+          navigate('/profile')
+          break
+        case 'search':
+          navigate('/search')
           break
       }
     },

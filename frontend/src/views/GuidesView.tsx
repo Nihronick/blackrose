@@ -56,14 +56,16 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
   const { pullY, refreshing } = usePullToRefresh(scrollRef, handleRefresh)
 
   return (
-    <div className="view-scroll flex-1 overflow-y-auto" ref={scrollRef}>
+    <div className="view-scroll flex-1 overflow-y-auto relative z-0" ref={scrollRef}>
+      <div className="absolute top-0 left-0 w-full h-80 mesh-bg opacity-30 pointer-events-none -z-10" />
       <PtrIndicator pullY={pullY} refreshing={refreshing} />
 
-      <div className="grid grid-cols-1 gap-4 px-5 py-6 pb-32">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 container-padding py-4 sm:py-6 pb-28 sm:pb-32 stagger-in relative z-10">
         {items.length === 0 ? (
-          <div className="flex h-[60vh] flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
-            <div className="flex size-20 items-center justify-center rounded-[28px] bg-muted mb-4 ring-1 ring-border/50">
-              <BookOpen className="size-10 text-muted-foreground/40" />
+          <div className="flex h-[60vh] flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500 relative">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
+            <div className="flex size-20 items-center justify-center rounded-[28px] bg-primary/10 mb-4 ring-1 ring-primary/20 shadow-inner relative z-10">
+              <BookOpen className="size-10 text-primary" />
             </div>
             <h3 className="text-lg font-bold text-foreground">В этой категории пусто</h3>
             <p className="max-w-[200px] text-xs font-medium text-muted-foreground/60 mt-1">
@@ -74,7 +76,7 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
           items.map((item) => (
             <Card
               key={item.key}
-              className="group cursor-pointer border-border/50 bg-card transition-all hover:bg-accent active:scale-[0.98]"
+              className="group cursor-pointer glass-card card-elevated rounded-3xl active:scale-[0.98] hover:border-primary/30"
               onClick={() => {
                 haptic.light()
                 onSelectGuide(item.key, item.title, item.icon)
@@ -82,7 +84,7 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
             >
               <CardContent className="flex flex-col gap-3 p-4">
                 <div className="flex items-start gap-4">
-                  <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-muted transition-colors group-hover:bg-background">
+                  <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 shadow-inner transition-colors group-hover:bg-primary/20">
                     {item.icon ? (
                       <motion.img
                         layoutId={`guide-icon-${item.key}`}
@@ -100,7 +102,7 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
                     )}
                   </div>
                   <div className="flex flex-1 flex-col min-w-0">
-                    <h3 className="truncate text-base font-bold tracking-tight text-foreground leading-tight">
+                    <h3 className="truncate text-base font-black tracking-normal text-foreground/90 font-heading leading-tight">
                       {item.title}
                     </h3>
                     {item.text && (
@@ -144,5 +146,3 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
     </div>
   )
 }
-
-export default GuidesView

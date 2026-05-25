@@ -57,11 +57,12 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
       className="flex h-full flex-col bg-background animate-in fade-in duration-300"
       data-testid="categories-view"
     >
-      <header className="px-5 pt-6 pb-4">
+      <div className="absolute top-0 left-0 w-full h-80 mesh-bg opacity-30 pointer-events-none -z-10" />
+      <header className="container-padding pt-4 sm:pt-6 pb-3 sm:pb-4 relative z-10">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
           <Input
-            className="h-12 w-full rounded-2xl bg-muted/50 pl-11 pr-12 border-none ring-1 ring-border/5 focus-visible:ring-primary/20 transition-all font-medium"
+            className="h-11 sm:h-12 w-full rounded-2xl bg-muted/30 pl-11 pr-12 border border-border/10 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/20 transition-all font-medium text-sm"
             placeholder="Поиск категорий..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -85,14 +86,15 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
         <PtrIndicator pullY={pullY} refreshing={refreshing} />
-        <div ref={scrollRef} className="view-scroll flex-1 overflow-y-auto px-5 py-4 pb-32">
+        <div
+          ref={scrollRef}
+          className="view-scroll flex-1 overflow-y-auto container-padding py-3 sm:py-4 pb-28 sm:pb-32"
+        >
           <ErrorBoundary>
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <LayoutGrid className="size-4 text-primary" />
-                <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
-                  Категории ({filteredCategories.length})
-                </h3>
+              <div className="section-label font-heading">
+                <LayoutGrid className="size-3.5 text-primary" />
+                <span>Категории ({filteredCategories.length})</span>
               </div>
               <CategoryList
                 categories={filteredCategories}
@@ -144,5 +146,3 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
     </div>
   )
 }
-
-export default CategoriesView

@@ -85,22 +85,22 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
     <div className="flex flex-col gap-8 pb-4 stagger-in">
       {/* 1. Hero Welcome */}
       <section className="pt-2">
-        <div className="relative overflow-hidden rounded-[40px] mesh-bg p-8 border border-primary/20 shadow-2xl shadow-primary/10 transition-transform duration-500 hover:scale-[1.01]">
+        <div className="relative overflow-hidden rounded-3xl sm:rounded-[40px] mesh-bg p-5 sm:p-8 border border-primary/15 shadow-2xl shadow-primary/10 transition-transform duration-500 hover:scale-[1.005] ambient-glow texture-noise">
           {/* Animated background pulse */}
           <div className="absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
           <div className="absolute -left-10 -bottom-10 size-32 rounded-full bg-primary/10 blur-[60px]" />
 
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="relative z-10 flex flex-col gap-4 py-2">
+            <div className="flex items-center gap-2">
               <div className="size-2 rounded-full bg-primary animate-ping" />
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
                 Live Updates
               </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-normal text-foreground mb-3 leading-snug font-heading">
-              Привет,{' '}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground font-heading flex flex-wrap gap-x-2 items-baseline">
+              <span>Привет,</span>
               <span
-                className="bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent"
+                className="bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent pb-2"
                 style={{
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -110,7 +110,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
                 {userName}!
               </span>
             </h1>
-            <p className="text-[15px] font-medium text-muted-foreground/80 leading-snug max-w-md sm:max-w-xl">
+            <p className="text-sm sm:text-[15px] font-medium text-muted-foreground/80 leading-relaxed max-w-md sm:max-w-xl">
               {recentGuides.length > 0
                 ? `У нас появилось ${recentGuides.length} новых гайдов. Пора стать сильнее!`
                 : 'Сегодня отличный день, чтобы изучить что-то новое.'}
@@ -125,13 +125,9 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
         <div className="lg:col-span-8 flex flex-col gap-8">
           {/* 2. Popular Guides (Horizontal) */}
           <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="size-4 text-primary" />
-                <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
-                  Популярное
-                </h3>
-              </div>
+            <div className="section-label font-heading">
+              <TrendingUp className="size-3.5 text-primary" />
+              <span>Популярное</span>
             </div>
 
             <div className="flex gap-4 overflow-x-auto scrollbar-premium pb-4 no-scrollbar lg:scrollbar-premium">
@@ -147,7 +143,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
                       key={g.key}
                       whileTap={{ scale: 0.96 }}
                       whileHover={{ y: -6 }}
-                      className="w-[200px] sm:w-[240px] min-w-[200px] sm:min-w-[240px] flex-shrink-0 cursor-pointer group"
+                      className="w-[180px] sm:w-[220px] lg:w-[240px] min-w-[180px] sm:min-w-[220px] lg:min-w-[240px] flex-shrink-0 cursor-pointer group"
                       onMouseEnter={() => prefetchGuide(g.key)}
                       onTouchStart={() => prefetchGuide(g.key)}
                       onClick={() => {
@@ -156,7 +152,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
                       }}
                     >
                       <Card className="h-full border-border/10 glass-card rounded-[24px] overflow-hidden flex flex-col transition-all duration-300 hover:shadow-glow hover:border-primary/20">
-                        <div className="relative h-28 bg-gradient-to-br from-primary/10 via-muted/5 to-transparent flex items-center justify-center p-4">
+                        <div className="relative h-24 sm:h-28 bg-gradient-to-br from-primary/10 via-muted/5 to-transparent flex items-center justify-center p-4">
                           <div className="size-16 rounded-2xl bg-background shadow-lg flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-300">
                             {g.icon_url ? (
                               <img
@@ -187,13 +183,9 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
 
           {/* 3. Newest Updates */}
           <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="size-4 text-emerald-400" />
-                <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
-                  Новинки
-                </h3>
-              </div>
+            <div className="section-label font-heading">
+              <Clock className="size-3.5 text-emerald-400" />
+              <span>Новинки</span>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -249,7 +241,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
         <div className="lg:col-span-4 flex flex-col gap-8">
           {/* 5. Support Project Premium Banner - Moved here to look like a sidebar panel on desktop */}
           <section className="flex flex-col">
-            <Card className="relative overflow-hidden rounded-[32px] border border-primary/20 bg-gradient-to-br from-primary/5 via-card/50 to-transparent p-6 shadow-glow hover:border-primary/30 transition-all duration-300">
+            <Card className="card-elevated relative overflow-hidden rounded-3xl border border-primary/15 p-5 sm:p-6 hover:border-primary/25">
               <div className="absolute -right-8 -top-8 size-32 bg-primary/10 rounded-full blur-[40px] animate-pulse" />
               <div className="absolute -left-12 -bottom-12 size-36 bg-violet-500/5 rounded-full blur-[50px]" />
 
@@ -292,16 +284,12 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
 
           {/* 4. Community Pulse (Latest Comments) */}
           <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="size-4 text-amber-400" />
-                <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
-                  Пульс сообщества
-                </h3>
-              </div>
+            <div className="section-label font-heading">
+              <MessageCircle className="size-3.5 text-amber-400" />
+              <span>Пульс сообщества</span>
             </div>
 
-            <div className="rounded-[32px] border border-border/10 bg-muted/10 p-6 shadow-soft">
+            <div className="card-elevated rounded-3xl p-4 sm:p-6">
               {commentsLoading ? (
                 <Skeleton className="h-32 w-full rounded-2xl bg-muted/40" />
               ) : recentComments.length === 0 ? (
@@ -337,11 +325,9 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
 
       {/* 6. Categories List at the bottom */}
       <section className="flex flex-col gap-4 mt-4">
-        <div className="flex items-center gap-2">
-          <LayoutGrid className="size-4 text-primary" />
-          <h3 className="text-xs font-black uppercase tracking-[0.15em] text-foreground/70 font-heading">
-            Категории
-          </h3>
+        <div className="section-label font-heading">
+          <LayoutGrid className="size-3.5 text-primary" />
+          <span>Категории</span>
         </div>
         <CategoryList categories={cats || []} onSelectCategory={onSelectCategory} />
       </section>

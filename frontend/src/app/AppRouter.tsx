@@ -7,8 +7,10 @@ import { type FC, Suspense, lazy } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
 // Lazy views
-const HomeView = lazy(() => import('@/views/HomeView'))
-const CategoriesView = lazy(() => import('@/views/CategoriesView'))
+const HomeView = lazy(() => import('@/views/HomeView').then((m) => ({ default: m.HomeView })))
+const CategoriesView = lazy(() =>
+  import('@/views/CategoriesView').then((m) => ({ default: m.CategoriesView }))
+)
 const FavoritesView = lazy(() =>
   import('@/views/FavoritesView').then((m) => ({ default: m.FavoritesView }))
 )
@@ -21,10 +23,16 @@ const TagResultsView = lazy(() =>
   import('@/views/TagResultsView').then((m) => ({ default: m.TagResultsView }))
 )
 const AdminView = lazy(() => import('@/views/AdminView').then((m) => ({ default: m.AdminView })))
-const RoadmapView = lazy(() => import('@/views/RoadmapView'))
+const RoadmapView = lazy(() =>
+  import('@/views/RoadmapView').then((m) => ({ default: m.RoadmapView }))
+)
+const ProfileView = lazy(() =>
+  import('@/views/ProfileView').then((m) => ({ default: m.ProfileView }))
+)
+const SearchView = lazy(() => import('@/views/SearchView').then((m) => ({ default: m.SearchView })))
 
 const ViewLoader = () => (
-  <div className="flex h-full flex-col overflow-hidden px-5 pt-8">
+  <div className="flex h-full flex-col overflow-hidden container-padding pt-8">
     <div className="mb-10 h-10 w-2/3 rounded-2xl skeleton" />
     <div className="grid grid-cols-1 gap-5">
       {[1, 2, 3, 4].map((i) => (
@@ -100,6 +108,8 @@ export const AppRouter: FC = () => {
           element={<HistoryView history={history} onSelectGuide={handleOpenGuide} />}
         />
         <Route path="/roadmap" element={<RoadmapView onSelectGuide={handleOpenGuide} />} />
+        <Route path="/profile" element={<ProfileView />} />
+        <Route path="/search" element={<SearchView />} />
         <Route path="/admin" element={<AdminView onClose={() => push({ type: 'home' })} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -115,7 +125,7 @@ interface RouteWrapperProps {
 const InnerGuidesView = ({
   onSelectGuide,
   cats,
-}: { onSelectGuide: RouteWrapperProps['onSelectGuide']; cats: Category[] }) => {
+}: { onSelectGuide: RouteWrapperProps['onSelectGuide']; cats: any[] }) => {
   const { id } = useParams()
   const cat = cats?.find((c) => c.key === id)
   const category = { key: id!, title: cat?.title || 'Гайды', icon: cat?.icon }

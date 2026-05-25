@@ -12,6 +12,7 @@ export interface AppState {
   theme: Theme
   language: AppLanguage
   searchOpen: boolean
+  hasOnboarded: boolean
 
   setSearchOpen: (open: boolean) => void
   setAccessMsg: (accessMsg: string | null) => void
@@ -21,6 +22,7 @@ export interface AppState {
   setAccessDenied: (msg: string) => void
   setTheme: (theme: Theme) => void
   setLanguage: (language: AppLanguage) => void
+  completeOnboarding: () => void
 }
 
 const VALID_THEMES: Theme[] = ['light', 'dark', 'system']
@@ -52,6 +54,7 @@ export const useAppStore = create<AppState>((set) => ({
   theme: getStoredTheme(),
   language: getStoredLanguage(),
   searchOpen: false,
+  hasOnboarded: localStorage.getItem('br_onboarded') === 'true',
 
   setSearchOpen: (searchOpen) => set({ searchOpen }),
   setAccessMsg: (accessMsg) => set({ accessMsg }),
@@ -81,5 +84,9 @@ export const useAppStore = create<AppState>((set) => ({
   setLanguage: (language) => {
     localStorage.setItem('br_lang', language)
     set({ language })
+  },
+  completeOnboarding: () => {
+    localStorage.setItem('br_onboarded', 'true')
+    set({ hasOnboarded: true })
   },
 }))

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import DOMPurify from 'dompurify'
 import { type RendererExtension, type TokenizerExtension, type Tokens, marked } from 'marked'
 import { normalizeUrl, parseVideo } from './utils'

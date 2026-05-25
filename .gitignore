@@ -55,3 +55,9 @@ backend/trash/
 backend/experiments/
 sanity-gravity/
 skills/
+.stitch/
+ag.yaml
+docs_structure.txt
+PRODUCTION_VALIDATION.md
+tools/
+e2e/

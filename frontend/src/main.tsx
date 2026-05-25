@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter } from 'react-router-dom'
-import App from './App'
+import { BrowserRouter } from 'react-router-dom'
+import { App } from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppEnvProvider } from './hooks/useAppEnv'
 import { initTheme } from './lib/theme'
@@ -48,7 +48,8 @@ import('./lib/capacitor')
     if (isNative()) {
       setStatusBarDark()
       initDeepLinks((path: string) => {
-        window.location.hash = path
+        window.history.pushState(null, '', path)
+        window.dispatchEvent(new PopStateEvent('popstate'))
       })
     }
   })
@@ -60,11 +61,11 @@ if (rootElement) {
     <StrictMode>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <HashRouter>
+          <BrowserRouter>
             <AppEnvProvider>
               <App />
             </AppEnvProvider>
-          </HashRouter>
+          </BrowserRouter>
         </QueryClientProvider>
       </ErrorBoundary>
     </StrictMode>

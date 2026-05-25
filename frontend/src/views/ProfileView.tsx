@@ -1,0 +1,217 @@
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { Card, CardContent } from '@/components/ui/card'
+import { useFavorites } from '@/hooks/useFavorites'
+import { useHistory } from '@/hooks/useHistory'
+import { getStoredUser } from '@/lib/auth'
+import { haptic } from '@/lib/haptic'
+import {
+  BookOpen,
+  ChevronRight,
+  LogOut,
+  Moon,
+  Settings,
+  Shield,
+  Star,
+  Sun,
+  User as UserIcon,
+} from '@/lib/icons'
+import { useAppStore } from '@/store'
+import * as O from 'fp-ts/Option'
+import { pipe } from 'fp-ts/function'
+import { motion } from 'framer-motion'
+import type { FC } from 'react'
+
+export const ProfileView: FC = () => {
+  const { history } = useHistory()
+  const { favorites } = useFavorites()
+  const { theme, setTheme, isAdmin, setIsAdmin } = useAppStore()
+
+  const user = pipe(
+    getStoredUser(),
+    O.getOrElse(
+      () =>
+        ({
+          id: 0,
+          first_name: 'Слеер',
+          last_name: '',
+          username: '',
+          photo_url: '',
+        }) as any
+    )
+  )
+
+  const stats = [
+    { label: 'Прочитано', value: history.length, icon: BookOpen, color: 'text-primary' },
+    { label: 'В закладках', value: favorites.length, icon: Star, color: 'text-amber-400' },
+  ]
+
+  const badges = [
+    { id: 1, title: 'Новичок', desc: 'Первые шаги', icon: '🌱', active: true },
+    { id: 2, title: 'Исследователь', desc: '5 гайдов', icon: '🔍', active: history.length >= 5 },
+    { id: 3, title: 'Коллекционер', desc: '3 закладки', icon: '📚', active: favorites.length >= 3 },
+  ]
+
+  return (
+    <div className="flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-500 pb-8 stagger-in">
+      {/* 1. Header with Avatar */}
+      <section className="pt-4 container-padding">
+        <div className="relative overflow-hidden rounded-[32px] mesh-bg p-6 border border-primary/15 shadow-2xl shadow-primary/10 ambient-glow texture-noise flex flex-col items-center text-center">
+          <div className="absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
+
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="relative mb-4">
+              <div className="size-24 rounded-full bg-background border-4 border-background shadow-xl overflow-hidden flex items-center justify-center p-1">
+                <div className="size-full rounded-full bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center border border-primary/20">
+                  {user.photo_url ? (
+                    <img
+                      src={user.photo_url}
+                      alt=""
+                      className="size-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <UserIcon className="size-10 text-primary" />
+                  )}
+                </div>
+              </div>
+              {isAdmin && (
+                <div className="absolute -bottom-2 -right-2 size-8 rounded-full bg-rose-500 text-white flex items-center justify-center border-4 border-background shadow-lg">
+                  <Shield className="size-4" />
+                </div>
+              )}
+            </div>
+
+            <h1 className="text-2xl font-black tracking-tight text-foreground font-heading">
+              {user.first_name} {user.last_name}
+            </h1>
+            {user.username && (
+              <p className="text-xs font-medium text-muted-foreground/60 mt-1">@{user.username}</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Stats Grid */}
+      <section className="container-padding">
+        <div className="grid grid-cols-2 gap-4">
+          {stats.map((stat, i) => {
+            const Icon = stat.icon
+            return (
+              <Card key={i} className="card-elevated rounded-[24px] border border-border/10">
+                <CardContent className="p-5 flex flex-col items-center text-center gap-2">
+                  <div
+                    className={`size-10 rounded-2xl bg-muted/50 flex items-center justify-center shadow-inner ${stat.color}`}
+                  >
+                    <Icon className="size-5" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black font-heading">{stat.value}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                      {stat.label}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* 3. Achievements */}
+      <section className="flex flex-col gap-4 mt-2">
+        <div className="container-padding section-label font-heading">
+          <Star className="size-3.5 text-amber-400" />
+          <span>Достижения</span>
+        </div>
+
+        <div className="flex gap-4 overflow-x-auto scrollbar-premium px-5 sm:px-8 pb-4 no-scrollbar">
+          {badges.map((badge) => (
+            <div
+              key={badge.id}
+              className={`w-[140px] flex-shrink-0 flex flex-col items-center text-center gap-3 p-4 rounded-[24px] border transition-all ${
+                badge.active
+                  ? 'bg-muted/30 border-primary/20 shadow-glow'
+                  : 'bg-muted/10 border-border/5 opacity-50 grayscale'
+              }`}
+            >
+              <div className="text-4xl filter drop-shadow-md">{badge.icon}</div>
+              <div>
+                <h4 className="text-[13px] font-black font-heading leading-tight">{badge.title}</h4>
+                <p className="text-[10px] text-muted-foreground/70 mt-1">{badge.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. Settings */}
+      <section className="container-padding flex flex-col gap-4 mt-2">
+        <div className="section-label font-heading">
+          <Settings className="size-3.5 text-muted-foreground" />
+          <span>Настройки</span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              haptic.light()
+              setTheme(theme === 'light' ? 'dark' : 'light')
+            }}
+            className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/5 hover:bg-muted/30 transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              <div className="size-10 rounded-xl bg-background flex items-center justify-center shadow-sm">
+                {theme === 'light' ? (
+                  <Sun className="size-5 text-amber-500" />
+                ) : (
+                  <Moon className="size-5 text-primary" />
+                )}
+              </div>
+              <div className="text-left">
+                <h4 className="text-sm font-black font-heading">Тема оформления</h4>
+                <p className="text-[11px] text-muted-foreground/60 font-medium">
+                  {theme === 'light'
+                    ? 'Светлая тема'
+                    : theme === 'dark'
+                      ? 'Темная тема'
+                      : 'Системная тема'}
+                </p>
+              </div>
+            </div>
+            <div className="w-12 h-6 rounded-full bg-muted/50 relative border border-border/10">
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 size-5 rounded-full bg-primary shadow-md transition-all duration-300 ${theme === 'dark' ? 'left-[26px]' : 'left-1'}`}
+              />
+            </div>
+          </motion.button>
+
+          {isAdmin && (
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                haptic.medium()
+                setIsAdmin(false)
+              }}
+              className="flex items-center justify-between p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-colors mt-2"
+            >
+              <div className="flex items-center gap-4">
+                <div className="size-10 rounded-xl bg-background flex items-center justify-center shadow-sm">
+                  <LogOut className="size-5 text-rose-500" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-sm font-black font-heading text-rose-500">
+                    Выйти из админки
+                  </h4>
+                  <p className="text-[11px] text-rose-500/60 font-medium">
+                    Снять права администратора
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="size-5 text-rose-500/40" />
+            </motion.button>
+          )}
+        </div>
+      </section>
+    </div>
+  )
+}

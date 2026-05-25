@@ -11,14 +11,15 @@ interface RoadmapViewProps {
 
 export const RoadmapView: FC<RoadmapViewProps> = () => {
   return (
-    <div className="view-scroll flex-1 overflow-y-auto px-5 py-6">
-      <div className="flex flex-col gap-8 pb-32 max-w-md mx-auto stagger-in">
+    <div className="view-scroll flex-1 overflow-y-auto container-padding py-4 sm:py-6 relative z-0">
+      <div className="absolute top-0 left-0 w-full h-80 mesh-bg opacity-30 pointer-events-none -z-10" />
+      <div className="flex flex-col gap-6 sm:gap-8 pb-28 sm:pb-32 max-w-md mx-auto stagger-in relative z-10">
         {/* Intro Card */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-[32px] border border-border/10 bg-muted/10 p-6 shadow-soft"
+          className="card-elevated relative overflow-hidden rounded-3xl p-5 sm:p-6"
         >
           <div className="absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-[40px]" />
           <h2 className="text-lg font-black tracking-tight text-foreground flex items-center gap-2 mb-2">
@@ -36,7 +37,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="rounded-[32px] border border-border/10 bg-card p-6 shadow-soft relative overflow-hidden"
+          className="card-elevated rounded-3xl p-5 sm:p-6 relative overflow-hidden"
         >
           <div className="relative flex flex-col gap-8 pl-8">
             {/* Vertical timeline line */}
@@ -249,5 +250,3 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
     </div>
   )
 }
-
-export default RoadmapView

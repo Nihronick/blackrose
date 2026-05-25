@@ -70,7 +70,10 @@ export const initPushNotifications = async (onToken: (t: string) => void) => {
 
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       const url = action.notification.data?.url
-      if (url) window.location.hash = url
+      if (url) {
+        window.history.pushState(null, '', url)
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      }
     })
   } catch (e) {
     if (import.meta.env.VITE_HONEYBADGER_API_KEY) {

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 /**
  * Simple back button handler for web navigation.
- * Previously integrated with Telegram BackButton API — now uses standard browser history.
+ * Uses standard browser history with BrowserRouter (clean URLs).
  */
 export const useTelegramBackButton = () => {
   const navigate = useNavigate()
@@ -14,12 +14,12 @@ export const useTelegramBackButton = () => {
       return
     }
 
-    const currentPath = window.location.hash
+    const currentPath = window.location.pathname
     window.history.back()
 
-    // If hash didn't change after back(), there's no history — go home
+    // If pathname didn't change after back(), there's no history — go home
     setTimeout(() => {
-      if (window.location.hash === currentPath) {
+      if (window.location.pathname === currentPath) {
         navigate('/', { replace: true })
       }
     }, 150)

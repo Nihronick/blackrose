@@ -137,5 +137,3 @@ export const FabButton: FC<FabButtonProps> = ({ visible, label, onBack, onHoldCo
     </div>
   )
 }
-
-export default FabButton

@@ -50,5 +50,3 @@ export const FavoriteButton: FC<FavoriteButtonProps> = ({
     </Button>
   )
 }
-
-export default FavoriteButton

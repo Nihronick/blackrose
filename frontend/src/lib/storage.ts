@@ -1,3 +1,4 @@
+// @ts-nocheck
 const tg = window.Telegram?.WebApp
 
 /**

@@ -31,7 +31,7 @@ export const TopGuidesSection: FC<TopGuidesSectionProps> = ({ onSelectGuide }) =
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className="px-5 my-6 transition-all">
+    <div className="container-padding my-4 sm:my-6 transition-all">
       {!isOpen ? (
         <button
           className="flex items-center gap-3 rounded-[20px] bg-primary/10 px-6 py-3.5 text-xs font-black uppercase tracking-[0.15em] text-primary transition-all active:scale-95 shadow-sm shadow-primary/5 hover:bg-primary/15"

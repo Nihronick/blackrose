@@ -6,7 +6,7 @@ import { useAppEnv } from '@/hooks/useAppEnv'
 import { useSheet } from '@/hooks/useSheet'
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton'
 import { haptic } from '@/lib/haptic'
-import { Compass, History, Home, Star } from '@/lib/icons'
+import { Compass, History, Home, Star, User } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
@@ -18,8 +18,8 @@ const AdminLoginModal = lazy(() =>
   import('@/components/AdminLoginModal').then((m) => ({ default: m.AdminLoginModal }))
 )
 const QuickNav = lazy(() => import('@/components/QuickNav').then((m) => ({ default: m.QuickNav })))
-const GlobalSearch = lazy(() =>
-  import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch }))
+const OnboardingView = lazy(() =>
+  import('@/views/OnboardingView').then((m) => ({ default: m.OnboardingView }))
 )
 
 interface AppLayoutProps {
@@ -33,7 +33,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   const { push } = useAppNavigation()
   const { isTMA } = useAppEnv()
   const { data: categoriesData } = useCategories()
-  const { isAdmin, cats, theme, setTheme, setIsAdmin, setSearchOpen, setCats } = useAppStore()
+  const { isAdmin, cats, theme, setTheme, setIsAdmin, setCats, hasOnboarded } = useAppStore()
   const { handleBack } = useTelegramBackButton()
   const sheet = useSheet<AppSheet>()
   const [logoFailed, setLogoFailed] = useState(false)
@@ -63,6 +63,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
     }
     if (path.startsWith('/tag/')) return '#' + path.split('/').pop()
     if (path.startsWith('/guide/')) return 'Гайд'
+    if (path === '/profile') return 'Профиль'
     return 'BlackRose'
   }, [location.pathname, cats])
 
@@ -72,7 +73,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         {!isHome && location.pathname !== '/admin' ? (
           <Header title={headerTitle} onBack={handleBack} />
         ) : (
-          <header className="sticky top-0 z-40 flex h-16 items-center px-4 glass shrink-0">
+          <header className="sticky top-0 z-40 flex h-16 items-center container-padding glass border-b border-border/5 shrink-0">
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex size-10 items-center justify-center overflow-hidden rounded-2xl border border-border/10 bg-background shadow-lg shadow-primary/20">
@@ -108,7 +109,11 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   variant="ghost"
                   size="icon"
                   className="size-10 rounded-2xl"
-                  onClick={() => setSearchOpen(true)}
+                  onClick={() => {
+                    haptic.light()
+                    push({ type: 'search' })
+                  }}
+                  aria-label="Поиск"
                 >
                   <SearchIcon className="size-5 text-muted-foreground" />
                 </Button>
@@ -148,7 +153,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
         {/* Main Content Area */}
         <main
-          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history'].includes(location.pathname) ? 'pb-28' : ''}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history', '/profile'].includes(location.pathname) ? 'pb-28' : ''}`}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -165,8 +170,8 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         </main>
 
         {/* Floating Premium Bottom Navigation Tab Bar */}
-        {['/', '/favorites', '/history'].includes(location.pathname) && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 py-2.5 rounded-[28px] shadow-2xl shrink-0">
+        {['/', '/favorites', '/history', '/profile'].includes(location.pathname) && (
+          <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 pt-2.5 pb-3 rounded-[28px] shadow-2xl shrink-0 select-none">
             <div className="flex w-full items-center justify-around">
               {[
                 { path: '/', label: 'Главная', icon: Home, route: { type: 'home' } as const },
@@ -182,6 +187,12 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   icon: History,
                   route: { type: 'history' } as const,
                 },
+                {
+                  path: '/profile',
+                  label: 'Профиль',
+                  icon: User,
+                  route: { type: 'profile' } as const,
+                },
               ].map((tab) => {
                 const Icon = tab.icon
                 const isActive = location.pathname === tab.path
@@ -189,7 +200,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   <button
                     key={tab.path}
                     type="button"
-                    className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all duration-300 relative ${
+                    className={`flex flex-col items-center gap-1.5 py-1 px-3 rounded-2xl transition-all duration-300 relative ${
                       isActive
                         ? 'text-primary'
                         : 'text-muted-foreground/60 hover:text-foreground/80'
@@ -209,7 +220,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                     <Icon
                       className={`size-5 transition-transform duration-300 ${isActive ? 'scale-110 stroke-[2.5px]' : 'scale-100'}`}
                     />
-                    <span className="text-[10px] font-black uppercase tracking-wider font-heading leading-none">
+                    <span className="text-[10px] font-black uppercase tracking-wider font-heading leading-normal">
                       {tab.label}
                     </span>
                   </button>
@@ -264,10 +275,6 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
             />
           </Suspense>
         )}
-
-        <Suspense fallback={null}>
-          <GlobalSearch />
-        </Suspense>
       </div>
     </MotionConfig>
   )

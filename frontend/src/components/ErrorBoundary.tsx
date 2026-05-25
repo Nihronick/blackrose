@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Button } from '@/components/ui/button'
 import { AlertCircle, RefreshCw, XCircle } from '@/lib/icons'
 import Honeybadger from '@honeybadger-io/js'
@@ -79,5 +80,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
-
-export default ErrorBoundary

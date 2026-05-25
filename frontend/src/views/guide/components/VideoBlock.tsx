@@ -148,7 +148,7 @@ export const VideoBlock: FC<{ url: string; alt?: string }> = ({ url, alt }) => {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 whileHover={{ scale: 1.1 }}
-                whileActive={{ scale: 0.9 }}
+                whileTap={{ scale: 0.9 }}
                 className="flex size-20 items-center justify-center rounded-full bg-primary/90 text-white shadow-2xl shadow-primary/30 backdrop-blur-sm pointer-events-auto"
               >
                 {isPlaying ? (

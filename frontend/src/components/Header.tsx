@@ -16,12 +16,12 @@ export const Header: FC<HeaderProps> = ({ title, onBack }) => {
   const showBackButton = onBack && !isTMA
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-xl transition-all">
+    <header className="sticky top-0 z-50 flex h-14 items-center gap-3 border-b border-border/5 bg-background/80 container-padding backdrop-blur-xl transition-all">
       {showBackButton && (
         <Button
           variant="ghost"
           size="icon"
-          className="size-9 h-auto shrink-0 transition-transform active:scale-90"
+          className="size-10 shrink-0 rounded-2xl transition-all active:scale-90 hover:bg-muted/50"
           onClick={() => {
             haptic.light()
             onBack()
@@ -32,7 +32,7 @@ export const Header: FC<HeaderProps> = ({ title, onBack }) => {
         </Button>
       )}
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-lg font-bold tracking-tight text-foreground transition-all">
+        <h1 className="truncate text-base font-black tracking-tight text-foreground transition-all font-heading">
           {title}
         </h1>
       </div>
