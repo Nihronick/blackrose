@@ -8,7 +8,6 @@ from models.schemas import CategoryIn, GuideIn, ImportMediaIn, LabImportIn, Reor
 from services.guides.service import guide_service, category_service
 from services.cache.redis_cache import cache_service
 from services.storage.hf_storage import storage_service
-from services.notifications.telegram_service import telegram_service
 from services.translation.service import translation_service
 from services.common.members import member_service
 from services.common.media import media_service
@@ -64,15 +63,6 @@ async def admin_upsert_guide(key: str, body: GuideIn, user=Depends(require_admin
     )
     await cache_service.invalidate_all()
     await cache_service.invalidate_guide(key)
-
-    if is_new:
-        subscriber_ids = await category_service.get_subscriber_ids(body.category_key)
-        if subscriber_ids:
-            asyncio.create_task(
-                telegram_service.notify_new_guide(
-                    key, body.title, body.category_key, subscriber_ids
-                )
-            )
 
     return {"ok": True, "created": is_new}
 
