@@ -98,18 +98,17 @@ export function isTelegram(): boolean {
 
 export function getAuthHeaders() {
   const headers: Record<string, string> = {}
-  const initData = getTelegramInitData()
 
-  // Приоритет 1: Мы в Telegram Mini App
-  if (initData) {
-    headers['X-Telegram-Init-Data'] = initData
-    return headers
-  }
-
-  // Приоритет 2: Мы в обычном браузере с JWT
+  // Priority 1: Bearer JWT for stored web/admin sessions
   const token = getStoredToken()
   if (token) {
     headers.Authorization = `Bearer ${token}`
+  }
+
+  // Priority 2: Supplementary Telegram Init-Data if launched inside TMA
+  const initData = getTelegramInitData()
+  if (initData) {
+    headers['X-Telegram-Init-Data'] = initData
   }
 
   return headers

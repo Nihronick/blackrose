@@ -9,7 +9,7 @@ import type { CategoryGuidesResponse } from '@/lib/types'
 import { normalizeUrl } from '@/lib/utils'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { type FC, type SyntheticEvent, useMemo, useRef } from 'react'
+import { type FC, type SyntheticEvent, useMemo, useRef, useState } from 'react'
 
 interface GuideItem {
   key: string
@@ -37,6 +37,7 @@ interface GuidesViewProps {
 export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
   const categoryKey = category?.key
+  const [sortBy, setSortBy] = useState<'default' | 'views' | 'title'>('default')
 
   const { data: categoryData, refetch } = useSuspenseQuery({
     queryKey: ['category-guides', categoryKey],
@@ -44,10 +45,21 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
     staleTime: 60_000,
   })
 
-  const items = useMemo(
+  const rawItems = useMemo(
     () => (Array.isArray(categoryData?.items) ? categoryData.items : []),
     [categoryData]
   )
+
+  const items = useMemo(() => {
+    const list = [...rawItems]
+    if (sortBy === 'views') {
+      return list.sort((a, b) => (b.views || 0) - (a.views || 0))
+    }
+    if (sortBy === 'title') {
+      return list.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+    }
+    return list
+  }, [rawItems, sortBy])
 
   const handleRefresh = async () => {
     await refetch()
@@ -60,7 +72,36 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
       <div className="absolute top-0 left-0 w-full h-80 mesh-bg opacity-30 pointer-events-none -z-10" />
       <PtrIndicator pullY={pullY} refreshing={refreshing} />
 
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 container-padding py-4 sm:py-6 pb-28 sm:pb-32 stagger-in relative z-10">
+      <div className="container-padding pt-4 pb-2 flex items-center justify-between">
+        <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground/60">
+          Всего гайдов: {items.length}
+        </span>
+        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-2xl border border-border/20">
+          {[
+            { key: 'default', label: 'Поряд.' },
+            { key: 'views', label: '🔥 Популярные' },
+            { key: 'title', label: '🔤 А-Я' },
+          ].map((mode) => (
+            <button
+              key={mode.key}
+              type="button"
+              className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all ${
+                sortBy === mode.key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => {
+                haptic.light()
+                setSortBy(mode.key as 'default' | 'views' | 'title')
+              }}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 container-padding py-2 pb-28 sm:pb-32 stagger-in relative z-10">
         {items.length === 0 ? (
           <div className="flex h-[60vh] flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500 relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />

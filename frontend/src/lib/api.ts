@@ -75,7 +75,22 @@ async function apiRaw<T>(
     options.body = isFormData ? (body as BodyInit) : JSON.stringify(body)
   }
 
-  const res = await fetch(`${BASE}${endpoint}`, options)
+  // Warmup timer for HF Free Spaces cold starts (>2.5s)
+  const warmupTimer = setTimeout(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('hf_space_warmup', { detail: { warming: true } }))
+    }
+  }, 2500)
+
+  let res: Response
+  try {
+    res = await fetch(`${BASE}${endpoint}`, options)
+  } finally {
+    clearTimeout(warmupTimer)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('hf_space_warmup', { detail: { warming: false } }))
+    }
+  }
 
   // Silent refresh flow on 401.
   if (res.status === 401 && !hasRetried && !endpoint.includes('/api/auth/refresh')) {

@@ -16,8 +16,9 @@ export const GuideContent: FC<GuideContentProps> = ({ html, onImageClick, onCybe
 
     const handleImageClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.tagName === 'IMG' && target.classList.contains('guide-img')) {
-        onImageClick((target as HTMLImageElement).src)
+      if (target.tagName === 'IMG') {
+        const src = (target as HTMLImageElement).src
+        if (src) onImageClick(src)
       }
     }
 

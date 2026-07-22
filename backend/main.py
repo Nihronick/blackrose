@@ -14,8 +14,7 @@ from functions.discord_import import discord_import_guide
 from services.cache.redis_cache import cache_service
 from core.db import init_db, close_pool
 from core.middleware import setup_cors, add_security_headers, setup_honeybadger
-from api import admin, public, bot, webhook_ingest
-from services.notifications.bot_service import bot_service
+from api import admin, public, webhook_ingest
 from core.http import http_client
 
 
@@ -30,31 +29,6 @@ async def lifespan(app: FastAPI):
     # DB Init
     await init_db()
 
-    # Bot Init
-    # bot_service.init_bot()
-    if bot_service.bot:
-        webhook_base = settings.WEBHOOK_URL or (f"https://{os.getenv('SPACE_HOST')}" if os.getenv("SPACE_HOST") else "")
-        if webhook_base:
-            full_url = f"{webhook_base.rstrip('/')}{settings.WEBHOOK_PATH}"
-            logger.info(f"Setting webhook: {full_url}")
-            # Retry webhook setup 3 times
-            for attempt in range(1, 4):
-                try:
-                    await bot_service.bot.set_webhook(
-                        url=full_url,
-                        secret_token=settings.WEBHOOK_SECRET or None,
-                        drop_pending_updates=True,
-                        request_timeout=60.0
-                    )
-                    logger.info(f"Bot webhook set successfully on attempt {attempt}.")
-                    break
-                except Exception as e:
-                    if attempt == 3:
-                        logger.error("Failed to set bot webhook after 3 attempts.", error=str(e))
-                    else:
-                        logger.warning(f"Webhook setup attempt {attempt} failed, retrying in 5s...", error=str(e))
-                        await asyncio.sleep(5)
-
     # Seeding
     await seed_initial_admin()
 
@@ -62,7 +36,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down system...")
-    await bot_service.close()
     await cache_service.close()
     await close_pool()
     await http_client.close()
@@ -84,7 +57,6 @@ app.middleware("http")(add_security_headers)
 app.include_router(public.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(webhook_ingest.router, prefix="/api")
-app.include_router(bot.router)
 
 # Static files for frontend (Production)
 static_dir = os.path.join(os.path.dirname(__file__), "static")

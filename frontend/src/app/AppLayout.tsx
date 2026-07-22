@@ -37,6 +37,16 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   const { handleBack } = useTelegramBackButton()
   const sheet = useSheet<AppSheet>()
   const [logoFailed, setLogoFailed] = useState(false)
+  const [warmingUp, setWarmingUp] = useState(false)
+
+  useEffect(() => {
+    const handleWarmup = (e: Event) => {
+      const customEv = e as CustomEvent<{ warming: boolean }>
+      setWarmingUp(!!customEv.detail?.warming)
+    }
+    window.addEventListener('hf_space_warmup', handleWarmup)
+    return () => window.removeEventListener('hf_space_warmup', handleWarmup)
+  }, [])
 
   useEffect(() => {
     if (categoriesData && Array.isArray(categoriesData)) {
@@ -70,6 +80,13 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   return (
     <MotionConfig reducedMotion="user">
       <div className="app-shell flex h-[var(--tg-viewport-stable-height,100dvh)] w-full max-w-[1200px] mx-auto md:border-x md:border-border/10 md:shadow-2xl flex-col overflow-hidden bg-background text-foreground relative">
+        {warmingUp && (
+          <div className="bg-primary/20 border-b border-primary/30 px-4 py-2 text-center text-xs font-bold text-primary animate-pulse flex items-center justify-center gap-2 shrink-0 z-50">
+            <div className="adm2-spinner adm2-spinner-sm" />
+            <span>☕ Сервер просыпается (бесплатный тариф HF), загрузка завершится через пару секунд...</span>
+          </div>
+        )}
+
         {!isHome && location.pathname !== '/admin' ? (
           <Header title={headerTitle} onBack={handleBack} />
         ) : (

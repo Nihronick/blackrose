@@ -52,10 +52,12 @@ Frontend will be available at `http://localhost:5173`.
 
 ## Deployment
 
-Deployment scripts are centralized in `tools/`:
+Deployment is fully automated via **GitHub Actions** upon pushing to `main`:
 
-- `powershell -File tools\deploy-backend.ps1` - deploy backend to HF Spaces
-- `powershell -File tools\deploy-frontend.ps1` - build and deploy frontend to GitHub Pages
+- **Backend:** Pushes to `main` update Hugging Face Spaces (`.github/workflows/deploy-backend.yml`).
+- **Frontend:** Pushes to `main` build and deploy to GitHub Pages (`.github/workflows/deploy-frontend.yml`).
+
+For detailed deployment parameters and secrets configuration, see `docs/DEPLOY.md`.
 
 ## Core stack
 

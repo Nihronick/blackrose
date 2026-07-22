@@ -94,7 +94,7 @@ def verify_telegram_login_widget(data: dict) -> dict | None:
 
 
 def jwt_encode(payload: dict, *, expires_in: int = 900, token_type: str = "access") -> str:
-    secret = (settings.JWT_SECRET or settings.BOT_TOKEN)
+    secret = settings.JWT_SECRET or "blackrose_jwt_secret"
     now = datetime.now(timezone.utc)
     full_payload = {
         **payload,
@@ -110,7 +110,7 @@ def jwt_refresh_encode(payload: dict, *, expires_in: int = 60 * 60 * 24 * 7) -> 
 
 def jwt_decode(token: str) -> dict | None:
     try:
-        secret = (settings.JWT_SECRET or settings.BOT_TOKEN)
+        secret = settings.JWT_SECRET or "blackrose_jwt_secret"
         return jwt.decode(token, secret, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
         logger.debug("JWT token expired")

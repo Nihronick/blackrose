@@ -4,7 +4,6 @@
 COMPOSE_DEV = docker-compose
 
 BACKEND_EXEC = $(COMPOSE_DEV) exec backend
-FRONTEND_EXEC = $(COMPOSE_DEV) exec frontend
 
 .PHONY: help up down build restart logs test lint format migrate seed clean check-env
 
@@ -40,7 +39,7 @@ test-backend: ## Запустить тесты бэкенда через pytest
 	$(BACKEND_EXEC) pytest tests -v
 
 test-e2e: ## Запустить E2E тесты через Playwright
-	$(FRONTEND_EXEC) npm run test:e2e
+	cd frontend && npm run test:e2e
 
 lint: ## Проверить код линтером ruff
 	$(BACKEND_EXEC) ruff check .
@@ -65,8 +64,8 @@ db-shell: ## Войти в консоль postgres
 shell-backend: ## Войти в терминал бэкенда
 	$(BACKEND_EXEC) zsh
 
-shell-frontend: ## Войти в терминал фронтенда
-	$(FRONTEND_EXEC) bash
+shell-frontend: ## Войти в папку фронтенда
+	cd frontend && sh
 
 clean: ## Удалить временные файлы, кэши и __pycache__
 	find . -type d -name "__pycache__" -exec rm -rf {} +

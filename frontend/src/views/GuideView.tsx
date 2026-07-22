@@ -13,6 +13,7 @@ import type { Guide as GuideType } from '@/lib/types'
 
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { PtrIndicator } from '@/components/PtrIndicator'
+import { TableOfContents } from '@/components/TableOfContents'
 import { TagsList } from '@/components/TagBadge'
 import { GuideContent } from '@/features/guide/components/GuideContent'
 import { useGuideLogic } from '@/features/guide/hooks/useGuideLogic'
@@ -130,6 +131,7 @@ export const GuideView: FC<GuideViewProps> = ({
             className="glass-card rounded-[32px] p-5 sm:p-8 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[60px] pointer-events-none" />
+            <TableOfContents text={guide.text || guide.content || ''} />
             <GuideContent
               html={formattedText}
               onImageClick={setLightbox}

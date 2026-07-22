@@ -296,6 +296,53 @@ export const GuideEditor: FC<GuideEditorProps> = ({ guide, categories, onSave, o
   const setE = (f: string) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((p) => ({ ...p, [f]: e.target.value }))
 
+  const [hasDraft, setHasDraft] = useState(false)
+  const draftKey = `br_guide_draft_${form.key || 'new'}`
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey)
+      if (raw) {
+        const d = JSON.parse(raw)
+        if (d && d.form && d.form.text && d.form.text !== form.text) {
+          setHasDraft(true)
+        }
+      }
+    } catch {}
+  }, [])
+
+  // Autosave to localStorage every 3 seconds
+  useEffect(() => {
+    if (!form.text && !form.title) return
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ form, tags, updatedAt: Date.now() }))
+      } catch {}
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [form, tags, draftKey])
+
+  const restoreDraft = () => {
+    try {
+      const raw = localStorage.getItem(draftKey)
+      if (raw) {
+        const d = JSON.parse(raw)
+        if (d.form) setForm(d.form)
+        if (d.tags) setTags(d.tags)
+        setHasDraft(false)
+        haptic.success?.()
+      }
+    } catch {}
+  }
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(draftKey)
+      setHasDraft(false)
+    } catch {}
+  }
+
   const handleDelete = async () => {
     if (
       !window.confirm(
@@ -306,8 +353,9 @@ export const GuideEditor: FC<GuideEditorProps> = ({ guide, categories, onSave, o
     setSaving(true)
     try {
       await apiDelete(`/api/admin/guide/${form.key}`)
+      discardDraft()
       haptic.success?.()
-      onSave() // Close and refresh
+      onSave()
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       setErr(err.message)
@@ -336,6 +384,7 @@ export const GuideEditor: FC<GuideEditorProps> = ({ guide, categories, onSave, o
         sort_order: Number(form.sort_order),
       })
       await apiSetGuideTags(form.key, tags).catch(() => {})
+      discardDraft()
       haptic.success?.()
       onSave()
     } catch (e) {
@@ -394,6 +443,23 @@ export const GuideEditor: FC<GuideEditorProps> = ({ guide, categories, onSave, o
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 pb-32 no-scrollbar">
+        {hasDraft && (
+          <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-foreground text-xs font-bold flex items-center justify-between animate-in zoom-in-95">
+            <div className="flex items-center gap-2">
+              <History className="size-4 text-primary" />
+              <span>Обнаружен несохраненный черновик</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="default" className="h-8 rounded-xl text-[11px] font-bold" onClick={restoreDraft}>
+                Восстановить
+              </Button>
+              <Button size="sm" variant="ghost" className="h-8 rounded-xl text-[11px]" onClick={discardDraft}>
+                Сбросить
+              </Button>
+            </div>
+          </div>
+        )}
+
         {err && (
           <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-sm font-bold flex items-center gap-2 animate-in zoom-in-95">
             <Info className="size-4" />

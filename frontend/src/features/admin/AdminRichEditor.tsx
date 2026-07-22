@@ -1,5 +1,6 @@
-import { Button } from '@/components/ui/button'
-import { Edit3, Eye, ImageIcon, Sparkles } from '@/lib/icons'
+import { apiUpload } from '@/lib/api'
+import { haptic } from '@/lib/haptic'
+import { Columns, Edit3, Eye, ImageIcon, Sparkles } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import type { ChangeEvent, FC } from 'react'
 import type React from 'react'
@@ -14,7 +15,6 @@ function normalizeIcons(text: string): string {
 
 function renderMd(text: string | null | undefined): string {
   if (!text || typeof text !== 'string') return ''
-  // Ultra-simple fallback renderer if server fails
   try {
     return text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -48,12 +48,12 @@ function renderMd(text: string | null | undefined): string {
       )
       .replace(
         /{{(\w+)}}/g,
-        '<span class="inline-flex items-center justify-center p-1 bg-muted rounded">🖼</span>'
+        '<span class="inline-flex items-center justify-center p-1 bg-muted rounded font-bold text-xs">🖼 $1</span>'
       )
       .replace(
         /!\[(.*?)\]\((.*?)\)/g,
         (_, alt, url) =>
-          `<div class="my-4 border border-border/20 rounded-xl overflow-hidden bg-muted/20"><div class="p-2 text-[10px] bg-muted/50 font-bold uppercase tracking-wider text-muted-foreground">Медиа: ${alt || 'без названия'}</div><div class="p-4 flex justify-center text-2xl">🖼️</div></div>`
+          `<div class="my-4 border border-border/20 rounded-xl overflow-hidden bg-muted/20"><div class="p-2 text-[10px] bg-muted/50 font-bold uppercase tracking-wider text-muted-foreground">Медиа: ${alt || 'картинка'}</div><div class="p-2 flex justify-center"><img src="${url}" class="max-h-60 rounded object-contain" onError="this.src=''"/></div></div>`
       )
       .replace(/\n/g, '<br>')
   } catch (e) {
@@ -77,8 +77,9 @@ export const RichEditor: FC<RichEditorProps> = ({
 }) => {
   const [showSheet, setShowSheet] = useState(false)
   const [showMediaSheet, setShowMediaSheet] = useState(false)
-  const [preview, setPreview] = useState(false)
+  const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview'>('edit')
   const [liveHtml, setLiveHtml] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [rendering, setRendering] = useState(false)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const renderTimer = useRef<NodeJS.Timeout | null>(null)
@@ -86,7 +87,7 @@ export const RichEditor: FC<RichEditorProps> = ({
   const wordCount = useMemo(() => (value || '').trim().split(/\s+/).filter(Boolean).length, [value])
 
   useEffect(() => {
-    if (!preview) return
+    if (viewMode === 'edit') return
     if (renderTimer.current) clearTimeout(renderTimer.current)
     if (!value || !value.trim()) {
       setLiveHtml('')
@@ -109,29 +110,19 @@ export const RichEditor: FC<RichEditorProps> = ({
           const data = await res.json()
           setLiveHtml(data.html || '')
         } else {
-          try {
-            const safeVal = value || ''
-            setLiveHtml(renderMd(safeVal))
-          } catch (e) {
-            console.error('RichEditor render effect error:', e)
-          }
+          setLiveHtml(renderMd(value || ''))
         }
       } catch {
-        try {
-          const safeVal = value || ''
-          setLiveHtml(renderMd(safeVal))
-        } catch (e) {
-          console.error('RichEditor render effect error:', e)
-        }
+        setLiveHtml(renderMd(value || ''))
       } finally {
         setRendering(false)
       }
-    }, 400)
+    }, 300)
 
     return () => {
       if (renderTimer.current) clearTimeout(renderTimer.current)
     }
-  }, [preview, value])
+  }, [viewMode, value])
 
   const insertIcon = useCallback(
     (key: string) => {
@@ -179,6 +170,48 @@ export const RichEditor: FC<RichEditorProps> = ({
     [value, onChange]
   )
 
+  const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
+    const files = e.dataTransfer?.files
+    if (!files || !files.length) return
+    const file = files[0]
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return
+    e.preventDefault()
+    setUploading(true)
+    try {
+      const res = await apiUpload(file, 'guides')
+      insertMedia((res as { url: string }).url, file.type.startsWith('video/') ? 'video' : 'image')
+      haptic.success?.()
+    } catch (err) {
+      alert('Ошибка загрузки: ' + (err as Error).message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) {
+          e.preventDefault()
+          setUploading(true)
+          try {
+            const res = await apiUpload(file, 'guides')
+            insertMedia((res as { url: string }).url, 'image')
+            haptic.success?.()
+          } catch (err) {
+            alert('Ошибка загрузки из буфера: ' + (err as Error).message)
+          } finally {
+            setUploading(false)
+          }
+          break
+        }
+      }
+    }
+  }
+
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
       const raw = e.target.value
@@ -194,26 +227,6 @@ export const RichEditor: FC<RichEditorProps> = ({
     [onChange]
   )
 
-  const handlePreviewToggle = useCallback((value: boolean) => {
-    setPreview(value)
-  }, [])
-
-  const handleShowSheet = useCallback(() => {
-    setShowSheet(true)
-  }, [])
-
-  const handleCloseSheet = useCallback(() => {
-    setShowSheet(false)
-  }, [])
-
-  const handleShowMedia = useCallback(() => {
-    setShowMediaSheet(true)
-  }, [])
-
-  const handleCloseMedia = useCallback(() => {
-    setShowMediaSheet(false)
-  }, [])
-
   return (
     <div className="flex flex-col border border-border/50 rounded-[24px] overflow-hidden bg-background shadow-sm ring-1 ring-border/5">
       {/* Editor Toolbar */}
@@ -225,25 +238,38 @@ export const RichEditor: FC<RichEditorProps> = ({
           <button
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95',
-              !preview
+              viewMode === 'edit'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             )}
             type="button"
-            onClick={() => handlePreviewToggle(false)}
+            onClick={() => setViewMode('edit')}
           >
             <Edit3 className="size-3.5" />
             Текст
           </button>
           <button
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95',
-              preview
+              'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95',
+              viewMode === 'split'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             )}
             type="button"
-            onClick={() => handlePreviewToggle(true)}
+            onClick={() => setViewMode('split')}
+          >
+            <Columns className="size-3.5" />
+            Сплит
+          </button>
+          <button
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95',
+              viewMode === 'preview'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+            type="button"
+            onClick={() => setViewMode('preview')}
           >
             <Eye className="size-3.5" />
             Превью
@@ -251,11 +277,16 @@ export const RichEditor: FC<RichEditorProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
+          {uploading && (
+            <span className="text-[10px] font-bold text-primary animate-pulse flex items-center gap-1">
+              <div className="adm2-spinner adm2-spinner-sm" /> Загрузка...
+            </span>
+          )}
           <Button
             variant="ghost"
             size="sm"
             className="h-8 rounded-lg text-[11px] font-black uppercase text-primary hover:bg-primary/10 transition-all active:scale-95"
-            onClick={handleShowSheet}
+            onClick={() => setShowSheet(true)}
           >
             <Sparkles className="mr-1.5 size-3.5" />
             Иконки
@@ -264,7 +295,7 @@ export const RichEditor: FC<RichEditorProps> = ({
             variant="ghost"
             size="sm"
             className="h-8 rounded-lg text-[11px] font-black uppercase text-primary hover:bg-primary/10 transition-all active:scale-95"
-            onClick={handleShowMedia}
+            onClick={() => setShowMediaSheet(true)}
           >
             <ImageIcon className="mr-1.5 size-3.5" />
             Медиа
@@ -279,7 +310,32 @@ export const RichEditor: FC<RichEditorProps> = ({
 
       {/* Main Area */}
       <div className="relative bg-card/10">
-        {preview ? (
+        {viewMode === 'split' ? (
+          <div className="grid grid-cols-2 divide-x divide-border/20 min-h-[350px]">
+            <textarea
+              ref={taRef}
+              className="w-full min-h-[350px] bg-transparent p-5 text-sm font-medium leading-relaxed placeholder:text-muted-foreground/30 focus:outline-none scroll-smooth"
+              rows={rows}
+              value={value || ''}
+              onChange={handleChange}
+              onDrop={handleDrop}
+              onPaste={handlePaste}
+              placeholder="Перетащите сюда картинку или вставьте из буфера (Ctrl+V)..."
+              spellCheck={false}
+            />
+            <div className="min-h-[350px] p-5 overflow-y-auto no-scrollbar">
+              <div
+                className="guide-content max-w-none prose prose-sm dark:prose-invert"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: Split preview
+                dangerouslySetInnerHTML={{
+                  __html:
+                    liveHtml ||
+                    '<span className="text-muted-foreground italic opacity-50">Предварительный просмотр...</span>',
+                }}
+              />
+            </div>
+          </div>
+        ) : viewMode === 'preview' ? (
           <div className="min-h-[300px] p-6 animate-in fade-in duration-300">
             {rendering ? (
               <div className="flex h-40 items-center justify-center">
@@ -288,7 +344,7 @@ export const RichEditor: FC<RichEditorProps> = ({
             ) : (
               <div
                 className="guide-content max-w-none prose prose-sm dark:prose-invert"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: Markdown rendering
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: Preview rendering
                 dangerouslySetInnerHTML={{
                   __html:
                     liveHtml ||
@@ -304,7 +360,9 @@ export const RichEditor: FC<RichEditorProps> = ({
             rows={rows}
             value={value || ''}
             onChange={handleChange}
-            placeholder={placeholder}
+            onDrop={handleDrop}
+            onPaste={handlePaste}
+            placeholder={placeholder || 'Напишите текст гайда. Можно перетащить картинку или вставить из буфера (Ctrl+V)...'}
             spellCheck={false}
           />
         )}

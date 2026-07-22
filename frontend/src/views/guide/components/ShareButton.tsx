@@ -21,8 +21,7 @@ export const ShareButton: FC<ShareButtonProps> = ({ guide }) => {
 
   const share = async () => {
     haptic.light()
-    const botUsername = 'blackrosesl1_bot'
-    const deepLink = `https://t.me/${botUsername}?start=guide_${guide.key}`
+    const shareUrl = `${window.location.origin}${window.location.pathname}#/guide/${guide.key}`
 
     const markShared = () => {
       setShared(true)
@@ -30,13 +29,13 @@ export const ShareButton: FC<ShareButtonProps> = ({ guide }) => {
       setTimeout(() => setShared(false), 2000)
     }
 
-    // 1. Try native Web Share API (Mobile browsers)
+    // 1. Try native Web Share API (Mobile browsers & WebViews)
     if (navigator.share) {
       try {
         await navigator.share({
           title: guide.title,
           text: `BlackRose: ${guide.title}`,
-          url: deepLink,
+          url: shareUrl,
         })
         markShared()
         return
@@ -46,23 +45,23 @@ export const ShareButton: FC<ShareButtonProps> = ({ guide }) => {
       }
     }
 
-    // 2. Try Telegram WebApp
+    // 2. Try Telegram WebApp if launched inside Telegram
     const tgApp = (window as unknown as { Telegram?: Telegram })?.Telegram?.WebApp
     if (tgApp?.openTelegramLink) {
       tgApp.openTelegramLink(
-        `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(guide.title)}`
+        `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(guide.title)}`
       )
       markShared()
       return
     }
 
-    // 3. Fallback to clipboard
+    // 3. Fallback to clipboard copy
     if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(deepLink).then(markShared)
+      navigator.clipboard.writeText(shareUrl).then(markShared)
       return
     }
 
-    _fallbackCopy(deepLink, markShared)
+    _fallbackCopy(shareUrl, markShared)
   }
 
   return (
