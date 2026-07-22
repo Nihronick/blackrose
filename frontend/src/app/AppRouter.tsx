@@ -125,7 +125,7 @@ interface RouteWrapperProps {
 const InnerGuidesView = ({
   onSelectGuide,
   cats,
-}: { onSelectGuide: RouteWrapperProps['onSelectGuide']; cats: any[] }) => {
+}: { onSelectGuide: RouteWrapperProps['onSelectGuide']; cats: Category[] }) => {
   const { id } = useParams()
   const cat = cats?.find((c) => c.key === id)
   const category = { key: id!, title: cat?.title || 'Гайды', icon: cat?.icon }

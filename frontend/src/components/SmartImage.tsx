@@ -1,5 +1,5 @@
-import { FC, ImgHTMLAttributes, useEffect, useState } from 'react'
 import { normalizeUrl } from '@/lib/utils'
+import { type FC, type ImgHTMLAttributes, useEffect, useState } from 'react'
 
 interface SmartImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   src: string
@@ -48,7 +48,9 @@ export const SmartImage: FC<SmartImageProps> = ({
 
   if (failed) {
     return (
-      <div className={`flex items-center justify-center bg-muted/40 text-muted-foreground/40 rounded-xl p-2 text-[10px] font-bold uppercase tracking-wider ${className}`}>
+      <div
+        className={`flex items-center justify-center bg-muted/40 text-muted-foreground/40 rounded-xl p-2 text-[10px] font-bold uppercase tracking-wider ${className}`}
+      >
         🖼️ Ошибка загрузки
       </div>
     )

@@ -362,7 +362,10 @@ export const RichEditor: FC<RichEditorProps> = ({
             onChange={handleChange}
             onDrop={handleDrop}
             onPaste={handlePaste}
-            placeholder={placeholder || 'Напишите текст гайда. Можно перетащить картинку или вставить из буфера (Ctrl+V)...'}
+            placeholder={
+              placeholder ||
+              'Напишите текст гайда. Можно перетащить картинку или вставить из буфера (Ctrl+V)...'
+            }
             spellCheck={false}
           />
         )}

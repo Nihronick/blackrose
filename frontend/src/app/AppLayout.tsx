@@ -83,7 +83,9 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         {warmingUp && (
           <div className="bg-primary/20 border-b border-primary/30 px-4 py-2 text-center text-xs font-bold text-primary animate-pulse flex items-center justify-center gap-2 shrink-0 z-50">
             <div className="adm2-spinner adm2-spinner-sm" />
-            <span>☕ Сервер просыпается (бесплатный тариф HF), загрузка завершится через пару секунд...</span>
+            <span>
+              ☕ Сервер просыпается (бесплатный тариф HF), загрузка завершится через пару секунд...
+            </span>
           </div>
         )}
 

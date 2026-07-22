@@ -28,16 +28,11 @@ export const ProfileView: FC = () => {
 
   const user = pipe(
     getStoredUser(),
-    O.getOrElse(
-      () =>
-        ({
-          id: 0,
-          first_name: 'Слеер',
-          last_name: '',
-          username: '',
-          photo_url: '',
-        }) as any
-    )
+    O.getOrElse(() => ({
+      id: 0,
+      first_name: 'Слеер',
+      is_admin: false,
+    }))
   )
 
   const stats = [

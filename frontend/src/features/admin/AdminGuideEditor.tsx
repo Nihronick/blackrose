@@ -305,7 +305,7 @@ export const GuideEditor: FC<GuideEditorProps> = ({ guide, categories, onSave, o
       const raw = localStorage.getItem(draftKey)
       if (raw) {
         const d = JSON.parse(raw)
-        if (d && d.form && d.form.text && d.form.text !== form.text) {
+        if (d?.form?.text && d.form.text !== form.text) {
           setHasDraft(true)
         }
       }
@@ -450,10 +450,20 @@ export const GuideEditor: FC<GuideEditorProps> = ({ guide, categories, onSave, o
               <span>Обнаружен несохраненный черновик</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="default" className="h-8 rounded-xl text-[11px] font-bold" onClick={restoreDraft}>
+              <Button
+                size="sm"
+                variant="default"
+                className="h-8 rounded-xl text-[11px] font-bold"
+                onClick={restoreDraft}
+              >
                 Восстановить
               </Button>
-              <Button size="sm" variant="ghost" className="h-8 rounded-xl text-[11px]" onClick={discardDraft}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 rounded-xl text-[11px]"
+                onClick={discardDraft}
+              >
                 Сбросить
               </Button>
             </div>

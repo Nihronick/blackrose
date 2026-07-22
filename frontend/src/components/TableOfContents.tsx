@@ -1,5 +1,5 @@
-import { List, ChevronDown, ChevronUp } from '@/lib/icons'
-import { FC, useMemo, useState } from 'react'
+import { ChevronDown, ChevronUp, List } from '@/lib/icons'
+import { type FC, useMemo, useState } from 'react'
 
 interface TocItem {
   id: string
@@ -21,7 +21,10 @@ export function extractHeadings(markdownText: string): TocItem[] {
     const match = line.match(/^(##|###)\s+(.+)$/)
     if (match) {
       const level = match[1].length === 2 ? 2 : 3
-      const text = match[2].trim().replace(/\*\*/g, '').replace(/\{\{\w+\}\}/g, '')
+      const text = match[2]
+        .trim()
+        .replace(/\*\*/g, '')
+        .replace(/\{\{\w+\}\}/g, '')
       const id = `heading-${index++}-${text.toLowerCase().replace(/[^\wа-яe]+/gi, '-')}`
       items.push({ id, text, level })
     }
@@ -38,9 +41,13 @@ export const TableOfContents: FC<TableOfContentsProps> = ({ text }) => {
 
   const scrollToHeading = (id: string) => {
     // Search for matching header text element in DOM
-    const target = document.getElementById(id) || Array.from(document.querySelectorAll('h2, h3')).find(
-      (el) => el.getAttribute('data-toc-id') === id || el.textContent?.includes(id.split('-').pop() || '')
-    )
+    const target =
+      document.getElementById(id) ||
+      Array.from(document.querySelectorAll('h2, h3')).find(
+        (el) =>
+          el.getAttribute('data-toc-id') === id ||
+          el.textContent?.includes(id.split('-').pop() || '')
+      )
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }

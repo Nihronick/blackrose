@@ -55,14 +55,18 @@ export const CommentsSection: FC<CommentsSectionProps> = ({ guideKey }) => {
   const load = async () => {
     try {
       const res = await apiGetComments(guideKey)
-      const userId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id
-      const mapped = (res.comments || []).map(c => ({
+      const userId = (
+        window as unknown as {
+          Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number } } } }
+        }
+      ).Telegram?.WebApp?.initDataUnsafe?.user?.id
+      const mapped = (res.comments || []).map((c) => ({
         id: String(c.id),
         name: c.first_name || c.username || 'Аноним',
         text: c.text,
         created_at: c.created_at,
         is_own: String(c.user_id) === String(userId),
-        is_admin: false
+        is_admin: false,
       }))
       setComments(mapped as Comment[])
     } finally {
