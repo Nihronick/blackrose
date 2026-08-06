@@ -40,7 +40,7 @@ export const CategoryList: FC<CategoryListProps> = ({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 pt-4 sm:pt-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 pt-4 sm:pt-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
@@ -52,7 +52,7 @@ export const CategoryList: FC<CategoryListProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:gap-4 pt-4 sm:pt-6 sm:grid-cols-2 lg:grid-cols-3 stagger-in">
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 pt-4 sm:pt-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 stagger-in">
       {categories.length === 0 ? (
         <div className="col-span-full py-10 w-full">
           <Card className="glass-card relative overflow-hidden rounded-[32px] border border-border/10 bg-gradient-to-br from-primary/5 via-card/50 to-transparent p-8 text-center shadow-glow transition-all duration-300">

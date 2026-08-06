@@ -37,13 +37,13 @@ export const GuildsView: FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-4 stagger-in">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-in">
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-28 rounded-[24px] skeleton" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 stagger-in">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-in">
             {guilds.map((guild) => (
               <motion.div
                 key={guild.id}

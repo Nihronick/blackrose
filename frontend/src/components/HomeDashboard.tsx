@@ -82,7 +82,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-4 stagger-in">
+    <div className="flex flex-col gap-8 pb-4 stagger-in px-4 sm:px-6 lg:px-8">
       {/* 1. Hero Welcome */}
       <section className="pt-2">
         <div className="relative overflow-hidden rounded-3xl sm:rounded-[40px] mesh-bg p-5 sm:p-8 border border-primary/15 shadow-2xl shadow-primary/10 transition-transform duration-500 hover:scale-[1.005] ambient-glow texture-noise">
