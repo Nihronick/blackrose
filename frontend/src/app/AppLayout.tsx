@@ -92,10 +92,10 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         {!isHome && location.pathname !== '/admin' ? (
           <Header title={headerTitle} onBack={handleBack} />
         ) : (
-          <header className="sticky top-0 z-40 flex h-16 items-center container-padding glass border-b border-border/5 shrink-0">
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center overflow-hidden rounded-2xl border border-border/10 bg-background shadow-lg shadow-primary/20">
+          <header className="sticky top-0 z-40 flex h-16 items-center container-padding glass border-b border-border/10 shrink-0">
+            <div className="flex w-full items-center justify-between gap-4">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => push({ type: 'home' })}>
+                <div className="flex size-10 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-background shadow-lg shadow-primary/20">
                   {!logoFailed ? (
                     <img
                       src={logoSrc}
@@ -107,10 +107,39 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                     <span className="text-lg font-black text-foreground">B</span>
                   )}
                 </div>
-                <span className="text-xl font-black uppercase tracking-normal text-foreground">
+                <span className="text-xl font-black uppercase tracking-normal text-foreground font-heading">
                   BlackRose
                 </span>
               </div>
+
+              {/* Desktop Navigation Links */}
+              <nav className="hidden md:flex items-center gap-1 font-heading">
+                {[
+                  { label: 'Главная', route: { type: 'home' } as const, active: isHome },
+                  { label: 'Категории', route: { type: 'categories' } as const, active: location.pathname === '/categories' },
+                  { label: 'Гильдии', route: { type: 'guilds' } as const, active: location.pathname.startsWith('/guilds') },
+                  { label: 'Дорожная карта', route: { type: 'roadmap' } as const, active: location.pathname === '/roadmap' },
+                  { label: 'Избранное', route: { type: 'favorites' } as const, active: location.pathname === '/favorites' },
+                ].map((item) => (
+                  <Button
+                    key={item.label}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-3.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all ${
+                      item.active
+                        ? 'bg-primary/15 text-primary shadow-sm border border-primary/20'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                    onClick={() => {
+                      haptic.light()
+                      push(item.route)
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </nav>
+
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -158,7 +187,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-10 rounded-2xl"
+                  className="size-10 rounded-2xl hover:bg-muted"
                   onClick={() => {
                     setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')
                   }}
@@ -172,7 +201,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
         {/* Main Content Area */}
         <main
-          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) ? 'pb-28' : ''}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) ? 'pb-28 md:pb-8' : ''}`}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -188,9 +217,9 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
           </AnimatePresence>
         </main>
 
-        {/* Floating Premium Bottom Navigation Tab Bar */}
+        {/* Floating Premium Bottom Navigation Tab Bar (Mobile Only) */}
         {['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) && (
-          <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 pt-2.5 pb-3 rounded-[28px] shadow-2xl shrink-0 select-none">
+          <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 pt-2.5 pb-3 rounded-[28px] shadow-2xl shrink-0 select-none">
             <div className="flex w-full items-center justify-around">
               {[
                 { path: '/', label: 'Главная', icon: Home, route: { type: 'home' } as const },
@@ -204,7 +233,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   path: '/guilds',
                   label: 'Гильдии',
                   icon: Shield,
-                  route: { type: 'route', path: '/guilds' } as any,
+                  route: { type: 'guilds' } as const,
                 },
                 {
                   path: '/history',

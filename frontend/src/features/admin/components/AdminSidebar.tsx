@@ -36,7 +36,7 @@ export const AdminSidebar: FC<AdminSidebarProps> = ({
       )}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border/10 flex flex-col transition-transform duration-300 sm:relative sm:translate-x-0 shadow-2xl sm:shadow-none',
+          'fixed inset-y-0 left-0 z-50 w-72 shrink-0 bg-card border-r border-border/10 flex flex-col transition-transform duration-300 sm:relative sm:translate-x-0 shadow-2xl sm:shadow-none',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
