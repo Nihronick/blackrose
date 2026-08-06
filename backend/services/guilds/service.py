@@ -1,7 +1,6 @@
-from sqlalchemy import select, delete, func, desc
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func
 from core.db import get_sessionmaker
-from models.db_models import Guild, GuildMember, GuildJoinRequest, GuildStatus, Member
+from models.db_models import Guild, GuildMember, GuildJoinRequest, GuildStatus
 from core.logging import get_logger
 from datetime import datetime, timezone
 

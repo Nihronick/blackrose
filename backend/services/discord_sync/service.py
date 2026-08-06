@@ -1,11 +1,8 @@
 import hashlib
-import re
-from datetime import datetime
 from sqlalchemy import select, delete
 from core.db import get_sessionmaker
 from core.logging import get_logger
 from models.db_models import Category, DiscordSyncChannel, DiscordSyncedGuide, Guide
-from services.discord_lab.lab_synthesizer import discord_lab_service
 from services.common.media import MediaService
 from services.discord_sync.translator import sanitize_discord_markdown, translate_en_to_ru
 
@@ -91,7 +88,7 @@ class DiscordSyncService:
             res = await session.execute(
                 select(DiscordSyncChannel).where(
                     DiscordSyncChannel.channel_id == channel_id,
-                    DiscordSyncChannel.is_active == True,
+                    DiscordSyncChannel.is_active,
                 )
             )
             config = res.scalar_one_or_none()
