@@ -2,9 +2,21 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { apiFetch, apiGetProxyUrl, apiImportMedia, apiPost, apiPut } from '@/lib/api'
+import {
+  apiFetch,
+  apiGetProxyUrl,
+  apiImportMedia,
+  apiPost,
+  apiPut,
+  apiGetDiscordSyncStatus,
+  apiStartDiscordSync,
+  apiStopDiscordSync,
+  apiGetDiscordSyncChannels,
+  apiAddDiscordSyncChannel,
+  apiRemoveDiscordSyncChannel,
+} from '@/lib/api'
 import { getGameIconUrl } from '@/lib/gameIcons'
-import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings } from '@/lib/icons'
+import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { type ChangeEvent, type FC, useEffect, useMemo, useState } from 'react'
 
@@ -54,6 +66,24 @@ export const DiscordLabTab: FC = () => {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
 
+  // Worker & Channels Sync State
+  const [workerToken, setWorkerToken] = useState('')
+  const [workerStatus, setWorkerStatus] = useState<{ running: boolean; channels_count: number; has_token: boolean }>({ running: false, channels_count: 0, has_token: false })
+  const [syncChannels, setSyncChannels] = useState<Array<{ channel_id: string; channel_name?: string; category_key: string; auto_translate: boolean; is_active: boolean }>>([])
+  const [newChannelId, setNewChannelId] = useState('')
+  const [newChannelName, setNewChannelName] = useState('')
+  const [newChannelCat, setNewChannelCat] = useState('')
+  const [workerLoading, setWorkerLoading] = useState(false)
+
+  const fetchSyncState = async () => {
+    try {
+      const st = await apiGetDiscordSyncStatus()
+      setWorkerStatus(st)
+      const chs = await apiGetDiscordSyncChannels()
+      setSyncChannels(chs.channels || [])
+    } catch {}
+  }
+
   useEffect(() => {
     apiFetch<Guide[]>('/api/admin/guides')
       .then(setAllGuides)
@@ -61,9 +91,13 @@ export const DiscordLabTab: FC = () => {
     apiFetch<Category[]>('/api/admin/categories')
       .then((cats) => {
         setCategories(cats)
-        if (cats.length > 0) setSelectedCategory(cats[0].key)
+        if (cats.length > 0) {
+          setSelectedCategory(cats[0].key)
+          setNewChannelCat(cats[0].key)
+        }
       })
       .catch(() => {})
+    fetchSyncState()
   }, [])
 
   const runTest = async () => {
@@ -285,6 +319,59 @@ export const DiscordLabTab: FC = () => {
     }
   }
 
+  const handleStartWorker = async () => {
+    if (!workerToken.trim()) return alert('Введите Discord User Token')
+    setWorkerLoading(true)
+    try {
+      const res = await apiStartDiscordSync(workerToken.trim())
+      alert(res.message || 'Слушатель запущен')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка запуска: ' + (e.message || e))
+    } finally {
+      setWorkerLoading(false)
+    }
+  }
+
+  const handleStopWorker = async () => {
+    setWorkerLoading(true)
+    try {
+      const res = await apiStopDiscordSync()
+      alert(res.message || 'Слушатель остановлен')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка: ' + (e.message || e))
+    } finally {
+      setWorkerLoading(false)
+    }
+  }
+
+  const handleAddChannel = async () => {
+    if (!newChannelId.trim()) return alert('Укажите ID канала')
+    try {
+      await apiAddDiscordSyncChannel({
+        channel_id: newChannelId.trim(),
+        channel_name: newChannelName.trim() || undefined,
+        category_key: newChannelCat,
+        auto_translate: true,
+      })
+      setNewChannelId('')
+      setNewChannelName('')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка добавления канала: ' + (e.message || e))
+    }
+  }
+
+  const handleRemoveChannel = async (channelId: string) => {
+    try {
+      await apiRemoveDiscordSyncChannel(channelId)
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка удаления: ' + (e.message || e))
+    }
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -293,13 +380,168 @@ export const DiscordLabTab: FC = () => {
             <Beaker className="size-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight uppercase">Discord Sync Lab</h2>
+            <h2 className="text-xl font-black tracking-tight uppercase">Discord Sync Lab & Live Gateway Worker</h2>
             <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-              Тестовая площадка для импорта из Slayerpedia
+              Автоматическая бесшумная синхронизация и импорт гайдов
             </p>
           </div>
         </div>
       </div>
+
+      {/* Stealth Discord Gateway Worker Control Card */}
+      <Card className="p-6 border border-primary/20 glass-card rounded-3xl space-y-6 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 rounded-2xl text-primary border border-primary/20">
+              <ShieldCheck className="size-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black uppercase font-heading">Бесшумный Авто-Синхронизатор Discord</h3>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    workerStatus.running
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {workerStatus.running ? '🟢 Активен (Слушает в реальном времени)' : '🔴 Остановлен'}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground/80 font-medium mt-0.5">
+                Пассивный WebSocket-слушатель чужих каналов Discord с автопереводом EN ➔ RU и локальным кэшированием медиа.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {workerStatus.running ? (
+              <Button
+                variant="destructive"
+                className="h-10 px-5 rounded-2xl font-bold text-xs uppercase tracking-wider gap-2 cursor-pointer w-full sm:w-auto"
+                disabled={workerLoading}
+                onClick={handleStopWorker}
+              >
+                <Pause className="size-4" /> Остановить
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                className="h-10 px-5 rounded-2xl font-bold text-xs uppercase tracking-wider gap-2 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer w-full sm:w-auto shadow-lg shadow-emerald-900/30"
+                disabled={workerLoading || !workerToken.trim()}
+                onClick={handleStartWorker}
+              >
+                <Play className="size-4" /> Запустить слушатель
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {!workerStatus.running && (
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-muted/20 p-4 rounded-2xl border border-border/10">
+            <div className="sm:col-span-9 space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 ml-1">
+                Discord User Token (для читательского подключения)
+              </label>
+              <Input
+                type="password"
+                placeholder="Вставьте токен вашего аккаунта-читателя..."
+                className="h-10 rounded-xl bg-background font-mono text-xs"
+                value={workerToken}
+                onChange={(e) => setWorkerToken(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <Button
+                variant="secondary"
+                className="h-10 w-full rounded-xl text-xs font-bold uppercase tracking-wider"
+                onClick={handleStartWorker}
+                disabled={!workerToken.trim() || workerLoading}
+              >
+                Старт
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Channel Sync Rules Table & Add Form */}
+        <div className="space-y-4 pt-2">
+          <h4 className="text-xs font-black uppercase tracking-wider text-foreground font-heading">
+            Отслеживаемые каналы Discord ({syncChannels.length})
+          </h4>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-card/60 p-3 rounded-2xl border border-border/10">
+            <div className="sm:col-span-4">
+              <Input
+                placeholder="ID канала (например 123456...)"
+                className="h-9 rounded-xl bg-background text-xs font-mono"
+                value={newChannelId}
+                onChange={(e) => setNewChannelId(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-4">
+              <Input
+                placeholder="Название канала (опционально)"
+                className="h-9 rounded-xl bg-background text-xs"
+                value={newChannelName}
+                onChange={(e) => setNewChannelName(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <select
+                className="h-9 w-full rounded-xl bg-background border border-input px-3 text-xs font-bold"
+                value={newChannelCat}
+                onChange={(e) => setNewChannelCat(e.target.value)}
+              >
+                {categories.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-1">
+              <Button
+                size="icon"
+                className="h-9 w-full rounded-xl bg-primary text-primary-foreground cursor-pointer"
+                onClick={handleAddChannel}
+                title="Добавить канал"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          </div>
+
+          {syncChannels.length > 0 && (
+            <div className="divide-y divide-border/10 rounded-2xl border border-border/10 overflow-hidden bg-background/40">
+              {syncChannels.map((ch) => (
+                <div key={ch.channel_id} className="flex items-center justify-between p-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="font-mono font-bold text-primary px-2 py-1 bg-primary/10 rounded-lg">
+                      #{ch.channel_id}
+                    </div>
+                    <div>
+                      <div className="font-bold text-foreground">{ch.channel_name || 'Канал Discord'}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Категория на сайте: <span className="font-bold text-primary">{ch.category_key}</span> • Автоперевод EN➔RU
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                    onClick={() => handleRemoveChannel(ch.channel_id)}
+                    title="Удалить привязку"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         <Card className="xl:col-span-5 p-8 border-none bg-card/40 backdrop-blur-sm space-y-6 shadow-2xl ring-1 ring-white/5">

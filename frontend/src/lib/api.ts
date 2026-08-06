@@ -239,3 +239,18 @@ export const apiAdminUpdateGuild = (id: number, data: Record<string, unknown>) =
   apiPut<unknown>(`/api/admin/guilds/${id}`, data)
 export const apiAdminDeleteGuild = (id: number) =>
   apiDelete<unknown>(`/api/admin/guilds/${id}`)
+
+// --- Discord Sync API ---
+export const apiGetDiscordSyncStatus = () =>
+  apiFetch<{ running: boolean; channels_count: number; has_token: boolean }>('/api/admin/discord-sync/status')
+export const apiStartDiscordSync = (user_token: string) =>
+  apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/start', { user_token })
+export const apiStopDiscordSync = () =>
+  apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/stop', {})
+export const apiGetDiscordSyncChannels = () =>
+  apiFetch<{ channels: Array<{ channel_id: string; channel_name?: string; category_key: string; auto_translate: boolean; is_active: boolean }> }>('/api/admin/discord-sync/channels')
+export const apiAddDiscordSyncChannel = (data: { channel_id: string; category_key: string; channel_name?: string; auto_translate?: boolean }) =>
+  apiPost<{ ok: boolean; channel: unknown }>('/api/admin/discord-sync/channels', data)
+export const apiRemoveDiscordSyncChannel = (channel_id: string) =>
+  apiDelete<{ ok: boolean }>(`/api/admin/discord-sync/channels/${channel_id}`)
+
