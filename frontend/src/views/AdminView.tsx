@@ -123,41 +123,34 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 bg-background overflow-y-auto pt-12 pb-20 px-6 animate-in fade-in duration-300">
-        <div className="max-w-md mx-auto space-y-8">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
+        <div className="w-full max-w-md space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-destructive/10 rounded-2xl text-destructive shadow-sm shadow-destructive/10">
+              <div className="p-3 bg-primary/10 rounded-2xl text-primary border border-primary/20 shadow-inner">
                 <ShieldCheck className="size-6" />
               </div>
-              <h1 className="text-xl font-black tracking-tight uppercase">Доступ ограничен</h1>
+              <div>
+                <h1 className="text-base font-black tracking-tight uppercase font-heading">Доступ ограничен</h1>
+                <p className="text-[11px] font-bold text-muted-foreground/70">Административная панель BlackRose</p>
+              </div>
             </div>
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose}>
-              <X className="size-6" />
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" onClick={onClose}>
+              <X className="size-5" />
             </Button>
           </div>
 
-          <Card className="p-6 border-none bg-card/50 shadow-xl ring-1 ring-border/5 space-y-6">
-            {error === 'auth' ? (
-              <>
-                <div className="space-y-2">
-                  <div className="text-sm font-bold text-foreground/80 leading-relaxed">
-                    Для доступа к панели управления необходимо войти.
-                  </div>
-                </div>
-                <div className="w-[1px] h-4 bg-border/20 mx-auto" />
-                <LocalAdminLogin onSuccess={() => window.location.reload()} />
-              </>
-            ) : (
-              <div className="flex flex-col items-center text-center gap-4 py-4">
-                <AlertCircle className="size-12 text-destructive opacity-40" />
-                <div className="text-sm font-bold text-destructive">{error}</div>
-                <Button variant="secondary" className="rounded-xl h-10 px-6" onClick={load}>
-                  Попробовать снова
-                </Button>
-              </div>
-            )}
-          </Card>
+          {error === 'auth' ? (
+            <LocalAdminLogin onSuccess={() => window.location.reload()} />
+          ) : (
+            <Card className="p-6 border border-destructive/20 glass-card rounded-3xl text-center space-y-4">
+              <AlertCircle className="size-10 text-destructive opacity-80 animate-bounce mx-auto" />
+              <div className="text-sm font-bold text-foreground">{error}</div>
+              <Button variant="default" className="rounded-2xl h-11 px-8 font-bold bg-primary text-primary-foreground font-heading" onClick={load}>
+                Попробовать снова
+              </Button>
+            </Card>
+          )}
         </div>
       </div>
     )
