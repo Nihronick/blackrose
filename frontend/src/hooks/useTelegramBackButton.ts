@@ -10,19 +10,28 @@ export const useTelegramBackButton = () => {
   const location = useLocation()
 
   const handleBack = useCallback(() => {
-    if (location.pathname === '/') {
-      return
+    const currentPath = location.pathname
+    if (currentPath === '/') return
+
+    // Check if there is history to go back to
+    if (window.history.length > 1) {
+      window.history.back()
     }
 
-    const currentPath = window.location.pathname
-    window.history.back()
-
-    // If pathname didn't change after back(), there's no history — go home
+    // Fallback logic if history didn't change (e.g. direct URL entry)
     setTimeout(() => {
       if (window.location.pathname === currentPath) {
-        navigate('/', { replace: true })
+        if (currentPath.startsWith('/guilds/')) {
+          navigate('/guilds', { replace: true })
+        } else if (currentPath.startsWith('/category/')) {
+          navigate('/', { replace: true })
+        } else if (currentPath.startsWith('/guide/')) {
+          navigate('/', { replace: true })
+        } else {
+          navigate('/', { replace: true })
+        }
       }
-    }, 150)
+    }, 120)
   }, [location.pathname, navigate])
 
   return { handleBack }

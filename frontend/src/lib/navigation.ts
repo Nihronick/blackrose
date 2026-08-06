@@ -18,6 +18,8 @@ export type Route =
   | { type: 'roadmap' }
   | { type: 'profile' }
   | { type: 'search' }
+  | { type: 'guilds' }
+  | { type: 'guild'; id: number }
 
 export const useAppNavigation = () => {
   const navigate = useNavigate()
@@ -57,6 +59,12 @@ export const useAppNavigation = () => {
           break
         case 'search':
           navigate('/search')
+          break
+        case 'guilds':
+          navigate('/guilds')
+          break
+        case 'guild':
+          navigate(`/guilds/${route.id}`)
           break
       }
     },
