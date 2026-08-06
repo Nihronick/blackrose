@@ -49,7 +49,7 @@ export const GuildsView: FC = () => {
                 key={guild.id}
                 whileHover={{ scale: 0.98 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => push({ type: 'route', path: `/guilds/${guild.id}` } as any)} // fallback
+                onClick={() => push({ type: 'guild', id: guild.id })}
                 className="glass-card cursor-pointer p-5 rounded-[24px] flex flex-col gap-3 transition-all relative overflow-hidden group"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />

@@ -73,6 +73,8 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
     }
     if (path.startsWith('/tag/')) return '#' + path.split('/').pop()
     if (path.startsWith('/guide/')) return 'Гайд'
+    if (path === '/guilds') return 'Гильдии'
+    if (path.startsWith('/guilds/')) return 'Состав гильдии'
     if (path === '/profile') return 'Профиль'
     return 'BlackRose'
   }, [location.pathname, cats])
