@@ -11,6 +11,7 @@ import { getStoredUser } from '@/lib/auth'
 import { haptic } from '@/lib/haptic'
 import {
   BookOpen,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Compass,
@@ -79,6 +80,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
 
   const queryClient = useQueryClient()
   const prefetchTimer = useRef<NodeJS.Timeout | null>(null)
+  const popularScrollRef = useRef<HTMLDivElement>(null)
 
   const prefetchGuide = (key: string) => {
     if (prefetchTimer.current) clearTimeout(prefetchTimer.current)
@@ -306,12 +308,45 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
         <div className="lg:col-span-8 flex flex-col gap-8">
           {/* 4. Popular Guides (Horizontal) */}
           <section className="flex flex-col gap-4">
-            <div className="section-label font-heading">
-              <TrendingUp className="size-3.5 text-primary" />
-              <span>Популярное</span>
+            <div className="flex items-center justify-between">
+              <div className="section-label font-heading flex items-center gap-2">
+                <TrendingUp className="size-3.5 text-primary" />
+                <span>Популярное</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 rounded-xl hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => {
+                    haptic.light()
+                    popularScrollRef.current?.scrollBy({ left: -260, behavior: 'smooth' })
+                  }}
+                  title="Прокрутить влево"
+                  aria-label="Прокрутить влево"
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 rounded-xl hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => {
+                    haptic.light()
+                    popularScrollRef.current?.scrollBy({ left: 260, behavior: 'smooth' })
+                  }}
+                  title="Прокрутить вправо"
+                  aria-label="Прокрутить вправо"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
             </div>
 
-            <div className="flex gap-4 overflow-x-auto scrollbar-premium pb-4 no-scrollbar lg:scrollbar-premium">
+            <div
+              ref={popularScrollRef}
+              className="flex gap-4 overflow-x-auto scrollbar-premium pb-4 no-scrollbar lg:scrollbar-premium scroll-smooth"
+            >
               {topLoading
                 ? [...Array(3)].map((_, i) => (
                     <Skeleton

@@ -2,8 +2,8 @@ import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 /**
- * Simple back button handler for web navigation.
- * Uses standard browser history with BrowserRouter (clean URLs).
+ * Smart back button handler for SPA web & TMA navigation.
+ * Respects React Router session stack and provides hierarchical fallback when history is unavailable.
  */
 export const useTelegramBackButton = () => {
   const navigate = useNavigate()
@@ -13,26 +13,25 @@ export const useTelegramBackButton = () => {
     const currentPath = location.pathname
     if (currentPath === '/') return
 
-    // Check if there is history to go back to
-    if (window.history.length > 1) {
-      window.history.back()
+    // If navigated within this SPA session (key is not default), go back in router history
+    if (location.key !== 'default') {
+      navigate(-1)
+      return
     }
 
-    // Fallback logic if history didn't change (e.g. direct URL entry)
-    setTimeout(() => {
-      if (window.location.pathname === currentPath) {
-        if (currentPath.startsWith('/guilds/')) {
-          navigate('/guilds', { replace: true })
-        } else if (currentPath.startsWith('/category/')) {
-          navigate('/', { replace: true })
-        } else if (currentPath.startsWith('/guide/')) {
-          navigate('/', { replace: true })
-        } else {
-          navigate('/', { replace: true })
-        }
-      }
-    }, 120)
-  }, [location.pathname, navigate])
+    // Direct entry or refresh fallback: navigate hierarchically
+    if (currentPath.startsWith('/guilds/')) {
+      navigate('/guilds', { replace: true })
+    } else if (currentPath.startsWith('/guide/')) {
+      navigate('/categories', { replace: true })
+    } else if (currentPath.startsWith('/category/')) {
+      navigate('/categories', { replace: true })
+    } else if (currentPath.startsWith('/tag/')) {
+      navigate('/search', { replace: true })
+    } else {
+      navigate('/', { replace: true })
+    }
+  }, [location.key, location.pathname, navigate])
 
   return { handleBack }
 }
