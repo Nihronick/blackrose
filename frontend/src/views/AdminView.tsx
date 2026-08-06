@@ -95,10 +95,16 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
       const cats = await apiFetch<Category[]>('/api/admin/categories')
       setCategories(cats)
     } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
       const isAuth =
-        e instanceof Error &&
-        (e.message === 'ACCESS_DENIED' || e.message?.includes('прав администратора'))
-      setError(isAuth ? 'auth' : e instanceof Error ? e.message : 'Unknown error')
+        msg === 'ACCESS_DENIED' ||
+        msg.includes('401') ||
+        msg.includes('403') ||
+        msg.includes('прав') ||
+        msg.includes('Сессия') ||
+        msg.includes('авториз') ||
+        msg.includes('token')
+      setError(isAuth ? 'auth' : msg || 'Unknown error')
     } finally {
       setLoading(false)
     }
