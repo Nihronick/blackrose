@@ -15,6 +15,7 @@ from core.db import init_db, close_pool
 from core.middleware import setup_cors, add_security_headers, setup_honeybadger
 from api import admin, public, webhook_ingest
 from api.guilds import router as guilds_router
+from api.discord_sync import router as discord_sync_router
 from core.http import http_client
 
 
@@ -58,6 +59,7 @@ app.include_router(public.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(webhook_ingest.router, prefix="/api")
 app.include_router(guilds_router, prefix="/api")
+app.include_router(discord_sync_router, prefix="/api")
 
 # Static files for frontend (Production)
 static_dir = os.path.join(os.path.dirname(__file__), "static")

@@ -223,3 +223,29 @@ class GuildStatus(Base):
     __table_args__ = (
         Index("ix_guild_statuses_guild_key", "guild_id", "key", unique=True),
     )
+
+
+class DiscordSyncChannel(Base):
+    __tablename__ = "discord_sync_channels"
+    channel_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    channel_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    category_key: Mapped[str] = mapped_column(Text, nullable=False)
+    auto_translate: Mapped[bool] = mapped_column(Boolean, server_default="true", default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default="true", default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+
+
+class DiscordSyncedGuide(Base):
+    __tablename__ = "discord_synced_guides"
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    discord_message_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False, index=True)
+    discord_channel_id: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    guide_key: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    author_tag: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_synced_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), onupdate=sa_text("NOW()")
+    )
+

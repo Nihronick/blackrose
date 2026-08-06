@@ -194,3 +194,31 @@ class MemberRoleIn(BaseModel):
         if v not in ("project_admin", "admin", "editor", "moderator", "member"):
             raise ValueError("Недопустимая роль")
         return v
+
+
+# --- Discord Sync Schemas ---
+
+class DiscordSyncChannelIn(BaseModel):
+    channel_id: str
+    channel_name: str | None = None
+    category_key: str
+    auto_translate: bool = True
+
+    @field_validator("channel_id")
+    @classmethod
+    def validate_channel_id(cls, v):
+        if not v or not v.strip().isdigit():
+            raise ValueError("ID канала должен состоять только из цифр")
+        return v.strip()
+
+
+class DiscordSyncTokenIn(BaseModel):
+    user_token: str
+
+    @field_validator("user_token")
+    @classmethod
+    def validate_token(cls, v):
+        if not v or len(v.strip()) < 20:
+            raise ValueError("Некорректный Discord токен")
+        return v.strip()
+
