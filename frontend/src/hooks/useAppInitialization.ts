@@ -40,7 +40,9 @@ export const useAppInitialization = () => {
           if (data?.is_admin === true) setIsAdmin(true)
         })
         .catch((e) => {
-          if (e.message?.includes('Сессия истекла')) clearStoredToken()
+          if (e.message?.includes('Сессия истекла') || e.message === 'ACCESS_DENIED') {
+            clearStoredToken()
+          }
         })
     }
 
