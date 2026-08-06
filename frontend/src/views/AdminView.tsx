@@ -13,6 +13,7 @@ import {
 } from '@/features/admin/AdminTabs'
 import { AdminSidebar } from '@/features/admin/components/AdminSidebar'
 import { apiFetch } from '@/lib/api'
+import { GuildsTab } from '@/features/admin/GuildsTab'
 import {
   AlertCircle,
   BarChart3,
@@ -26,6 +27,7 @@ import {
   LogOut,
   Menu,
   Palette,
+  Shield,
   ShieldCheck,
   X,
 } from '@/lib/icons'
@@ -46,6 +48,7 @@ interface AdminTab {
 
 const TABS: readonly AdminTab[] = [
   { id: 'dash', label: 'Обзор', title: 'Системная панель', icon: BarChart3 },
+  { id: 'guilds', label: 'Гильдии', title: 'Управление гильдиями', icon: Shield },
   { id: 'guides', label: 'Гайды', title: 'Управление гайдами', icon: FileText },
   { id: 'categories', label: 'Категории', title: 'Структура контента', icon: LayoutGrid },
   { id: 'media', label: 'Медиа', title: 'Библиотека файлов', icon: Film },
@@ -227,6 +230,7 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
             <Suspense fallback={<TabSpinner />}>
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {activeTab?.id === 'dash' && <DashboardTab />}
+                {activeTab?.id === 'guilds' && <GuildsTab />}
                 {activeTab?.id === 'guides' && (
                   <GuidesTab
                     categories={categories}

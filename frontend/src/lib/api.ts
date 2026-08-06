@@ -16,6 +16,11 @@ import type {
   SubscriptionsResponse,
   TagsResponse,
   TopGuidesResponse,
+  Guild,
+  GuildMember,
+  GuildRosterResponse,
+  GuildJoinRequest,
+  GuildStatusOption,
 } from './types'
 
 const BASE = import.meta.env.VITE_API_URL ?? ''
@@ -205,3 +210,32 @@ export const apiGetCategories = () => apiFetch<CategoriesResponse>('/api/categor
 export function apiGetProxyUrl(url: string): string {
   return url || ''
 }
+
+// --- Guild API ---
+export const apiGuilds = () => apiFetch<{ guilds: Guild[] }>('/api/guilds')
+export const apiGuildRoster = (id: number) =>
+  apiFetch<GuildRosterResponse>(`/api/guilds/${id}/roster`)
+export const apiGuildStatuses = (id: number) =>
+  apiFetch<{ statuses: GuildStatusOption[] }>(`/api/guilds/${id}/statuses`)
+export const apiMyGuildProfile = () =>
+  apiFetch<{ profile: GuildMember | null }>('/api/guilds/my/profile')
+export const apiUpdateMyGuildProfile = (data: { nickname: string; stage: number }) =>
+  apiPut<unknown>('/api/guilds/my/profile', data)
+export const apiJoinGuild = (data: { guild_id: number; nickname: string; message?: string }) =>
+  apiPost<unknown>('/api/guilds/join', data)
+export const apiGuildRequests = (guildId: number) =>
+  apiFetch<{ requests: GuildJoinRequest[] }>(`/api/guilds/${guildId}/requests`)
+export const apiApproveGuildRequest = (id: number) =>
+  apiPost<unknown>(`/api/guilds/requests/${id}/approve`, {})
+export const apiRejectGuildRequest = (id: number) =>
+  apiPost<unknown>(`/api/guilds/requests/${id}/reject`, {})
+export const apiUpdateGuildMember = (id: number, data: Record<string, unknown>) =>
+  apiPut<unknown>(`/api/guilds/members/${id}`, data)
+export const apiRemoveGuildMember = (id: number) =>
+  apiDelete<unknown>(`/api/guilds/members/${id}`)
+export const apiAdminCreateGuild = (data: { name: string; icon_url?: string; description?: string; max_members?: number }) =>
+  apiPost<unknown>('/api/admin/guilds', data)
+export const apiAdminUpdateGuild = (id: number, data: Record<string, unknown>) =>
+  apiPut<unknown>(`/api/admin/guilds/${id}`, data)
+export const apiAdminDeleteGuild = (id: number) =>
+  apiDelete<unknown>(`/api/admin/guilds/${id}`)

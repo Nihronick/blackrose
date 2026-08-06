@@ -126,3 +126,64 @@ export interface MediaListResponse {
   groups: MediaGroup[]
   total: number
 }
+
+// --- Guild System ---
+
+export type GlobalRole = 'project_admin' | 'admin' | 'editor' | 'moderator' | 'member'
+export type GuildRole = 'guild_master' | 'guild_vice_master' | 'guild_member'
+export type MemberStatus = 'active' | 'trial' | 'left' | 'reserve' | string
+
+export interface Guild {
+  id: number
+  name: string
+  icon_url?: string
+  description?: string
+  max_members: number
+  member_count: number
+  is_active: boolean
+}
+
+export interface GuildMember {
+  id: number
+  guild_id: number
+  user_id: number
+  nickname: string
+  rank: number
+  rank_confirmed: boolean
+  stage: number
+  guild_role: GuildRole
+  status: MemberStatus
+  status_note?: string
+  approved: boolean
+  joined_at: string
+}
+
+export interface GuildStats {
+  total_ranks: number
+  average_rank: number
+  member_count: number
+}
+
+export interface GuildRosterResponse {
+  members: GuildMember[]
+  stats: GuildStats
+  guild: Guild
+}
+
+export interface GuildJoinRequest {
+  id: number
+  guild_id: number
+  guild_name?: string
+  user_id: number
+  nickname: string
+  message?: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}
+
+export interface GuildStatusOption {
+  key: string
+  label: string
+  color: string
+  is_builtin: boolean
+}

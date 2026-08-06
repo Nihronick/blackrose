@@ -106,3 +106,91 @@ class LabImportIn(BaseModel):
     category_key: str | None = None
     title: str | None = None
     guide_key: str | None = None
+
+
+# --- Guild Schemas ---
+
+class GuildIn(BaseModel):
+    name: str
+    icon_url: str | None = None
+    description: str | None = None
+    max_members: int = 20
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Название гильдии не может быть пустым")
+        if len(v.strip()) > 50:
+            raise ValueError("Максимум 50 символов")
+        return v.strip()
+
+
+class GuildMemberProfileIn(BaseModel):
+    """What a member can edit themselves (nickname, stage)"""
+    nickname: str
+    stage: int = 0
+
+    @field_validator("nickname")
+    @classmethod
+    def validate_nickname(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Никнейм не может быть пустым")
+        if len(v.strip()) > 30:
+            raise ValueError("Максимум 30 символов")
+        return v.strip()
+
+
+class GuildMemberAdminIn(BaseModel):
+    """What a master/vice/admin can change (rank, role, status)"""
+    rank: int | None = None
+    rank_confirmed: bool | None = None
+    guild_role: str | None = None
+    status: str | None = None
+    status_note: str | None = None
+    approved: bool | None = None
+
+    @field_validator("guild_role")
+    @classmethod
+    def validate_guild_role(cls, v):
+        if v is not None and v not in ("guild_master", "guild_vice_master", "guild_member"):
+            raise ValueError("Недопустимая роль")
+        return v
+
+    @field_validator("rank")
+    @classmethod
+    def validate_rank(cls, v):
+        if v is not None and (v < 1 or v > 21):
+            raise ValueError("Ранг должен быть от 1 до 21")
+        return v
+
+
+class GuildJoinRequestIn(BaseModel):
+    guild_id: int
+    nickname: str
+    message: str | None = None
+
+    @field_validator("nickname")
+    @classmethod
+    def validate_nickname(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Никнейм не может быть пустым")
+        return v.strip()
+
+
+class GuildStatusIn(BaseModel):
+    key: str
+    label: str
+    color: str = "gray"
+
+
+class MemberRoleIn(BaseModel):
+    """Global role update (only project_admin / admin)"""
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v):
+        if v not in ("project_admin", "admin", "editor", "moderator", "member"):
+            raise ValueError("Недопустимая роль")
+        return v

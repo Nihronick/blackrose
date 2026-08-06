@@ -5,6 +5,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Identity,
+    Index,
     Integer,
     String,
     Text,
@@ -133,4 +134,92 @@ class ViewLog(Base):
     )
     viewed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+
+
+class Guild(Base):
+    __tablename__ = "guilds"
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    icon_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    max_members: Mapped[int] = mapped_column(Integer, server_default="20", default=20)
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default="true", default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+    members: Mapped[list["GuildMember"]] = relationship(
+        "GuildMember", back_populates="guild", cascade="all, delete-orphan"
+    )
+    custom_statuses: Mapped[list["GuildStatus"]] = relationship(
+        "GuildStatus", back_populates="guild", cascade="all, delete-orphan"
+    )
+
+
+class GuildMember(Base):
+    __tablename__ = "guild_members"
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    guild_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True, index=True)
+    nickname: Mapped[str] = mapped_column(Text, nullable=False)
+    rank: Mapped[int] = mapped_column(Integer, server_default="1", default=1)
+    rank_confirmed: Mapped[bool] = mapped_column(Boolean, server_default="false", default=False)
+    stage: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
+    guild_role: Mapped[str] = mapped_column(
+        Text, server_default="'guild_member'", default="guild_member"
+    )
+    status: Mapped[str] = mapped_column(
+        Text, server_default="'active'", default="active"
+    )
+    status_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    approved: Mapped[bool] = mapped_column(Boolean, server_default="false", default=False)
+    approved_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    joined_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), onupdate=sa_text("NOW()")
+    )
+    guild: Mapped["Guild"] = relationship("Guild", back_populates="members")
+
+    __table_args__ = (
+        Index("ix_guild_members_guild_rank", "guild_id", "rank"),
+    )
+
+
+class GuildJoinRequest(Base):
+    __tablename__ = "guild_join_requests"
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    guild_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    nickname: Mapped[str] = mapped_column(Text, nullable=False)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        Text, server_default="'pending'", default="pending"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+    resolved_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class GuildStatus(Base):
+    __tablename__ = "guild_statuses"
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    guild_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False
+    )
+    key: Mapped[str] = mapped_column(Text, nullable=False)
+    label: Mapped[str] = mapped_column(Text, nullable=False)
+    color: Mapped[str] = mapped_column(Text, server_default="'gray'", default="gray")
+    sort_order: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
+    guild: Mapped["Guild"] = relationship("Guild", back_populates="custom_statuses")
+
+    __table_args__ = (
+        Index("ix_guild_statuses_guild_key", "guild_id", "key", unique=True),
     )

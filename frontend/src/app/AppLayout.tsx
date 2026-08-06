@@ -6,7 +6,7 @@ import { useAppEnv } from '@/hooks/useAppEnv'
 import { useSheet } from '@/hooks/useSheet'
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton'
 import { haptic } from '@/lib/haptic'
-import { Compass, History, Home, Star, User } from '@/lib/icons'
+import { Compass, History, Home, Star, User, Shield } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
@@ -172,7 +172,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
         {/* Main Content Area */}
         <main
-          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history', '/profile'].includes(location.pathname) ? 'pb-28' : ''}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) ? 'pb-28' : ''}`}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -189,7 +189,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         </main>
 
         {/* Floating Premium Bottom Navigation Tab Bar */}
-        {['/', '/favorites', '/history', '/profile'].includes(location.pathname) && (
+        {['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) && (
           <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 pt-2.5 pb-3 rounded-[28px] shadow-2xl shrink-0 select-none">
             <div className="flex w-full items-center justify-around">
               {[
@@ -199,6 +199,12 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   label: 'Избранное',
                   icon: Star,
                   route: { type: 'favorites' } as const,
+                },
+                {
+                  path: '/guilds',
+                  label: 'Гильдии',
+                  icon: Shield,
+                  route: { type: 'route', path: '/guilds' } as any,
                 },
                 {
                   path: '/history',

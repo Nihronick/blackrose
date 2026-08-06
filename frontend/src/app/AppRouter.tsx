@@ -16,6 +16,8 @@ const FavoritesView = lazy(() =>
 )
 const GuideView = lazy(() => import('@/views/GuideView').then((m) => ({ default: m.GuideView })))
 const GuidesView = lazy(() => import('@/views/GuidesView').then((m) => ({ default: m.GuidesView })))
+const GuildsView = lazy(() => import('@/views/GuildsView').then((m) => ({ default: m.GuildsView })))
+const GuildRosterView = lazy(() => import('@/views/GuildRosterView').then((m) => ({ default: m.GuildRosterView })))
 const HistoryView = lazy(() =>
   import('@/views/HistoryView').then((m) => ({ default: m.HistoryView }))
 )
@@ -111,6 +113,8 @@ export const AppRouter: FC = () => {
         <Route path="/profile" element={<ProfileView />} />
         <Route path="/search" element={<SearchView />} />
         <Route path="/admin" element={<AdminView onClose={() => push({ type: 'home' })} />} />
+        <Route path="/guilds" element={<GuildsView />} />
+        <Route path="/guilds/:id" element={<InnerGuildRosterView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
@@ -161,4 +165,9 @@ const InnerGuideView = ({
 const InnerTagResultsView = ({ onSelectGuide }: RouteWrapperProps) => {
   const { tag } = useParams()
   return <TagResultsView tag={tag!} onSelectGuide={onSelectGuide} />
+}
+
+const InnerGuildRosterView = () => {
+  const { id } = useParams()
+  return <GuildRosterView guildId={Number(id)} />
 }

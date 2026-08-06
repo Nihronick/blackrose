@@ -1,6 +1,7 @@
 import { apiFetch } from '@/lib/api'
 import { clearStoredToken, getMode, getStoredUser } from '@/lib/auth'
 import { applyLanguageKey } from '@/lib/language'
+import { initTelegramApp } from '@/lib/telegram'
 import { useAppStore } from '@/store'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
@@ -13,6 +14,9 @@ export const useAppInitialization = () => {
 
   useEffect(() => {
     let isCancelled = false
+
+    // Initialize modern Telegram Mini App 8.x features (Fullscreen, Deep Linking, Color Sync)
+    initTelegramApp(navigate)
 
     const doAuth = async () => {
       if (isCancelled) return
@@ -76,3 +80,4 @@ export const useAppInitialization = () => {
     navigator.serviceWorker?.register?.('sw.js').catch(() => {})
   }, [])
 }
+

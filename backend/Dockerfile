@@ -1,4 +1,4 @@
-# BlackRose — единый контейнер: API + Bot + ARQ Worker
+# BlackRose — контейнер: FastAPI backend
 FROM python:3.11-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Backend dependencies (now includes bot deps)
+# Backend dependencies
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
