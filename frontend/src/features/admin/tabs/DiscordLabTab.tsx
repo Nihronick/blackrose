@@ -14,9 +14,11 @@ import {
   apiGetDiscordSyncChannels,
   apiAddDiscordSyncChannel,
   apiRemoveDiscordSyncChannel,
+  apiGetSyncedDiscordGuides,
+  apiBackfillDiscordChannel,
 } from '@/lib/api'
 import { getGameIconUrl } from '@/lib/gameIcons'
-import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck } from '@/lib/icons'
+import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck, RefreshCw, ExternalLink, Clock, History, Sparkles } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { type ChangeEvent, type FC, useEffect, useMemo, useState } from 'react'
 
@@ -70,10 +72,12 @@ export const DiscordLabTab: FC = () => {
   const [workerToken, setWorkerToken] = useState('')
   const [workerStatus, setWorkerStatus] = useState<{ running: boolean; channels_count: number; has_token: boolean }>({ running: false, channels_count: 0, has_token: false })
   const [syncChannels, setSyncChannels] = useState<Array<{ channel_id: string; channel_name?: string; category_key: string; auto_translate: boolean; is_active: boolean }>>([])
+  const [syncedGuides, setSyncedGuides] = useState<Array<{ id: number; discord_message_id: string; discord_channel_id: string; guide_key: string; author_tag: string; created_at: string; title: string; category_key: string; views: number }>>([])
   const [newChannelId, setNewChannelId] = useState('')
   const [newChannelName, setNewChannelName] = useState('')
   const [newChannelCat, setNewChannelCat] = useState('')
   const [workerLoading, setWorkerLoading] = useState(false)
+  const [backfillingId, setBackfillingId] = useState<string | null>(null)
 
   const fetchSyncState = async () => {
     try {
@@ -81,7 +85,22 @@ export const DiscordLabTab: FC = () => {
       setWorkerStatus(st)
       const chs = await apiGetDiscordSyncChannels()
       setSyncChannels(chs.channels || [])
+      const sg = await apiGetSyncedDiscordGuides()
+      setSyncedGuides(sg.synced_guides || [])
     } catch {}
+  }
+
+  const handleBackfillChannel = async (channelId: string) => {
+    setBackfillingId(channelId)
+    try {
+      const res = await apiBackfillDiscordChannel(channelId)
+      alert(res.message || 'Сканирование истории канала запущено')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка сканирования: ' + (e.message || e))
+    } finally {
+      setBackfillingId(null)
+    }
   }
 
   useEffect(() => {
@@ -515,9 +534,9 @@ export const DiscordLabTab: FC = () => {
           {syncChannels.length > 0 && (
             <div className="divide-y divide-border/10 rounded-2xl border border-border/10 overflow-hidden bg-background/40">
               {syncChannels.map((ch) => (
-                <div key={ch.channel_id} className="flex items-center justify-between p-3 text-xs">
+                <div key={ch.channel_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 text-xs">
                   <div className="flex items-center gap-3">
-                    <div className="font-mono font-bold text-primary px-2 py-1 bg-primary/10 rounded-lg">
+                    <div className="font-mono font-bold text-primary px-2.5 py-1 bg-primary/10 rounded-lg">
                       #{ch.channel_id}
                     </div>
                     <div>
@@ -527,15 +546,93 @@ export const DiscordLabTab: FC = () => {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
-                    onClick={() => handleRemoveChannel(ch.channel_id)}
-                    title="Удалить привязку"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-[11px] font-bold gap-1.5 rounded-xl border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+                      disabled={backfillingId === ch.channel_id || !workerStatus.running}
+                      onClick={() => handleBackfillChannel(ch.channel_id)}
+                      title="Сканировать историю этого канала и занести гайды в очередь"
+                    >
+                      <RefreshCw className={`size-3.5 ${backfillingId === ch.channel_id ? 'animate-spin' : ''}`} />
+                      {backfillingId === ch.channel_id ? 'Сканирование...' : 'Сканировать очередь'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                      onClick={() => handleRemoveChannel(ch.channel_id)}
+                      title="Удалить привязку"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Live Sync Activity Feed & History Table */}
+        <div className="space-y-4 pt-4 border-t border-border/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History className="size-4 text-primary" />
+              <h4 className="text-xs font-black uppercase tracking-wider text-foreground font-heading">
+                Журнал синхронизированных гайдов ({syncedGuides.length})
+              </h4>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-[10px] uppercase font-bold gap-1 text-muted-foreground hover:text-foreground"
+              onClick={fetchSyncState}
+            >
+              <RefreshCw className="size-3" /> Обновить лог
+            </Button>
+          </div>
+
+          {syncedGuides.length === 0 ? (
+            <div className="p-8 text-center bg-background/30 rounded-2xl border border-dashed border-border/20 space-y-2">
+              <Sparkles className="size-8 text-muted-foreground/40 mx-auto" />
+              <p className="text-xs font-bold text-muted-foreground">История синхронизации пока пуста</p>
+              <p className="text-[10px] text-muted-foreground/60 max-w-sm mx-auto">
+                Запустите слушатель или нажмите «Сканировать очередь» у канала, чтобы начать автоматический импорт гайдов.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/10 rounded-2xl border border-border/10 overflow-hidden bg-background/50">
+              {syncedGuides.map((item) => (
+                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 gap-3 text-xs hover:bg-muted/20 transition-colors">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        Синхронизировано
+                      </span>
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        ID: {item.discord_message_id}
+                      </span>
+                    </div>
+                    <div className="font-bold text-foreground line-clamp-1">{item.title}</div>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <span>Автор: <strong className="text-foreground">{item.author_tag}</strong></span>
+                      <span>• Категория: <strong className="text-primary">{item.category_key}</strong></span>
+                      {item.created_at && (
+                        <span>• <Clock className="inline size-3 mr-0.5" />{new Date(item.created_at).toLocaleString('ru-RU')}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <a
+                      href={`#/guide/${item.guide_key}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                    >
+                      <ExternalLink className="size-3.5" /> Открыть гайд
+                    </a>
+                  </div>
                 </div>
               ))}
             </div>

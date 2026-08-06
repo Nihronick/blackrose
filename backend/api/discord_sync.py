@@ -58,3 +58,23 @@ async def remove_channel(channel_id: str, user=Depends(require_admin)):
     if not ok:
         raise HTTPException(status_code=404, detail="Канал не найден")
     return {"ok": True}
+
+
+@router.get("/synced-guides")
+async def list_synced_guides(user=Depends(require_admin)):
+    guides = await discord_sync_service.get_synced_guides(limit=50)
+    return {"synced_guides": guides}
+
+
+@router.post("/channels/{channel_id}/backfill")
+async def backfill_channel(channel_id: str, user=Depends(require_admin)):
+    if not stealth_discord_worker.running or not stealth_discord_worker.user_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Слушатель не запущен. Сначала укажите токен и нажмите 'Запустить слушатель'."
+        )
+    ok = await stealth_discord_worker.fetch_channel_history(channel_id, limit=30)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Ошибка загрузки истории канала")
+    return {"ok": True, "message": f"Очередь сканирования истории канала {channel_id} запущена"}
+

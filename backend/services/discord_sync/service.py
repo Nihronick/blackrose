@@ -174,5 +174,29 @@ class DiscordSyncService:
             logger.info(f"Successfully synced Discord guide '{guide_key}' from channel {channel_id}")
             return {"ok": True, "guide_key": guide_key, "title": title}
 
+    @classmethod
+    async def get_synced_guides(cls, limit: int = 50) -> list[dict]:
+        async with get_sessionmaker()() as session:
+            res = await session.execute(
+                select(DiscordSyncedGuide, Guide)
+                .outerjoin(Guide, DiscordSyncedGuide.guide_key == Guide.key)
+                .order_by(DiscordSyncedGuide.id.desc())
+                .limit(limit)
+            )
+            items = []
+            for synced, guide in res.all():
+                items.append({
+                    "id": synced.id,
+                    "discord_message_id": synced.discord_message_id,
+                    "discord_channel_id": synced.discord_channel_id,
+                    "guide_key": synced.guide_key,
+                    "author_tag": synced.author_tag,
+                    "created_at": synced.created_at.isoformat() if synced.created_at else None,
+                    "title": guide.title if guide else "Без названия",
+                    "category_key": guide.category_key if guide else "uncategorized",
+                    "views": guide.views if guide else 0,
+                })
+            return items
+
 
 discord_sync_service = DiscordSyncService()

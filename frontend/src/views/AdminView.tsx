@@ -225,7 +225,7 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
 
         {/* Content Container */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
-          <div className="max-w-[1400px] mx-auto p-6 md:p-8">
+          <div className="w-full max-w-[1800px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
             <Suspense fallback={<TabSpinner />}>
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {activeTab?.id === 'dash' && <DashboardTab />}
