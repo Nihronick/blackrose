@@ -328,3 +328,40 @@ async def admin_lab_import(body: LabImportIn, user=Depends(require_admin)):
     except Exception as e:
         logger.error(f"Inline import failed: {e}")
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
+
+@router.get("/backup/export")
+async def admin_export_backup(user=Depends(require_admin)):
+    from core.db import get_sessionmaker
+    from sqlalchemy import select
+    from models.db_models import Category, Guide, DiscordSyncChannel, Guild
+
+    async with get_sessionmaker()() as session:
+        cats_res = await session.execute(select(Category))
+        categories = [c.__dict__ for c in cats_res.scalars().all()]
+        for c in categories:
+            c.pop("_sa_instance_state", None)
+
+        guides_res = await session.execute(select(Guide))
+        guides = [g.__dict__ for g in guides_res.scalars().all()]
+        for g in guides:
+            g.pop("_sa_instance_state", None)
+
+        channels_res = await session.execute(select(DiscordSyncChannel))
+        channels = [ch.__dict__ for ch in channels_res.scalars().all()]
+        for ch in channels:
+            ch.pop("_sa_instance_state", None)
+
+        guilds_res = await session.execute(select(Guild))
+        guilds = [gl.__dict__ for gl in guilds_res.scalars().all()]
+        for gl in guilds:
+            gl.pop("_sa_instance_state", None)
+
+        return {
+            "version": "2.0",
+            "categories": categories,
+            "guides": guides,
+            "discord_sync_channels": channels,
+            "guilds": guilds,
+        }
+

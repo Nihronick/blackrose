@@ -120,6 +120,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   { label: 'Главная', route: { type: 'home' } as const, active: isHome },
                   { label: 'Категории', route: { type: 'categories' } as const, active: location.pathname === '/categories' },
                   { label: 'Гильдии', route: { type: 'guilds' } as const, active: location.pathname.startsWith('/guilds') },
+                  { label: 'Билды', route: { type: 'build' } as const, active: location.pathname === '/build' },
                   { label: 'Дорожная карта', route: { type: 'roadmap' } as const, active: location.pathname === '/roadmap' },
                   { label: 'Избранное', route: { type: 'favorites' } as const, active: location.pathname === '/favorites' },
                 ].map((item) => (

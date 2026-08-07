@@ -1,10 +1,12 @@
+import asyncio
 import hashlib
 from sqlalchemy import select, delete
 from core.db import get_sessionmaker
 from core.logging import get_logger
 from models.db_models import Category, DiscordSyncChannel, DiscordSyncedGuide, Guide
 from services.common.media import MediaService
-from services.discord_sync.translator import sanitize_discord_markdown, translate_en_to_ru
+from services.common.telegram_notify import telegram_notify_service
+from services.discord_sync.translator import sanitize_discord_markdown, translate_en_to_ru, generate_tldr_block
 
 logger = get_logger("blackrose.services.discord_sync")
 
@@ -123,10 +125,11 @@ class DiscordSyncService:
                     except Exception as err:
                         logger.warning(f"Failed to import attachment {url}: {err}")
 
-            # 4. Optional Translation (EN -> RU)
+            # 4. Optional Translation (EN -> RU) & TL;DR block
             final_text = clean_text
             if auto_translate:
                 final_text = await translate_en_to_ru(clean_text)
+                final_text = generate_tldr_block(final_text)
 
             # 5. Extract Title
             first_line = clean_text.split("\n")[0].strip("# ").strip()
@@ -138,6 +141,8 @@ class DiscordSyncService:
             # 6. Upsert into Guide table
             guide_res = await session.execute(select(Guide).where(Guide.key == guide_key))
             guide = guide_res.scalar_one_or_none()
+
+            is_new_guide = guide is None
 
             if not guide:
                 guide = Guide(
@@ -172,6 +177,18 @@ class DiscordSyncService:
 
             await session.commit()
             logger.info(f"Successfully synced Discord guide '{guide_key}' from channel {channel_id}")
+
+            # Send Telegram broadcast notification if it's a new guide
+            if is_new_guide:
+                asyncio.create_task(
+                    telegram_notify_service.send_guide_notification(
+                        title=title,
+                        category_key=category_key,
+                        guide_key=guide_key,
+                        author_tag=author_tag,
+                    )
+                )
+
             return {"ok": True, "guide_key": guide_key, "title": title}
 
     @classmethod

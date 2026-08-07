@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card'
 import { apiFetch, apiPost } from '@/lib/api'
 import {
   ChevronRight,
+  Download,
   Eye,
   FileText,
   LayoutGrid,
@@ -54,6 +55,22 @@ export const DashboardTab: FC = () => {
       alert('Ошибка при очистке кэша: ' + (e instanceof Error ? e.message : 'Unknown error'))
     } finally {
       setClearing(false)
+    }
+  }
+
+  const handleExportBackup = async () => {
+    try {
+      const data = await apiFetch<unknown>('/api/admin/backup/export')
+      const jsonStr = JSON.stringify(data, null, 2)
+      const blob = new Blob([jsonStr], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `blackrose_backup_${Date.now()}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert('Ошибка скачивания бэкапа: ' + e)
     }
   }
 
@@ -208,35 +225,54 @@ export const DashboardTab: FC = () => {
         </div>
       </div>
 
-      {/* System Maintenance */}
+      {/* System Maintenance & Backup */}
       <div className="space-y-4 pt-8 border-t border-border/10">
         <div className="flex items-center gap-2">
           <RefreshCw className="size-4 text-primary" />
           <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">
-            Обслуживание системы
+            Обслуживание системы & Бэкап
           </h3>
         </div>
-        <Card className="p-6 border-none bg-card/40 backdrop-blur-sm shadow-sm ring-1 ring-border/5">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="space-y-1">
-              <div className="text-sm font-bold text-foreground">Очистка кэша Redis</div>
-              <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed max-w-md">
-                Принудительно удаляет все сохраненные категории и данные гайдов из оперативной
-                памяти. Полезно, если данные в приложении не обновляются или отображаются
-                некорректно.
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-6 border border-border/10 glass-card rounded-3xl shadow-lg">
+            <div className="flex flex-col justify-between h-full gap-4">
+              <div className="space-y-1">
+                <div className="text-sm font-bold text-foreground font-heading">Очистка кэша Redis</div>
+                <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed">
+                  Принудительно удаляет кэшированные данные из оперативной памяти сервера.
+                </div>
               </div>
+              <Button
+                variant="outline"
+                className="rounded-2xl h-11 px-5 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all cursor-pointer w-full"
+                onClick={handleClearCache}
+                disabled={clearing}
+              >
+                <RefreshCw className={cn('size-4', clearing && 'animate-spin')} />
+                <span>{clearing ? 'Очистка...' : 'Очистить кэш'}</span>
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              className="rounded-xl h-12 px-6 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all active:scale-95 shrink-0"
-              onClick={handleClearCache}
-              disabled={clearing}
-            >
-              <RefreshCw className={cn('size-4', clearing && 'animate-spin')} />
-              <span>{clearing ? 'Очистка...' : 'Очистить кэш'}</span>
-            </Button>
-          </div>
-        </Card>
+          </Card>
+
+          <Card className="p-6 border border-primary/20 glass-card rounded-3xl shadow-lg bg-gradient-to-br from-primary/10 via-card to-transparent">
+            <div className="flex flex-col justify-between h-full gap-4">
+              <div className="space-y-1">
+                <div className="text-sm font-bold text-foreground font-heading">Полный Бэкап Базы Данных</div>
+                <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed">
+                  Скачать резервный дамповый снимок всех гайдов, категорий, гильдий и настроек в формате JSON.
+                </div>
+              </div>
+              <Button
+                variant="default"
+                className="rounded-2xl h-11 px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer w-full shadow-lg shadow-primary/20"
+                onClick={handleExportBackup}
+              >
+                <Download className="size-4" />
+                <span>Скачать Бэкап (JSON)</span>
+              </Button>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   )

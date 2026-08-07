@@ -85,3 +85,29 @@ async def translate_en_to_ru(text: str) -> str:
         translated_text = translated_text.replace(key, val)
 
     return translated_text
+
+
+def generate_tldr_block(text: str) -> str:
+    """
+    Extracts key points from guide text and builds a TL;DR summary block.
+    """
+    if not text:
+        return text
+
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    content_lines = [line_str for line_str in lines if not line_str.startswith("#")]
+    
+    summary_bullets = content_lines[:3] if content_lines else lines[:3]
+    if not summary_bullets:
+        return text
+
+    tldr_markdown = (
+        "> [!NOTE]\n"
+        "> **💡 Краткая выжимка (TL;DR):**\n"
+    )
+    for b in summary_bullets:
+        clean_b = b[:120] + ("..." if len(b) > 120 else "")
+        tldr_markdown += f"> • {clean_b}\n"
+
+    return tldr_markdown + "\n\n" + text
+

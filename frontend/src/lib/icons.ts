@@ -6,6 +6,7 @@
 export {
   AlertCircle,
   ArrowLeft,
+  Award,
   BarChart3,
   Beaker,
   Bell,
@@ -31,6 +32,7 @@ export {
   FileJson,
   FileText,
   Film,
+  Flame,
   Folder,
   Globe,
   GripVertical,
@@ -89,5 +91,6 @@ export {
   X,
   XCircle,
   XIcon,
+  Zap,
   ZoomIn,
 } from 'lucide-react'

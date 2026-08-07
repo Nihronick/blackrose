@@ -32,6 +32,7 @@ const ProfileView = lazy(() =>
   import('@/views/ProfileView').then((m) => ({ default: m.ProfileView }))
 )
 const SearchView = lazy(() => import('@/views/SearchView').then((m) => ({ default: m.SearchView })))
+const BuildPlannerView = lazy(() => import('@/views/BuildPlannerView').then((m) => ({ default: m.BuildPlannerView })))
 
 const ViewLoader = () => (
   <div className="flex h-full flex-col overflow-hidden container-padding pt-8">
@@ -112,6 +113,7 @@ export const AppRouter: FC = () => {
         <Route path="/roadmap" element={<RoadmapView onSelectGuide={handleOpenGuide} />} />
         <Route path="/profile" element={<ProfileView />} />
         <Route path="/search" element={<SearchView />} />
+        <Route path="/build" element={<BuildPlannerView />} />
         <Route path="/admin" element={<AdminView onClose={() => push({ type: 'home' })} />} />
         <Route path="/guilds" element={<GuildsView />} />
         <Route path="/guilds/:id" element={<InnerGuildRosterView />} />
