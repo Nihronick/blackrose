@@ -263,8 +263,11 @@
     );
   }
 
-  /* Responsive container padding */
+  /* Responsive container padding & widescreen max-width */
   .container-padding {
+    width: 100%;
+    max-width: 1800px;
+    margin-inline: auto;
     padding-inline: 1.25rem;
   }
   @media (min-width: 768px) {

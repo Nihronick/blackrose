@@ -108,17 +108,17 @@ export const DashboardTab: FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {statCards.map((stat) => (
           <Card
             key={stat.label}
-            className="p-5 border-none bg-card/40 backdrop-blur-sm shadow-sm ring-1 ring-border/5"
+            className="p-6 border border-border/10 glass-card rounded-3xl shadow-lg hover:border-primary/30 hover:-translate-y-1 transition-all duration-300 group"
           >
-            <div className={cn('inline-flex p-2.5 rounded-xl mb-3', stat.bg, stat.color)}>
-              <stat.icon className="size-5" />
+            <div className={cn('inline-flex p-3 rounded-2xl mb-4 group-hover:scale-110 transition-transform', stat.bg, stat.color)}>
+              <stat.icon className="size-6" />
             </div>
-            <div className="text-2xl font-black tracking-tighter mb-0.5">{stat.value}</div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+            <div className="text-3xl font-black tracking-tight mb-1 font-heading">{stat.value}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
               {stat.label}
             </div>
           </Card>
@@ -129,11 +129,11 @@ export const DashboardTab: FC = () => {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <TrendingUp className="size-4 text-primary" />
-          <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">
-            Тренд просмотров (30д)
+          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+            Тренд просмотров (30 дней)
           </h3>
         </div>
-        <Card className="p-6 border-none bg-card/40 backdrop-blur-sm shadow-sm ring-1 ring-border/5 h-[300px] min-h-[300px] overflow-hidden">
+        <Card className="p-6 border border-border/10 glass-card rounded-3xl shadow-xl h-[360px] min-h-[360px] overflow-hidden">
           <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <AreaChart data={chartData}>
               <defs>
