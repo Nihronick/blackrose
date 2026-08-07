@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     GITHUB_REPO: str = "" # e.g. "Nihronick/blackrose-wiki"
     GITHUB_BRANCH: str = "main"
 
+    # Telegram Notification Settings
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_CHAT_ID: str = ""
+
     # Frontend/WebApp
     FRONTEND_URL: str = "http://localhost:5173"
     MINIAPP_URL: Optional[str] = None
@@ -83,3 +87,7 @@ class Settings(BaseSettings):
         return os.path.join(os.path.dirname(self.BASE_DIR), "logs")
 
 settings = Settings()
+
+def get_settings() -> Settings:
+    return settings
+
