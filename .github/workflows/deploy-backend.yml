@@ -43,27 +43,24 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git config --global credential.helper store
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          echo "https://user:$HF_TOKEN@huggingface.co" > ~/.git-credentials
-          
-          # Create deployment directory
+          pip install huggingface_hub
           mkdir -p .deploy
-          
-          # Copy backend files
           cp -r backend/* .deploy/
-          # Copy the Hugging Face specific Dockerfile
           cp backend/Dockerfile.hf .deploy/Dockerfile
-          
-          cd .deploy
-          git init -b main
-          git add .
-          git commit -m "Deploy from GitHub Actions (Commit: ${{ github.sha }})"
-          
-          # Force push to HF Spaces
-          git remote add space https://huggingface.co/spaces/Nihronick/blackrose-backend
-          git push --force space main
+          python -c "
+from huggingface_hub import HfApi
+import os
+
+token = os.environ.get('HF_TOKEN')
+api = HfApi()
+api.upload_folder(
+    folder_path='.deploy',
+    repo_id='Nihronick/blackrose-backend',
+    repo_type='space',
+    token=token,
+)
+print('Successfully uploaded backend to Hugging Face Space!')
+"
 
       - name: Clean up Credentials & Deployment Folder
         if: always()
