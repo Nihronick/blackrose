@@ -70,7 +70,37 @@ export const DiscordLabTab: FC = () => {
 
   // Worker & Channels Sync State
   const [workerToken, setWorkerToken] = useState('')
-  const [workerStatus, setWorkerStatus] = useState<{ running: boolean; channels_count: number; has_token: boolean }>({ running: false, channels_count: 0, has_token: false })
+  const [workerStatus, setWorkerStatus] = useState<{
+    running: boolean
+    channels_count: number
+    has_token: boolean
+    has_saved_token?: boolean
+    token_preview?: string | null
+  }>({ running: false, channels_count: 0, has_token: false, has_saved_token: false, token_preview: null })
+
+  const handleClearToken = async () => {
+    try {
+      await apiPost('/api/admin/discord-sync/clear-token', {})
+      setWorkerToken('')
+      fetchSyncState()
+      alert('Токен отвязан от вашей учетной записи')
+    } catch (e: any) {
+      alert('Ошибка: ' + (e.message || e))
+    }
+  }
+
+  const handleStartWithSavedToken = async () => {
+    setWorkerLoading(true)
+    try {
+      const res = await apiStartDiscordSync(workerToken.trim() || '')
+      alert(res.message || 'Слушатель запущен')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка запуска: ' + (e.message || e))
+    } finally {
+      setWorkerLoading(false)
+    }
+  }
   const [syncChannels, setSyncChannels] = useState<Array<{ channel_id: string; channel_name?: string; category_key: string; auto_translate: boolean; is_active: boolean }>>([])
   const [syncedGuides, setSyncedGuides] = useState<Array<{ id: number; discord_message_id: string; discord_channel_id: string; guide_key: string; author_tag: string; created_at: string; title: string; category_key: string; views: number }>>([])
   const [newChannelId, setNewChannelId] = useState('')
@@ -507,28 +537,61 @@ export const DiscordLabTab: FC = () => {
               >
                 <Pause className="size-4" /> Остановить
               </Button>
-            ) : (
+            ) : workerStatus.has_saved_token ? (
               <Button
                 variant="default"
                 className="h-11 px-6 rounded-2xl font-black text-xs uppercase tracking-wider gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white cursor-pointer w-full sm:w-auto shadow-xl shadow-emerald-950/40 border border-white/10"
+                disabled={workerLoading}
+                onClick={handleStartWithSavedToken}
+              >
+                <Play className="size-4" /> Запустить (Авто-токен)
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                className="h-11 px-6 rounded-2xl font-black text-xs uppercase tracking-wider gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white cursor-pointer w-full sm:w-auto shadow-xl shadow-violet-950/40 border border-white/10"
                 disabled={workerLoading || !workerToken.trim()}
                 onClick={handleStartWorker}
               >
-                <Play className="size-4" /> Запустить слушатель
+                <Play className="size-4" /> Запустить и Закрепить
               </Button>
             )}
           </div>
         </div>
 
+        {workerStatus.has_saved_token && (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="size-5 text-emerald-400 shrink-0" />
+              <div>
+                <div className="font-black uppercase tracking-wider text-emerald-300">
+                  🔒 Токен зафиксирован за вашей учётной записью
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  Активный токен: <code className="font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md">{workerStatus.token_preview || '••••••••'}</code>. Вам больше не нужно вводить его вручную!
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-[11px] font-bold text-rose-400 border-rose-500/30 hover:bg-rose-500/20 rounded-xl cursor-pointer"
+              onClick={handleClearToken}
+            >
+              Отвязать токен
+            </Button>
+          </div>
+        )}
+
         {!workerStatus.running && (
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-background/60 p-5 rounded-2xl border border-white/10 backdrop-blur-md">
             <div className="sm:col-span-9 space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 ml-1 font-heading">
-                Discord User Token (для читательского подключения)
+                {workerStatus.has_saved_token ? 'Изменить зафиксированный токен Discord' : 'Ввести токен Discord для привязки'}
               </label>
               <Input
                 type="password"
-                placeholder="Вставьте токен вашего аккаунта-читателя..."
+                placeholder={workerStatus.has_saved_token ? 'Введите новый токен для обновления...' : 'Вставьте токен вашего аккаунта-читателя...'}
                 className="h-11 rounded-2xl bg-background/80 border border-white/10 font-mono text-xs text-foreground focus-visible:ring-primary/40 focus-visible:border-primary/50"
                 value={workerToken}
                 onChange={(e) => setWorkerToken(e.target.value)}
@@ -540,7 +603,7 @@ export const DiscordLabTab: FC = () => {
                 onClick={handleStartWorker}
                 disabled={!workerToken.trim() || workerLoading}
               >
-                Старт
+                Сохранить и Старт
               </Button>
             </div>
           </div>

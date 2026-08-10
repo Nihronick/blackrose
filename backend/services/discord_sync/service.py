@@ -3,7 +3,7 @@ import hashlib
 from sqlalchemy import select, delete
 from core.db import get_sessionmaker
 from core.logging import get_logger
-from models.db_models import Category, DiscordSyncChannel, DiscordSyncedGuide, Guide
+from models.db_models import Category, DiscordSyncChannel, DiscordSyncedGuide, Guide, SystemSetting
 from services.common.media import MediaService
 from services.common.telegram_notify import telegram_notify_service
 from services.discord_sync.translator import sanitize_discord_markdown, translate_en_to_ru, generate_tldr_block
@@ -11,6 +11,31 @@ from services.discord_sync.translator import sanitize_discord_markdown, translat
 logger = get_logger("blackrose.services.discord_sync")
 
 class DiscordSyncService:
+    @classmethod
+    async def get_setting(cls, key: str) -> str | None:
+        try:
+            async with get_sessionmaker()() as session:
+                res = await session.execute(select(SystemSetting.value).where(SystemSetting.key == key))
+                return res.scalar_one_or_none()
+        except Exception as e:
+            logger.warning(f"Error fetching system setting {key}: {e}")
+            return None
+
+    @classmethod
+    async def set_setting(cls, key: str, value: str | None) -> None:
+        try:
+            async with get_sessionmaker()() as session:
+                res = await session.execute(select(SystemSetting).where(SystemSetting.key == key))
+                setting = res.scalar_one_or_none()
+                if not setting:
+                    setting = SystemSetting(key=key, value=value)
+                    session.add(setting)
+                else:
+                    setting.value = value
+                await session.commit()
+        except Exception as e:
+            logger.error(f"Error setting system setting {key}: {e}")
+
     @classmethod
     async def get_all_channels(cls) -> list[dict]:
         async with get_sessionmaker()() as session:

@@ -12,25 +12,48 @@ logger = get_logger("blackrose.api.discord_sync")
 @router.get("/status")
 async def get_sync_status(user=Depends(require_admin)):
     channels = await discord_sync_service.get_all_channels()
+    saved_token = await discord_sync_service.get_setting("discord_user_token")
+    active_token = stealth_discord_worker.user_token or saved_token
+    token_preview = f"{active_token[:10]}...••••" if active_token and len(active_token) > 10 else None
     return {
         "running": stealth_discord_worker.running,
         "channels_count": len(channels),
-        "has_token": bool(stealth_discord_worker.user_token),
+        "has_token": bool(active_token),
+        "has_saved_token": bool(saved_token),
+        "token_preview": token_preview,
     }
 
 
 @router.post("/start")
 async def start_worker(body: DiscordSyncTokenIn, user=Depends(require_admin)):
-    ok = await stealth_discord_worker.start(body.user_token)
+    token_to_use = body.user_token.strip() if body.user_token else None
+    if not token_to_use:
+        token_to_use = await discord_sync_service.get_setting("discord_user_token")
+    
+    if not token_to_use:
+        raise HTTPException(status_code=400, detail="Токен Discord не указан и не найден в сохраненных настройках")
+
+    # Permanently save to system_settings for future sessions
+    if body.user_token and body.user_token.strip():
+        await discord_sync_service.set_setting("discord_user_token", body.user_token.strip())
+
+    ok = await stealth_discord_worker.start(token_to_use)
     if not ok:
         raise HTTPException(status_code=400, detail="Не удалось запустить воркер")
-    return {"ok": True, "message": "Слушатель Discord успешно запущен"}
+    return {"ok": True, "message": "Слушатель Discord успешно запущен и закреплён за вашей учётной записью"}
 
 
 @router.post("/stop")
 async def stop_worker(user=Depends(require_admin)):
     await stealth_discord_worker.stop()
     return {"ok": True, "message": "Слушатель Discord остановлен"}
+
+
+@router.post("/clear-token")
+async def clear_saved_token(user=Depends(require_admin)):
+    await stealth_discord_worker.stop()
+    await discord_sync_service.set_setting("discord_user_token", None)
+    return {"ok": True, "message": "Сохраненный токен отвязан от учетной записи"}
 
 
 @router.get("/channels")

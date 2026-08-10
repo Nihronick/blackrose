@@ -33,6 +33,17 @@ async def lifespan(app: FastAPI):
     # Seeding
     await seed_initial_admin()
 
+    # Auto-start Discord Stealth Worker if saved token exists
+    try:
+        from services.discord_sync.service import discord_sync_service
+        from services.discord_sync.worker import stealth_discord_worker
+        saved_token = await discord_sync_service.get_setting("discord_user_token")
+        if saved_token:
+            logger.info("Auto-starting Discord Stealth Worker with saved token...")
+            await stealth_discord_worker.start(saved_token)
+    except Exception as err:
+        logger.warning(f"Failed to auto-start Discord worker on startup: {err}")
+
     yield
 
     # Shutdown
