@@ -136,6 +136,7 @@ async def backfill_all_channels(user=Depends(require_admin)):
     success_count = 0
     failed_count = 0
     total_guides = 0
+    errors = []
 
     for ch in channels:
         ch_id = ch["channel_id"]
@@ -145,9 +146,15 @@ async def backfill_all_channels(user=Depends(require_admin)):
             total_guides += res.get("processed", 0)
         else:
             failed_count += 1
+            err_msg = res.get("error", "Неизвестная ошибка")
+            errors.append(f"Канал {ch_id}: {err_msg}")
+
+    msg = f"Сканирование завершено: {success_count} из {len(channels)} каналов успешно обработано (импортировано {total_guides} гайдов)."
+    if errors:
+        msg += f"\nПричины ошибок: {' | '.join(errors)}"
 
     return {
         "ok": True,
-        "message": f"Сканирование всех каналов завершено: {success_count} из {len(channels)} каналов успешно обработано (импортировано {total_guides} гайдов)",
+        "message": msg,
     }
 

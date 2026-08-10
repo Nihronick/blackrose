@@ -20,7 +20,7 @@ class StealthDiscordWorker:
         self.task: asyncio.Task | None = None
 
     def set_token(self, token: str):
-        self.user_token = token.strip() if token else None
+        self.user_token = token.strip().strip("\"'") if token else None
 
     async def start(self, user_token: str | None = None) -> bool:
         if user_token:
@@ -55,8 +55,9 @@ class StealthDiscordWorker:
         if not self.user_token:
             return {"ok": False, "error": "Токен Discord не указан"}
 
+        clean_token = self.user_token.strip().strip("\"'")
         headers = {
-            "Authorization": self.user_token,
+            "Authorization": clean_token,
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
         }
