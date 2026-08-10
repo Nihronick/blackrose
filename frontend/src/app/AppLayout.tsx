@@ -54,6 +54,15 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
     }
   }, [categoriesData, setCats])
 
+  // Scroll restoration: Reset scroll top on route transition
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    const scrollables = document.querySelectorAll('.view-scroll, .overflow-y-auto')
+    scrollables.forEach((el) => {
+      el.scrollTop = 0
+    })
+  }, [location.pathname])
+
   const isHome = location.pathname === '/'
   const isCategory = location.pathname.startsWith('/category/')
   const isTag = location.pathname.startsWith('/tag/')

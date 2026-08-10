@@ -25,59 +25,82 @@ export type Route =
 export const useAppNavigation = () => {
   const navigate = useNavigate()
 
-  const push = useCallback(
-    (route: Route) => {
-      switch (route.type) {
-        case 'home':
-          navigate('/')
-          break
-        case 'categories':
-          navigate('/categories')
-          break
-        case 'category':
-          navigate(`/category/${route.id}`)
-          break
-        case 'guide':
-          navigate(`/guide/${encodeURIComponent(route.id)}`)
-          break
-        case 'tag':
-          navigate(`/tag/${encodeURIComponent(route.tag)}`)
-          break
-        case 'favorites':
-          navigate('/favorites')
-          break
-        case 'history':
-          navigate('/history')
-          break
-        case 'admin':
-          navigate('/admin')
-          break
-        case 'roadmap':
-          navigate('/roadmap')
-          break
-        case 'profile':
-          navigate('/profile')
-          break
-        case 'search':
-          navigate('/search')
-          break
-        case 'guilds':
-          navigate('/guilds')
-          break
-        case 'guild':
-          navigate(`/guilds/${route.id}`)
-          break
-        case 'build':
-          navigate('/build')
-          break
+  const safeNavigate = useCallback(
+    (to: string | number) => {
+      if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+        ;(document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(
+          () => {
+            if (typeof to === 'number') {
+              navigate(to)
+            } else {
+              navigate(to)
+            }
+          }
+        )
+      } else {
+        if (typeof to === 'number') {
+          navigate(to)
+        } else {
+          navigate(to)
+        }
       }
     },
     [navigate]
   )
 
+  const push = useCallback(
+    (route: Route) => {
+      switch (route.type) {
+        case 'home':
+          safeNavigate('/')
+          break
+        case 'categories':
+          safeNavigate('/categories')
+          break
+        case 'category':
+          safeNavigate(`/category/${route.id}`)
+          break
+        case 'guide':
+          safeNavigate(`/guide/${encodeURIComponent(route.id)}`)
+          break
+        case 'tag':
+          safeNavigate(`/tag/${encodeURIComponent(route.tag)}`)
+          break
+        case 'favorites':
+          safeNavigate('/favorites')
+          break
+        case 'history':
+          safeNavigate('/history')
+          break
+        case 'admin':
+          safeNavigate('/admin')
+          break
+        case 'roadmap':
+          safeNavigate('/roadmap')
+          break
+        case 'profile':
+          safeNavigate('/profile')
+          break
+        case 'search':
+          safeNavigate('/search')
+          break
+        case 'guilds':
+          safeNavigate('/guilds')
+          break
+        case 'guild':
+          safeNavigate(`/guilds/${route.id}`)
+          break
+        case 'build':
+          safeNavigate('/build')
+          break
+      }
+    },
+    [safeNavigate]
+  )
+
   const pop = useCallback(() => {
-    navigate(-1)
-  }, [navigate])
+    safeNavigate(-1)
+  }, [safeNavigate])
 
   return { push, pop }
 }

@@ -35,13 +35,17 @@ const SearchView = lazy(() => import('@/views/SearchView').then((m) => ({ defaul
 const BuildPlannerView = lazy(() => import('@/views/BuildPlannerView').then((m) => ({ default: m.BuildPlannerView })))
 
 const ViewLoader = () => (
-  <div className="flex h-full flex-col overflow-hidden container-padding pt-8">
-    <div className="mb-10 h-10 w-2/3 rounded-2xl skeleton" />
-    <div className="grid grid-cols-1 gap-5">
-      {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="h-28 rounded-[32px] border border-border/10 skeleton shadow-sm" />
-      ))}
+  <div className="flex h-full flex-col overflow-hidden container-padding pt-6 pb-24 space-y-6 animate-pulse">
+    <div className="flex items-center justify-between">
+      <div className="h-10 w-48 rounded-2xl bg-rose-500/10 border border-rose-500/20" />
+      <div className="h-8 w-24 rounded-xl bg-amber-500/10 border border-amber-500/20" />
     </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="h-44 rounded-3xl rose-bento-card border-rose-500/20 bg-card/60" />
+      <div className="h-44 rounded-3xl rose-bento-card border-rose-500/20 bg-card/60" />
+      <div className="h-44 rounded-3xl rose-bento-card border-rose-500/20 bg-card/60" />
+    </div>
+    <div className="h-32 rounded-3xl rose-bento-card border-rose-500/20 bg-card/40" />
   </div>
 )
 
