@@ -16,6 +16,7 @@ import {
   apiRemoveDiscordSyncChannel,
   apiGetSyncedDiscordGuides,
   apiBackfillDiscordChannel,
+  apiBackfillAllDiscordChannels,
 } from '@/lib/api'
 import { getGameIconUrl } from '@/lib/gameIcons'
 import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck, RefreshCw, ExternalLink, Clock, History, Sparkles } from '@/lib/icons'
@@ -120,6 +121,8 @@ export const DiscordLabTab: FC = () => {
     } catch {}
   }
 
+  const [isBackfillingAll, setIsBackfillingAll] = useState(false)
+
   const handleBackfillChannel = async (channelId: string) => {
     setBackfillingId(channelId)
     try {
@@ -130,6 +133,19 @@ export const DiscordLabTab: FC = () => {
       alert('Ошибка сканирования: ' + (e.message || e))
     } finally {
       setBackfillingId(null)
+    }
+  }
+
+  const handleBackfillAllChannels = async () => {
+    setIsBackfillingAll(true)
+    try {
+      const res = await apiBackfillAllDiscordChannels()
+      alert(res.message || 'Сканирование всех каналов завершено')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка сканирования: ' + (e.message || e))
+    } finally {
+      setIsBackfillingAll(false)
     }
   }
 
@@ -611,9 +627,23 @@ export const DiscordLabTab: FC = () => {
 
         {/* Channel Sync Rules Table & Add Form */}
         <div className="space-y-4 pt-2">
-          <h4 className="text-xs font-black uppercase tracking-wider text-foreground font-heading">
-            Отслеживаемые каналы Discord ({syncChannels.length})
-          </h4>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h4 className="text-xs font-black uppercase tracking-wider text-foreground font-heading">
+              Отслеживаемые каналы Discord ({syncChannels.length})
+            </h4>
+            {syncChannels.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isBackfillingAll}
+                onClick={handleBackfillAllChannels}
+                className="h-8 rounded-xl border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-bold gap-2 cursor-pointer transition-all"
+              >
+                <Sparkles className={`size-3.5 ${isBackfillingAll ? 'animate-spin' : ''}`} />
+                {isBackfillingAll ? 'Сканирование всех каналов...' : `⚡ Сканировать ВСЕ каналы (${syncChannels.length})`}
+              </Button>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-background/50 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
             <div className="sm:col-span-4">

@@ -104,3 +104,34 @@ async def backfill_channel(channel_id: str, user=Depends(require_admin)):
         raise HTTPException(status_code=400, detail="Ошибка загрузки истории канала (проверьте доступ к каналу и валидность токена)")
     return {"ok": True, "message": f"Сканирование истории канала {channel_id} успешно завершено"}
 
+
+@router.post("/backfill-all")
+async def backfill_all_channels(user=Depends(require_admin)):
+    active_token = stealth_discord_worker.user_token or await discord_sync_service.get_setting("discord_user_token")
+    if not active_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Токен Discord не обнаружен. Нажмите 'Привязать токен' или 'Запустить слушатель'."
+        )
+    stealth_discord_worker.set_token(active_token)
+
+    channels = await discord_sync_service.get_all_channels()
+    if not channels:
+        return {"ok": True, "message": "Список каналов пуст"}
+
+    success_count = 0
+    failed_count = 0
+
+    for ch in channels:
+        ch_id = ch["channel_id"]
+        ok = await stealth_discord_worker.fetch_channel_history(ch_id, limit=30)
+        if ok:
+            success_count += 1
+        else:
+            failed_count += 1
+
+    return {
+        "ok": True,
+        "message": f"Сканирование всех каналов завершено: {success_count} из {len(channels)} каналов успешно обработано"
+    }
+

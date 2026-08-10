@@ -257,6 +257,8 @@ export const apiGetSyncedDiscordGuides = () =>
   apiFetch<{ synced_guides: Array<{ id: number; discord_message_id: string; discord_channel_id: string; guide_key: string; author_tag: string; created_at: string; title: string; category_key: string; views: number }> }>('/api/admin/discord-sync/synced-guides')
 export const apiBackfillDiscordChannel = (channel_id: string) =>
   apiPost<{ ok: boolean; message: string }>(`/api/admin/discord-sync/channels/${channel_id}/backfill`, {})
+export const apiBackfillAllDiscordChannels = () =>
+  apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/backfill-all', {})
 
 // --- User Management API ---
 export interface AdminUserItem {
