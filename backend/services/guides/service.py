@@ -128,11 +128,18 @@ class GuideService:
     @classmethod
     async def upsert(cls, key: str, data: dict, changed_by: int | None = None) -> bool:
         async with get_sessionmaker()() as session:
-            existing = await session.execute(select(Guide).where(Guide.key == key))
+            existing = await session.execute(
+                select(Guide).options(selectinload(Guide.tags)).where(Guide.key == key)
+            )
             existing_guide = existing.scalar_one_or_none()
             is_new = existing_guide is None
 
-            old_snapshot = cls._to_dict(existing_guide) if not is_new else None
+            old_snapshot = None
+            if not is_new and existing_guide:
+                try:
+                    old_snapshot = cls._to_dict(existing_guide)
+                except Exception as err:
+                    logger.warning(f"Failed to create old_snapshot for history: {err}")
 
             stmt = insert(Guide).values(key=key, **data)
             stmt = stmt.on_conflict_do_update(
@@ -141,13 +148,17 @@ class GuideService:
             )
             await session.execute(stmt)
 
-            history = GuideHistory(
-                guide_key=key,
-                action="created" if is_new else "updated",
-                changed_by=changed_by,
-                snapshot=old_snapshot
-            )
-            session.add(history)
+            try:
+                history = GuideHistory(
+                    guide_key=key,
+                    action="created" if is_new else "updated",
+                    changed_by=changed_by,
+                    snapshot=old_snapshot
+                )
+                session.add(history)
+            except Exception as err:
+                logger.warning(f"Failed to record GuideHistory: {err}")
+
             await session.commit()
 
             # Trigger Git Sync (non-blocking)
