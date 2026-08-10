@@ -56,8 +56,12 @@ async def update_my_profile(body: GuildMemberProfileIn, user=Depends(require_use
         raise HTTPException(status_code=404, detail="Вы не состоите в гильдии")
     return {"ok": True}
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from core.rate_limit import limiter
+
 @router.post("/guilds/join")
-async def join_guild(body: GuildJoinRequestIn, user=Depends(require_user)):
+@limiter.limit("5/minute")
+async def join_guild(request: Request, body: GuildJoinRequestIn, user=Depends(require_user)):
     result = await guild_service.create_join_request(
         user_id=user["id"], guild_id=body.guild_id,
         nickname=body.nickname, message=body.message

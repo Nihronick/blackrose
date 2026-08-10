@@ -17,7 +17,9 @@ from api import admin, public, webhook_ingest
 from api.guilds import router as guilds_router
 from api.discord_sync import router as discord_sync_router
 from api.users_admin import router as users_admin_router
-from core.http import http_client
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+from core.rate_limit import limiter
 
 
 logger = get_logger("blackrose.main")
@@ -27,6 +29,9 @@ async def lifespan(app: FastAPI):
     # Startup
     configure_logging()
     logger.info("Initializing BlackRose System", version=settings.VERSION, env=settings.ENVIRONMENT)
+
+    if settings.JWT_SECRET == "dev_secret_key_change_me":
+        logger.warning("SECURITY WARNING: JWT_SECRET is set to default development value!")
 
     # DB Init
     await init_db()
@@ -60,11 +65,20 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Rate Limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Integrations & Middleware
 setup_honeybadger(app)
 setup_cors(app)
 app.add_middleware(RequestContextMiddleware)
 app.middleware("http")(add_security_headers)
+
+# Root Health Alias
+@app.get("/health", tags=["health"])
+async def root_health():
+    return {"status": "ok", "version": settings.VERSION}
 
 # Routers
 app.include_router(public.router, prefix="/api")

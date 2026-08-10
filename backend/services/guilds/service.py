@@ -45,6 +45,7 @@ class GuildService:
                 select(GuildMember)
                 .where(GuildMember.guild_id == guild_id)
                 .order_by(GuildMember.rank.desc())
+                .limit(100)
             )
             members = res.scalars().all()
             
