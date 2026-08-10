@@ -8,28 +8,32 @@ logger = get_logger("blackrose.services.guilds")
 
 class GuildService:
     async def get_all_guilds(self):
-        async with get_sessionmaker()() as session:
-            result = await session.execute(select(Guild).order_by(Guild.name))
-            guilds = result.scalars().all()
-            
-            counts_res = await session.execute(
-                select(GuildMember.guild_id, func.count(GuildMember.id))
-                .group_by(GuildMember.guild_id)
-            )
-            counts = {row[0]: row[1] for row in counts_res}
-            
-            res = []
-            for g in guilds:
-                res.append({
-                    "id": g.id,
-                    "name": g.name,
-                    "icon_url": g.icon_url,
-                    "description": g.description,
-                    "max_members": g.max_members,
-                    "is_active": g.is_active,
-                    "member_count": counts.get(g.id, 0)
-                })
-            return res
+        try:
+            async with get_sessionmaker()() as session:
+                result = await session.execute(select(Guild).order_by(Guild.name))
+                guilds = result.scalars().all()
+                
+                counts_res = await session.execute(
+                    select(GuildMember.guild_id, func.count(GuildMember.id))
+                    .group_by(GuildMember.guild_id)
+                )
+                counts = {row[0]: row[1] for row in counts_res.all()}
+                
+                res = []
+                for g in guilds:
+                    res.append({
+                        "id": g.id,
+                        "name": g.name,
+                        "icon_url": g.icon_url,
+                        "description": g.description,
+                        "max_members": g.max_members,
+                        "is_active": g.is_active,
+                        "member_count": counts.get(g.id, 0)
+                    })
+                return res
+        except Exception as e:
+            logger.error(f"Error in get_all_guilds: {e}")
+            return []
             
     async def get_guild_roster(self, guild_id: int):
         async with get_sessionmaker()() as session:
