@@ -50,15 +50,17 @@ export const LocalAdminLogin: FC<LocalAdminLoginProps> = ({ onSuccess, onBack })
   }
 
   return (
-    <Card className="w-full p-6 border border-primary/20 glass-card rounded-[32px] shadow-2xl">
+    <Card className="w-full p-8 border border-primary/30 bg-[#0c101c]/95 backdrop-blur-2xl rounded-[32px] shadow-2xl shadow-primary/20 text-foreground">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex flex-col items-center">
-          <div className="flex size-14 items-center justify-center rounded-[20px] bg-primary shadow-xl shadow-primary/20 text-white font-black text-xl tracking-tighter mb-4">
+          <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white shadow-xl shadow-violet-500/25 border border-white/10 font-black text-xl tracking-tighter mb-4">
             BR
           </div>
-          <h2 className="text-lg font-black tracking-tight mb-1 font-heading text-foreground">Вход в систему</h2>
-          <p className="text-xs text-center text-muted-foreground/80 font-medium leading-relaxed max-w-[220px]">
-            Доступ только для администраторов BlackRose
+          <h2 className="text-xl font-black tracking-tight mb-1 font-heading text-foreground">
+            Авторизация Администратора
+          </h2>
+          <p className="text-xs text-center text-muted-foreground/80 font-medium leading-relaxed max-w-[240px]">
+            Вход в защищённую панель управления BlackRose
           </p>
         </div>
 
@@ -66,13 +68,13 @@ export const LocalAdminLogin: FC<LocalAdminLoginProps> = ({ onSuccess, onBack })
           <div className="space-y-1.5">
             <label
               htmlFor="admin-login-input"
-              className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 font-heading"
+              className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 ml-1 font-heading"
             >
               Логин
             </label>
             <Input
               id="admin-login-input"
-              className="h-11 rounded-2xl border border-border/20 bg-muted/30 font-bold text-sm focus-visible:bg-background focus-visible:ring-primary/20"
+              className="h-12 rounded-2xl border border-white/10 bg-background/80 font-semibold text-sm focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/50 text-foreground"
               placeholder="Введите логин..."
               value={user}
               onChange={(e) => setUser(e.target.value)}
@@ -82,14 +84,14 @@ export const LocalAdminLogin: FC<LocalAdminLoginProps> = ({ onSuccess, onBack })
           <div className="space-y-1.5">
             <label
               htmlFor="admin-pass-input"
-              className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 font-heading"
+              className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 ml-1 font-heading"
             >
               Пароль
             </label>
             <Input
               id="admin-pass-input"
               type="password"
-              className="h-11 rounded-2xl border border-border/20 bg-muted/30 font-bold text-sm focus-visible:bg-background focus-visible:ring-primary/20"
+              className="h-12 rounded-2xl border border-white/10 bg-background/80 font-semibold text-sm focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/50 text-foreground"
               placeholder="••••••••"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
@@ -99,7 +101,7 @@ export const LocalAdminLogin: FC<LocalAdminLoginProps> = ({ onSuccess, onBack })
         </div>
 
         {err && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-2xl text-xs font-bold text-destructive text-center animate-in zoom-in-95">
+          <div className="p-3 bg-destructive/15 border border-destructive/30 rounded-2xl text-xs font-bold text-destructive text-center animate-in zoom-in-95">
             {err}
           </div>
         )}
@@ -107,10 +109,10 @@ export const LocalAdminLogin: FC<LocalAdminLoginProps> = ({ onSuccess, onBack })
         <div className="space-y-3 pt-2">
           <Button
             type="submit"
-            className="h-12 w-full rounded-2xl font-black uppercase tracking-wider text-xs shadow-xl shadow-primary/20 transition-all active:scale-[0.98] font-heading cursor-pointer"
+            className="h-14 w-full rounded-2xl font-black uppercase tracking-wider text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-xl shadow-violet-900/40 border border-white/10 transition-all active:scale-[0.98] font-heading cursor-pointer"
             disabled={loading || !user || !pass}
           >
-            {loading ? <div className="adm2-spinner adm2-spinner-sm" /> : 'Подтвердить вход'}
+            {loading ? <div className="adm2-spinner adm2-spinner-sm" /> : 'Подтвердить Вход'}
           </Button>
 
           {onBack && (

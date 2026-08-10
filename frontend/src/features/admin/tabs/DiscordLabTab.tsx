@@ -391,43 +391,107 @@ export const DiscordLabTab: FC = () => {
     }
   }
 
+  // Auto-polling for live updates when listener is active
+  useEffect(() => {
+    let interval: any = null
+    if (workerStatus.running) {
+      interval = setInterval(() => {
+        fetchSyncState()
+      }, 4000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [workerStatus.running])
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <Beaker className="size-5 text-primary" />
+    <div className="w-full space-y-8 animate-in fade-in duration-500">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-gradient-to-r from-violet-950/40 via-card/60 to-indigo-950/40 backdrop-blur-xl border border-primary/20 rounded-3xl shadow-2xl">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-2xl text-white shadow-lg shadow-violet-500/25 border border-white/10">
+            <Beaker className="size-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black tracking-tight uppercase">Discord Sync Lab & Live Gateway Worker</h2>
-            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-              Автоматическая бесшумная синхронизация и импорт гайдов
+            <h2 className="text-2xl font-black tracking-tight uppercase font-heading text-foreground">
+              Discord Sync Lab & Live Gateway Worker
+            </h2>
+            <p className="text-xs font-bold text-primary/80 uppercase tracking-widest mt-0.5">
+              Автоматическая бессерверная синхронизация, ИИ-выжимка и импорт гайдов
             </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 bg-background/60 rounded-2xl border border-white/10 backdrop-blur-md">
+            <div className={`size-2.5 rounded-full ${workerStatus.running ? 'bg-emerald-400 animate-ping' : 'bg-rose-500'}`} />
+            <span className="text-xs font-black uppercase tracking-wider text-foreground">
+              {workerStatus.running ? 'Шлюз Активен' : 'Шлюз Остановлен'}
+            </span>
           </div>
         </div>
       </div>
 
+      {/* Interactive Visual Pipeline Stepper */}
+      <Card className="p-6 border border-primary/20 bg-gradient-to-br from-card/90 via-card/60 to-card/90 backdrop-blur-xl rounded-3xl space-y-5 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-black uppercase tracking-widest text-primary font-heading">
+            ⚡ Этапы Конвейера Авто-Синхронизации (Pipeline Flow)
+          </h3>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            5 Интерактивных Стадий
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {[
+            { step: '1', title: '1. Gateway Listener', desc: 'Пассивный WebSocket', status: workerStatus.running ? 'active' : 'idle', icon: ShieldCheck },
+            { step: '2', title: '2. SHA-256 Diffing', desc: 'Сверка версий', status: workerStatus.running ? 'active' : 'idle', icon: RefreshCw },
+            { step: '3', title: '3. ИИ-Перевод', desc: 'EN ➔ RU + TL;DR', status: workerStatus.running ? 'active' : 'idle', icon: Globe },
+            { step: '4', title: '4. Кэш Медиа', desc: 'Сохранение фото', status: workerStatus.running ? 'active' : 'idle', icon: Database },
+            { step: '5', title: '5. Публикация', desc: 'Обновление в БД', status: workerStatus.running ? 'active' : 'idle', icon: Sparkles },
+          ].map((s) => (
+            <div
+              key={s.step}
+              className={`p-3.5 rounded-2xl border transition-all ${
+                s.status === 'active'
+                  ? 'bg-primary/10 border-primary/30 text-foreground shadow-md shadow-primary/5'
+                  : 'bg-background/40 border-white/5 text-muted-foreground/60'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <s.icon className={`size-4 ${s.status === 'active' ? 'text-primary animate-pulse' : 'text-muted-foreground/40'}`} />
+                <span className="text-xs font-black uppercase tracking-wide font-heading">{s.title}</span>
+              </div>
+              <p className="text-[10px] font-medium text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Stealth Discord Gateway Worker Control Card */}
-      <Card className="p-6 border border-primary/20 glass-card rounded-3xl space-y-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/10 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 rounded-2xl text-primary border border-primary/20">
+      <Card className="p-6 border border-primary/20 bg-gradient-to-br from-card/90 via-card/50 to-card/90 backdrop-blur-xl rounded-3xl space-y-6 shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-2xl text-white shadow-xl shadow-violet-500/25 border border-white/10">
               <ShieldCheck className="size-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-black uppercase font-heading">Бесшумный Авто-Синхронизатор Discord</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-black uppercase font-heading text-foreground">
+                  Бесшумный Авто-Синхронизатор Discord
+                </h3>
                 <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                     workerStatus.running
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-950/40'
+                      : 'bg-muted/60 text-muted-foreground border border-white/10'
                   }`}
                 >
                   {workerStatus.running ? '🟢 Активен (Слушает в реальном времени)' : '🔴 Остановлен'}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground/80 font-medium mt-0.5">
+              <p className="text-xs text-muted-foreground/80 font-medium mt-1">
                 Пассивный WebSocket-слушатель чужих каналов Discord с автопереводом EN ➔ RU и локальным кэшированием медиа.
               </p>
             </div>
@@ -437,7 +501,7 @@ export const DiscordLabTab: FC = () => {
             {workerStatus.running ? (
               <Button
                 variant="destructive"
-                className="h-10 px-5 rounded-2xl font-bold text-xs uppercase tracking-wider gap-2 cursor-pointer w-full sm:w-auto"
+                className="h-11 px-6 rounded-2xl font-black text-xs uppercase tracking-wider gap-2 cursor-pointer w-full sm:w-auto shadow-xl shadow-rose-950/40 border border-rose-500/30"
                 disabled={workerLoading}
                 onClick={handleStopWorker}
               >
@@ -446,7 +510,7 @@ export const DiscordLabTab: FC = () => {
             ) : (
               <Button
                 variant="default"
-                className="h-10 px-5 rounded-2xl font-bold text-xs uppercase tracking-wider gap-2 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer w-full sm:w-auto shadow-lg shadow-emerald-900/30"
+                className="h-11 px-6 rounded-2xl font-black text-xs uppercase tracking-wider gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white cursor-pointer w-full sm:w-auto shadow-xl shadow-emerald-950/40 border border-white/10"
                 disabled={workerLoading || !workerToken.trim()}
                 onClick={handleStartWorker}
               >
@@ -457,23 +521,22 @@ export const DiscordLabTab: FC = () => {
         </div>
 
         {!workerStatus.running && (
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-muted/20 p-4 rounded-2xl border border-border/10">
-            <div className="sm:col-span-9 space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 ml-1">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-background/60 p-5 rounded-2xl border border-white/10 backdrop-blur-md">
+            <div className="sm:col-span-9 space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 ml-1 font-heading">
                 Discord User Token (для читательского подключения)
               </label>
               <Input
                 type="password"
                 placeholder="Вставьте токен вашего аккаунта-читателя..."
-                className="h-10 rounded-xl bg-background font-mono text-xs"
+                className="h-11 rounded-2xl bg-background/80 border border-white/10 font-mono text-xs text-foreground focus-visible:ring-primary/40 focus-visible:border-primary/50"
                 value={workerToken}
                 onChange={(e) => setWorkerToken(e.target.value)}
               />
             </div>
             <div className="sm:col-span-3">
               <Button
-                variant="secondary"
-                className="h-10 w-full rounded-xl text-xs font-bold uppercase tracking-wider"
+                className="h-11 w-full rounded-2xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border border-white/10 shadow-lg cursor-pointer"
                 onClick={handleStartWorker}
                 disabled={!workerToken.trim() || workerLoading}
               >
@@ -489,11 +552,11 @@ export const DiscordLabTab: FC = () => {
             Отслеживаемые каналы Discord ({syncChannels.length})
           </h4>
 
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-card/60 p-3 rounded-2xl border border-border/10">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-background/50 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
             <div className="sm:col-span-4">
               <Input
                 placeholder="ID канала (например 123456...)"
-                className="h-9 rounded-xl bg-background text-xs font-mono"
+                className="h-10 rounded-xl bg-background/80 border border-white/10 text-xs font-mono text-foreground"
                 value={newChannelId}
                 onChange={(e) => setNewChannelId(e.target.value)}
               />
@@ -501,19 +564,19 @@ export const DiscordLabTab: FC = () => {
             <div className="sm:col-span-4">
               <Input
                 placeholder="Название канала (опционально)"
-                className="h-9 rounded-xl bg-background text-xs"
+                className="h-10 rounded-xl bg-background/80 border border-white/10 text-xs text-foreground"
                 value={newChannelName}
                 onChange={(e) => setNewChannelName(e.target.value)}
               />
             </div>
             <div className="sm:col-span-3">
               <select
-                className="h-9 w-full rounded-xl bg-background border border-input px-3 text-xs font-bold"
+                className="h-10 w-full rounded-xl bg-background border border-white/10 px-3 text-xs font-bold text-foreground cursor-pointer"
                 value={newChannelCat}
                 onChange={(e) => setNewChannelCat(e.target.value)}
               >
                 {categories.map((c) => (
-                  <option key={c.key} value={c.key}>
+                  <option key={c.key} value={c.key} className="bg-card text-foreground">
                     {c.title}
                   </option>
                 ))}
@@ -522,7 +585,7 @@ export const DiscordLabTab: FC = () => {
             <div className="sm:col-span-1">
               <Button
                 size="icon"
-                className="h-9 w-full rounded-xl bg-primary text-primary-foreground cursor-pointer"
+                className="h-10 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white cursor-pointer shadow-md border border-white/10"
                 onClick={handleAddChannel}
                 title="Добавить канал"
               >
@@ -532,16 +595,16 @@ export const DiscordLabTab: FC = () => {
           </div>
 
           {syncChannels.length > 0 && (
-            <div className="divide-y divide-border/10 rounded-2xl border border-border/10 overflow-hidden bg-background/40">
+            <div className="divide-y divide-white/10 rounded-2xl border border-white/10 overflow-hidden bg-background/40 backdrop-blur-md">
               {syncChannels.map((ch) => (
-                <div key={ch.channel_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 text-xs">
+                <div key={ch.channel_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 text-xs">
                   <div className="flex items-center gap-3">
-                    <div className="font-mono font-bold text-primary px-2.5 py-1 bg-primary/10 rounded-lg">
+                    <div className="font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-xl border border-primary/20">
                       #{ch.channel_id}
                     </div>
                     <div>
-                      <div className="font-bold text-foreground">{ch.channel_name || 'Канал Discord'}</div>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="font-bold text-foreground text-sm">{ch.channel_name || 'Канал Discord'}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
                         Категория на сайте: <span className="font-bold text-primary">{ch.category_key}</span> • Автоперевод EN➔RU
                       </div>
                     </div>
@@ -550,7 +613,7 @@ export const DiscordLabTab: FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 text-[11px] font-bold gap-1.5 rounded-xl border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+                      className="h-9 px-4 text-xs font-bold gap-2 rounded-xl border-primary/30 text-primary hover:bg-primary/20 cursor-pointer"
                       disabled={backfillingId === ch.channel_id || !workerStatus.running}
                       onClick={() => handleBackfillChannel(ch.channel_id)}
                       title="Сканировать историю этого канала и занести гайды в очередь"
@@ -561,7 +624,7 @@ export const DiscordLabTab: FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                      className="size-9 text-destructive hover:bg-destructive/20 rounded-xl cursor-pointer"
                       onClick={() => handleRemoveChannel(ch.channel_id)}
                       title="Удалить привязку"
                     >
@@ -575,7 +638,7 @@ export const DiscordLabTab: FC = () => {
         </div>
 
         {/* Live Sync Activity Feed & History Table */}
-        <div className="space-y-4 pt-4 border-t border-border/10">
+        <div className="space-y-4 pt-4 border-t border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <History className="size-4 text-primary" />
@@ -586,40 +649,40 @@ export const DiscordLabTab: FC = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-[10px] uppercase font-bold gap-1 text-muted-foreground hover:text-foreground"
+              className="h-8 text-[11px] uppercase font-black gap-1.5 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl"
               onClick={fetchSyncState}
             >
-              <RefreshCw className="size-3" /> Обновить лог
+              <RefreshCw className="size-3.5" /> Обновить лог
             </Button>
           </div>
 
           {syncedGuides.length === 0 ? (
-            <div className="p-8 text-center bg-background/30 rounded-2xl border border-dashed border-border/20 space-y-2">
-              <Sparkles className="size-8 text-muted-foreground/40 mx-auto" />
-              <p className="text-xs font-bold text-muted-foreground">История синхронизации пока пуста</p>
-              <p className="text-[10px] text-muted-foreground/60 max-w-sm mx-auto">
+            <div className="p-10 text-center bg-background/30 rounded-3xl border border-dashed border-white/10 space-y-3">
+              <Sparkles className="size-10 text-primary/40 mx-auto animate-bounce" />
+              <p className="text-sm font-bold text-foreground">История синхронизации пока пуста</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Запустите слушатель или нажмите «Сканировать очередь» у канала, чтобы начать автоматический импорт гайдов.
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-border/10 rounded-2xl border border-border/10 overflow-hidden bg-background/50">
+            <div className="divide-y divide-white/10 rounded-2xl border border-white/10 overflow-hidden bg-background/50 backdrop-blur-md">
               {syncedGuides.map((item) => (
-                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 gap-3 text-xs hover:bg-muted/20 transition-colors">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 text-xs hover:bg-white/5 transition-colors">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                         Синхронизировано
                       </span>
-                      <span className="font-mono text-[10px] text-muted-foreground">
+                      <span className="font-mono text-[11px] text-muted-foreground">
                         ID: {item.discord_message_id}
                       </span>
                     </div>
-                    <div className="font-bold text-foreground line-clamp-1">{item.title}</div>
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <div className="font-bold text-foreground text-sm line-clamp-1">{item.title}</div>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                       <span>Автор: <strong className="text-foreground">{item.author_tag}</strong></span>
                       <span>• Категория: <strong className="text-primary">{item.category_key}</strong></span>
                       {item.created_at && (
-                        <span>• <Clock className="inline size-3 mr-0.5" />{new Date(item.created_at).toLocaleString('ru-RU')}</span>
+                        <span>• <Clock className="inline size-3 mr-1" />{new Date(item.created_at).toLocaleString('ru-RU')}</span>
                       )}
                     </div>
                   </div>
@@ -628,9 +691,9 @@ export const DiscordLabTab: FC = () => {
                       href={`#/guide/${item.guide_key}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 transition-all border border-white/10 shadow-md"
                     >
-                      <ExternalLink className="size-3.5" /> Открыть гайд
+                      <ExternalLink className="size-4" /> Открыть гайд
                     </a>
                   </div>
                 </div>
