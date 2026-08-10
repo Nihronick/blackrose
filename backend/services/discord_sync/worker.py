@@ -110,6 +110,9 @@ class StealthDiscordWorker:
                             await asyncio.sleep(retry_delay)
                             continue
 
+                        # Reset retry delay on successful connection
+                        retry_delay = 5
+
                         heartbeat_interval = hello_msg["d"]["heartbeat_interval"] / 1000.0
 
                         # Send IDENTIFY (op: 2) spoofing Chrome Desktop

@@ -29,6 +29,8 @@ if (HB_API_KEY) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes garbage collection for unused cache
       retry: (failureCount, error: unknown) => {
         if (error instanceof Error && error.message === 'ACCESS_DENIED') return false
         if (error instanceof Error && error.message?.includes('Сессия истекла')) return false
