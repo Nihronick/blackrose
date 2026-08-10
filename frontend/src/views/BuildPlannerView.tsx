@@ -85,28 +85,29 @@ export const BuildPlannerView: FC = () => {
   }
 
   return (
-    <div className="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-6 space-y-8 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-6 space-y-8 animate-in fade-in duration-500 rose-mesh-bg rounded-3xl">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 glass-card border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-transparent shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 rose-bento-card border-rose-500/30 bg-gradient-to-br from-rose-950/50 via-card/70 to-card/90 shadow-2xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[9px] font-black tracking-widest">
-                Interactive Tool v2.0
-              </Badge>
-              <span className="text-xs font-bold text-muted-foreground">• Slayer Legend Builder</span>
+              <div className="gold-accent-badge">
+                <Sparkles className="size-3.5 fill-amber-400" />
+                <span>Interactive Tool v2.0</span>
+              </div>
+              <span className="text-xs font-bold text-rose-400/80">• Slayer Legend Builder</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-black uppercase tracking-tight font-heading text-foreground">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight font-heading text-foreground">
               Калькулятор Билда & Промоутов
             </h1>
-            <p className="text-xs sm:text-sm font-medium text-muted-foreground/80 max-w-xl">
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground max-w-xl">
               Настраивайте ранги промоута, подбирайте духов и комбо навыков. Считайте DPS и делитесь готовым билдом с согильдийцами!
             </p>
           </div>
 
           <Button
             size="lg"
-            className="h-12 px-6 rounded-2xl font-black text-xs uppercase tracking-wider gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 cursor-pointer shrink-0"
+            className="rose-glow-btn h-12 px-6 text-xs gap-2 shrink-0"
             onClick={handleShare}
           >
             {copied ? <Check className="size-4" /> : <Share2 className="size-4" />}
@@ -120,18 +121,18 @@ export const BuildPlannerView: FC = () => {
         {/* Left Control Panel */}
         <div className="xl:col-span-7 space-y-6">
           {/* Rank Selector */}
-          <Card className="p-6 border border-border/10 glass-card rounded-3xl space-y-4 shadow-lg">
+          <Card className="p-6 border border-rose-500/20 rose-bento-card rounded-3xl space-y-4 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Award className="size-5 text-primary" />
-                <h3 className="text-sm font-black uppercase font-heading tracking-wide">
+                <Award className="size-5 text-rose-400" />
+                <h3 className="text-sm font-black uppercase font-heading tracking-wide text-foreground">
                   Ранг Промоута (Ранг {selectedRank})
                 </h3>
               </div>
-              <span className="text-xs font-bold text-primary font-mono">{getRankName(selectedRank)}</span>
+              <span className="text-xs font-bold text-amber-400 font-mono gold-accent-badge">{getRankName(selectedRank)}</span>
             </div>
 
-            <div className="flex items-center gap-4 bg-background/50 p-4 rounded-2xl border border-border/10">
+            <div className="flex items-center gap-4 bg-background/50 p-4 rounded-2xl border border-white/10">
               {getRankIcon(selectedRank) && (
                 <img
                   src={getRankIcon(selectedRank)}
@@ -146,9 +147,9 @@ export const BuildPlannerView: FC = () => {
                   max="21"
                   value={selectedRank}
                   onChange={(e) => setSelectedRank(Number(e.target.value))}
-                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-rose-500"
                 />
-                <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
+                <div className="flex justify-between text-[10px] font-bold text-muted-foreground font-mono">
                   <span>1 (Stone)</span>
                   <span>11 (Diadust)</span>
                   <span>21 (Infinaut)</span>
@@ -158,15 +159,15 @@ export const BuildPlannerView: FC = () => {
           </Card>
 
           {/* Skill Selector */}
-          <Card className="p-6 border border-border/10 glass-card rounded-3xl space-y-4 shadow-lg">
+          <Card className="p-6 border border-rose-500/20 rose-bento-card rounded-3xl space-y-4 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Flame className="size-5 text-amber-400" />
-                <h3 className="text-sm font-black uppercase font-heading tracking-wide">
+                <h3 className="text-sm font-black uppercase font-heading tracking-wide text-foreground">
                   Активные Навыки ({selectedSkills.length} / 4)
                 </h3>
               </div>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">Выберите 4 навыка</span>
+              <span className="text-[10px] font-bold text-rose-400 uppercase">Выберите 4 навыка</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

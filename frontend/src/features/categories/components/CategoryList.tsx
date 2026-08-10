@@ -95,7 +95,7 @@ export const CategoryList: FC<CategoryListProps> = ({
           return (
             <Card
               key={item.key}
-              className="group relative cursor-pointer overflow-hidden rounded-3xl card-elevated active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2"
+              className="group relative cursor-pointer overflow-hidden rounded-3xl rose-bento-card border-rose-500/20 active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2"
               onMouseEnter={() => prefetchCategory(item.key)}
               onTouchStart={() => prefetchCategory(item.key)}
               onClick={() => {
@@ -104,7 +104,7 @@ export const CategoryList: FC<CategoryListProps> = ({
               }}
             >
               <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
-                <div className="flex size-12 sm:size-14 shrink-0 items-center justify-center rounded-2xl sm:rounded-[22px] bg-primary/10 transition-all group-hover:bg-primary/20 group-hover:rotate-3 shadow-inner">
+                <div className="flex size-12 sm:size-14 shrink-0 items-center justify-center rounded-2xl sm:rounded-[22px] bg-rose-500/10 border border-rose-500/20 transition-all group-hover:bg-rose-500/20 group-hover:rotate-3 shadow-inner">
                   {item.icon ? (
                     <img
                       src={normalizeUrl(item.icon)}
@@ -115,25 +115,25 @@ export const CategoryList: FC<CategoryListProps> = ({
                       }}
                     />
                   ) : (
-                    <Folder className="size-6 text-primary" />
+                    <Folder className="size-6 text-rose-400" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="truncate text-base sm:text-lg font-black tracking-normal text-foreground/90">
+                  <h3 className="truncate text-base sm:text-lg font-black font-heading tracking-normal text-foreground uppercase group-hover:text-rose-400 transition-colors">
                     {item.title}
                   </h3>
                   <div className="mt-1 flex items-center gap-2">
                     {item.count !== undefined && (
                       <Badge
                         variant="secondary"
-                        className="rounded-xl border-none bg-primary/5 px-2 py-0.5 text-[11px] font-black text-primary/70"
+                        className="rounded-xl border-none bg-rose-500/10 px-2 py-0.5 text-[11px] font-black text-rose-400 font-mono tabular-nums"
                       >
                         {item.count} {pluralize(item.count, 'гайд', 'гайда', 'гайдов')}
                       </Badge>
                     )}
                     {subscribed && (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-0 text-[10px] font-black uppercase">
-                        Active
+                      <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase">
+                        Подписан
                       </Badge>
                     )}
                   </div>

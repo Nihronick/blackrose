@@ -71,18 +71,15 @@ export const GuideView: FC<GuideViewProps> = ({
   }, [guide, guideKey, onGuideLoaded, recordView])
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-background rose-mesh-bg">
       <PtrIndicator pullY={pullY} refreshing={refreshing} />
       <div
         ref={scrollRef}
         className="view-scroll flex-1 overflow-y-auto overflow-x-hidden no-scrollbar relative"
       >
-        {/* Ambient background glow for hero */}
-        <div className="absolute top-0 left-0 w-full h-80 mesh-bg opacity-40 pointer-events-none -z-10" />
-
         <div className="container-padding pt-6 pb-32 max-w-4xl mx-auto">
           {/* Header */}
-          <header className="mb-8 relative z-10">
+          <header className="mb-8 relative z-10 p-6 sm:p-8 rounded-3xl rose-bento-card border-rose-500/30 bg-gradient-to-br from-rose-950/40 via-card/70 to-card/90 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -90,12 +87,12 @@ export const GuideView: FC<GuideViewProps> = ({
                 className="space-y-3"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="size-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(123,140,248,0.8)]" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
-                    Slayerpedia Guide
-                  </span>
+                  <div className="gold-accent-badge">
+                    <Eye className="size-3.5 fill-amber-400" />
+                    <span>Slayerpedia Guide</span>
+                  </div>
                 </div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-foreground font-heading">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-foreground font-heading uppercase">
                   {guide.title}
                 </h1>
               </motion.div>
@@ -112,9 +109,9 @@ export const GuideView: FC<GuideViewProps> = ({
 
             <div className="flex flex-wrap items-center gap-3 mt-6">
               {guide.views !== undefined && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 shadow-inner">
-                  <Eye className="size-3.5 text-primary" />
-                  <span className="text-[11px] font-bold text-primary">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 rounded-full border border-rose-500/30 shadow-inner">
+                  <Eye className="size-3.5 text-rose-400" />
+                  <span className="text-[11px] font-bold text-rose-400 font-mono tabular-nums">
                     {guide.views} просмотров
                   </span>
                 </div>
@@ -128,7 +125,7 @@ export const GuideView: FC<GuideViewProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="glass-card rounded-[32px] p-5 sm:p-8 relative overflow-hidden"
+            className="rose-bento-card rounded-3xl p-5 sm:p-8 relative overflow-hidden border-rose-500/20 shadow-2xl"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[60px] pointer-events-none" />
             <TableOfContents text={guide.text || guide.content || ''} />

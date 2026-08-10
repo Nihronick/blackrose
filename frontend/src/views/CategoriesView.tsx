@@ -54,7 +54,7 @@ export const CategoriesView: FC<CategoriesViewProps> = ({
 
   return (
     <div
-      className="flex h-full flex-col bg-background animate-in fade-in duration-300"
+      className="flex h-full flex-col bg-background animate-in fade-in duration-300 rose-mesh-bg min-h-screen"
       data-testid="categories-view"
     >
       <div className="absolute top-0 left-0 w-full h-80 mesh-bg opacity-30 pointer-events-none -z-10" />

@@ -67,36 +67,33 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
   }
 
   return (
-    <div className="flex flex-col min-h-full pb-20">
+    <div className="flex flex-col min-h-full pb-20 rose-mesh-bg">
       {/* Header */}
-      <div className="relative pt-8 pb-6 px-4 md:px-8 border-b border-border/10 overflow-hidden bg-muted/20">
-        <div className="absolute inset-0 mesh-bg opacity-30 pointer-events-none" />
+      <div className="relative pt-8 pb-6 px-4 md:px-8 border-b border-rose-500/20 overflow-hidden bg-gradient-to-r from-rose-950/40 via-card/70 to-card/90">
         <div className="flex flex-col gap-6 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="size-16 md:size-20 rounded-3xl bg-background shadow-lg border border-border/10 overflow-hidden flex items-center justify-center shrink-0">
+            <div className="size-16 md:size-20 rounded-3xl bg-rose-500/10 shadow-xl border border-rose-500/30 overflow-hidden flex items-center justify-center shrink-0">
               {guild?.icon_url ? (
                 <img src={guild.icon_url} alt={guild.name} className="size-full object-cover" />
               ) : (
-                <Shield className="size-8 text-muted-foreground/30" />
+                <Shield className="size-8 text-rose-400" />
               )}
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-black font-heading">{guild?.name || 'Загрузка...'}</h1>
-              {guild?.description && (
-                <p className="text-sm text-muted-foreground mt-1 max-w-xl">{guild.description}</p>
-              )}
+              <h1 className="text-3xl font-black font-heading tracking-tight uppercase text-foreground">{guild?.name || 'Клановый Состав'}</h1>
+              <p className="text-xs text-muted-foreground font-medium mt-1">{guild?.description || 'Официальный ростер участников гильдии Slayer Legend'}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {isMyGuild && (
-              <Button size="sm" variant="secondary" className="rounded-xl font-bold" onClick={() => setProfileModalOpen(true)}>
+              <Button size="sm" variant="secondary" className="rose-glow-btn h-10 px-5 text-xs" onClick={() => setProfileModalOpen(true)}>
                 <Edit2 className="size-4 mr-2" />
                 Мой профиль
               </Button>
             )}
             {canJoin && (
-              <Button size="sm" className="rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setJoinModalOpen(true)}>
+              <Button size="sm" className="rose-glow-btn h-10 px-5 text-xs" onClick={() => setJoinModalOpen(true)}>
                 <UserPlus className="size-4 mr-2" />
                 Подать заявку
               </Button>

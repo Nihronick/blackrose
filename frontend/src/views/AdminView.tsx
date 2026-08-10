@@ -169,7 +169,7 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
   const activeTab = TABS.find((t) => t.id === tab)
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-background overflow-hidden animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-50 flex bg-background overflow-hidden animate-in fade-in duration-500 rose-mesh-bg">
       <AdminSidebar
         tab={tab}
         tabs={TABS}
