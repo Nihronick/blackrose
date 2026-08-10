@@ -51,9 +51,10 @@ async def init_db():
                 pool_pre_ping=True,
             )
             _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
-            async with _engine.connect() as conn:
-                await conn.execute(text("SELECT 1"))
-            logger.info("Database connection verified.")
+            from models.db_models import Base
+            async with _engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database schema and tables verified/created.")
         except Exception as e:
             logger.error("Failed to initialize database: %s", e)
             raise
