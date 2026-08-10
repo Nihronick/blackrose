@@ -110,23 +110,30 @@ class DiscordSyncService:
         if not channel_id or not message_id or not raw_content.strip():
             return {"skipped": True, "reason": "empty content or missing channel/message id"}
 
-        async with get_sessionmaker()() as session:
-            # 1. Verify channel is tracked
-            res = await session.execute(
-                select(DiscordSyncChannel).where(
-                    DiscordSyncChannel.channel_id == channel_id,
-                    DiscordSyncChannel.is_active,
+        try:
+            async with get_sessionmaker()() as session:
+                # 1. Verify channel is tracked
+                res = await session.execute(
+                    select(DiscordSyncChannel).where(
+                        DiscordSyncChannel.channel_id == channel_id,
+                        DiscordSyncChannel.is_active,
+                    )
                 )
-            )
-            config = res.scalar_one_or_none()
-            if not config:
-                return {"skipped": True, "reason": f"channel {channel_id} is not configured for sync"}
+                config = res.scalar_one_or_none()
+                if not config:
+                    return {"skipped": True, "reason": f"channel {channel_id} is not configured for sync"}
 
-            category_key = config.category_key
-            auto_translate = config.auto_translate
+                category_key = config.category_key
+                auto_translate = config.auto_translate
 
-            # 2. SHA-256 hash check for diffing
-            content_hash = hashlib.sha256(raw_content.encode("utf-8")).hexdigest()
+                # Verify target category exists to prevent foreign key integrity errors
+                cat_res = await session.execute(select(Category).where(Category.key == category_key))
+                if not cat_res.scalar_one_or_none():
+                    logger.warning(f"Category '{category_key}' does not exist in database. Skipping message.")
+                    return {"skipped": True, "reason": f"category '{category_key}' does not exist"}
+
+                # 2. SHA-256 hash check for diffing
+                content_hash = hashlib.sha256(raw_content.encode("utf-8")).hexdigest()
 
             synced_res = await session.execute(
                 select(DiscordSyncedGuide).where(DiscordSyncedGuide.discord_message_id == message_id)
@@ -215,6 +222,9 @@ class DiscordSyncService:
                 )
 
             return {"ok": True, "guide_key": guide_key, "title": title}
+        except Exception as err:
+            logger.error(f"Error processing Discord message {message_id} in channel {channel_id}: {err}", exc_info=True)
+            return {"skipped": True, "reason": str(err)}
 
     @classmethod
     async def get_synced_guides(cls, limit: int = 50) -> list[dict]:
