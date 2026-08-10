@@ -38,7 +38,7 @@
 - [x] **Rate Limiting (S2)**: Подключён `slowapi` Limiter (10 req/min для комментариев, 5 req/min для заявок в гильдии).
 - [x] **JWT_SECRET Warning (S3)**: Добавлено предупреждение в лог при старте приложения, если секрет не изменён.
 - [x] **Roster Query Limit (D1)**: Добавлен предохранительный `limit(100)` на выборку участников гильдии.
-- [x] **Root Health Alias (A1)**: Добавлен роут `/health` на корневом уровне для внешних мониторингов.
+- [x] **Оптимизация polling в Discord Lab**: Переведено с ручного `setInterval(4s)` на TanStack `useQuery` с `refetchInterval: 10s` и `refetchIntervalInBackground: false` (опрос полностью останавливается при свёрнутой вкладке).
 
 ### 💡 Nice to Have
 - [ ] Тёмная/светлая тема с переключателем.
