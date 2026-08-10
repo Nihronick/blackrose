@@ -1,5 +1,6 @@
 import { BrandIcon } from '@/components/ui/BrandIcon'
 import { Button } from '@/components/ui/button'
+import { APP_CONFIG } from '@/lib/constants'
 import { haptic } from '@/lib/haptic'
 import { Sparkles } from '@/lib/icons'
 import { motion } from 'framer-motion'
@@ -190,7 +191,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
               className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest transition-all duration-300 hover:shadow-glow hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
               onClick={() => {
                 haptic.medium()
-                window.open('https://dalink.to/nihronick', '_blank')
+                window.open(APP_CONFIG.LINKS.DONATE, '_blank')
               }}
             >
               <BrandIcon name="qiwi" size={16} />
@@ -204,7 +205,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
                 className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
                 onClick={() => {
                   haptic.light()
-                  window.open('https://t.me/blackrose', '_blank')
+                  window.open(APP_CONFIG.LINKS.TELEGRAM, '_blank')
                 }}
               >
                 <BrandIcon name="telegram" size={20} />
@@ -214,7 +215,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
                 className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
                 onClick={() => {
                   haptic.light()
-                  window.open('https://discord.gg/blackrose', '_blank')
+                  window.open(APP_CONFIG.LINKS.DISCORD, '_blank')
                 }}
               >
                 <BrandIcon name="discord" size={20} />
@@ -224,7 +225,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
                 className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
                 onClick={() => {
                   haptic.light()
-                  window.open('https://github.com/Nihronick/blackrose', '_blank')
+                  window.open(APP_CONFIG.LINKS.GITHUB, '_blank')
                 }}
               >
                 <BrandIcon name="github" size={20} />
@@ -234,7 +235,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
                 className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
                 onClick={() => {
                   haptic.light()
-                  window.open('https://boosty.to/blackrose', '_blank')
+                  window.open(APP_CONFIG.LINKS.BOOSTY, '_blank')
                 }}
               >
                 <BrandIcon name="boosty" size={20} />
@@ -242,7 +243,7 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
             </div>
 
             <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-2">
-              BlackRose v3.3 • 2026
+              {APP_CONFIG.PROJECT_NAME} v{APP_CONFIG.VERSION} • {APP_CONFIG.YEAR}
             </p>
           </div>
         </motion.div>

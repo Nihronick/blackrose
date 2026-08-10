@@ -8,6 +8,7 @@ import { CategoryList } from '@/features/categories'
 import type { Category } from '@/features/categories'
 import { apiGuilds, apiRecentComments, apiRecentGuides, apiTopGuides, apiFetch } from '@/lib/api'
 import { getStoredUser } from '@/lib/auth'
+import { APP_CONFIG } from '@/lib/constants'
 import { haptic } from '@/lib/haptic'
 import {
   BookOpen,
@@ -542,7 +543,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
                     className="w-full h-11 rounded-2xl bg-gradient-to-r from-primary to-violet-500 text-primary-foreground font-black text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-glow active:scale-95 border border-primary/20 font-heading cursor-pointer flex items-center justify-center gap-2"
                     onClick={() => {
                       haptic.medium()
-                      window.open('https://dalink.to/nihronick', '_blank')
+                      window.open(APP_CONFIG.LINKS.DONATE, '_blank')
                     }}
                   >
                     <span>Поддержать проект</span>
