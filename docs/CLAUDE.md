@@ -541,6 +541,8 @@ These mistakes have already been made. **Do NOT repeat them.**
 | 17 | `api_path` in Inngest `serve` | Use `serve_path` instead of `api_path` for Inngest FastAPI integration |
 | 18 | Missing `INNGEST_SIGNING_KEY` | Set `is_production=False` in `Inngest` client if no key is available on HF |
 | 19 | Forgetting `MINIAPP_URL` in Settings | Ensure all Telegram-related env vars are present in `Settings` class |
+| 20 | Adding Layui/Bootstrap CDN alongside Tailwind v4 | Global CSS selectors from Layui broke Tailwind cascades, fonts, and button/input styling. **Never add third-party CSS frameworks.** |
+| 21 | Not using `startViewTransition()` for navigation | All `navigate()` calls must go through `safeNavigate()` wrapper in `navigation.ts` |
 
 ---
 
@@ -658,27 +660,61 @@ cd frontend && npm run dev
 
 ---
 
-## 📝 Current Status (Last Updated: 2026-05-06)
+## 📝 Current Status (Last Updated: 2026-08-10)
 
 ### Stable baseline
 - Auth flow uses short-lived JWT + refresh endpoint (`/api/auth/refresh`) with frontend silent refresh.
 - Import pipeline uses Inngest + Gemini and persists guides/media through service layer.
-- Deployment scripts are centralized in `tools/`.
+- Deployment is fully automated via GitHub Actions.
 - **Docker Architecture**: Root Dockerfiles (dev/prod) fixed to support `backend/` directory structure.
 - **Performance**: N+1 issues in `reorder` operations fixed via SQLAlchemy executemany.
 
+### Frontend Stack (August 2026)
+- **React 19** + **Vite 6.4** + **TypeScript** + **Tailwind CSS v4** (чистый, без Layui/Bootstrap).
+- **Build target**: `es2022`, без production sourcemaps.
+- **Vendor chunking**: `vendor-react` (283 кБ), `vendor-motion` (126 кБ), `vendor-charts` (333 кБ), `vendor-tanstack` (36 кБ).
+- **Главный JS бандл**: уменьшен с 530 кБ до **152 кБ** (−71.3%).
+- **Время сборки**: ~8 секунд (3158 модулей).
+
+### Работы выполненные 10 августа 2026
+
+#### Фаза 1: Удаление Layui и восстановление CSS (`commit ada473e`)
+- Удалены Layui CSS/JS CDN из `index.html`.
+- Удалён `layui-components` import из `main.tsx` и W3C declarations из `globals.d.ts`.
+- Заменены legacy-элементы (`layui-button`, `layui-badge`) на Tailwind в `CyberlinkPopup.tsx` и `DocBlock.tsx`.
+- Обновлены CSS-токены тёмной темы: `--background: #0D0E12`, `--foreground: #F9FAFB`, `--muted-foreground: #9CA3AF`, `--primary: #E11D48`.
+- Исправлен дублирующийся заголовок в `AdminView.tsx` / `LocalAdminLogin.tsx`.
+
+#### Фаза 2: Оптимизация производительности (`commit 2fd44be`)
+- `vite.config.ts`: настроен `manualChunks` для vendor splitting, таргет `es2022`, отключены sourcemaps.
+- `SearchView.tsx`: внедрён `useDeferredValue` + `useTransition` для мгновенного отклика поиска.
+- `BuildPlannerView.tsx`: внедрён `startTransition` для плавного переключения рангов и навыков.
+- `CategoryList.tsx`, `GuildRosterView.tsx`: добавлены `loading="lazy"` + `decoding="async"` на изображения.
+
+#### Фаза 3: Плавная навигация (`commit 37ed8bb`)
+- `navigation.ts`: все переходы обёрнуты в `document.startViewTransition()` (View Transitions API).
+- `AppLayout.tsx`: добавлен Scroll Restoration — автоматический сброс скролла при смене маршрута.
+- `AppRouter.tsx`: обновлён `ViewLoader` на стилизованный Bento-скелетон с `rose-bento-card`.
+
+#### Фаза 4: Полировка UI (`commit a945a5b`)
+- Создан `Breadcrumbs.tsx` — навигационные хлебные крошки, интегрирован в `GuideView.tsx`.
+- Создан `EmptyState.tsx` — универсальные пустые состояния с кнопками действия, интегрирован в `SearchView`, `FavoritesView`, `HistoryView`.
+- Создан `ScrollToTopFab.tsx` — плавающая кнопка «Наверх», интегрирована в `GuideView.tsx`.
+
 ### Operational constraints (must be considered in every change)
-- **LOCAL VENV DEPRECATED**: Windows-native development (venv/npm) is no longer supported due to host constraints. Use **VS Code DevContainers** for all tasks.
 - HF Spaces free tier has limited CPU/RAM and may degrade under heavy media workflows (do not overload the worker).
 - Discord CDN URLs are short-lived; import UX must remain fast and explicit.
 - HF Dataset public resolve is eventually consistent (short delay before new media is visible).
+- **Никогда не подключать сторонние CSS-фреймворки** (Layui, Bootstrap, etc.) — только чистый Tailwind CSS v4.
 
 ### Current technical debt
-- Documentation is being normalized to match real file locations and runtime behavior.
-- Multi-service chain (API + worker + bot + media + sync) increases blast radius for regressions.
+- Виртуализация длинных списков (TanStack Virtual) — пока не внедрена.
+- Subscription System UI (кнопка подписки на категории) — бэкенд готов, фронтенд нет.
+- Favicon и OG-картинка — не обновлены под текущий стиль.
 
 ### Source of truth for next tasks
 - `docs/todo.md` — active backlog and priorities.
-- `docs/snapshots/2026-05-06_0555_environment_blocker_handoff.md` — latest handoff note.
+- `docs/frontend_enhancement_plan.md` — подробный план с отметками выполненных задач.
 
 ---
+

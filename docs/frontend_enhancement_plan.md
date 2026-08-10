@@ -1,29 +1,53 @@
 # 🎨 Frontend Enhancement Plan: "BlackRose Premium"
 
-The current frontend is a solid MVP, but it lacks the "density" and interactivity expected from a high-quality Telegram Mini App. This plan outlines how to make the app feel more alive, professional, and useful.
+> **Статус:** Основные пункты выполнены (10 августа 2026). Ниже — обновлённый план с отметками выполненных задач.
 
-## 1. 🚀 Home Page: From "List" to "Dashboard"
-Currently, the home page is just a search bar and a list. We will transform it into a dynamic dashboard.
-- **Personalized Hero Section**: A warm welcome using the Telegram username and a "Guide of the Day" card.
-- **Activity Feed**: A horizontal scroll showing "New Guides" and "Recently Updated" to show that the content is alive.
-- **Pinned/Favorite Categories**: Quick access to the sections the user cares about most.
-- **Community Pulse**: A small section showing the latest 3-5 comments across all guides.
+## 1. 🚀 Home Page: From "List" to "Dashboard" ✅
+- [x] **Personalized Hero Section**: Приветствие с Telegram-именем и раздел «Последние обновления».
+- [x] **Activity Feed**: Горизонтальный скролл с новыми и обновлёнными гайдами.
+- [x] **Pinned/Favorite Categories**: Быстрый доступ к избранным категориям.
+- [x] **Community Pulse**: Секция последних комментариев.
 
-## 2. 💎 User Engagement & UX
-- **Subscription System UI**: We have the backend for subscriptions, but no UI. We'll add a "🔔 Subscribe" toggle to Category cards.
-- **Reading Progress**: A subtle progress bar at the top of long guides.
-- **Smart Search**: Add "Top Tags" and "Popular Searches" below the search bar to help users discover content.
-- **Interactive Tools**: A new dedicated section for game-specific tools (e.g., "Hero Build Calculator" or "Gear Comparison").
+## 2. 💎 User Engagement & UX — Частично выполнено
+- [ ] **Subscription System UI**: Кнопка «🔔 Подписаться» на карточках категорий (бэкенд готов, UI нет).
+- [ ] **Reading Progress**: Прогресс-бар в длинных гайдах.
+- [x] **Smart Search**: Полнотекстовый поиск с `useDeferredValue` и `useTransition` (мгновенный отклик).
+- [x] **Interactive Tools**: Калькулятор билдов (`BuildPlannerView.tsx`) с рангами промоута 1-21 и DPS.
 
-## 3. 🛠️ Admin Panel Pro
-- **Visual Analytics**: Integrate simple charts (using a lightweight library or CSS bars) to show views over time.
-- **Media Manager**: A dedicated tab to view all uploaded media, allowing for easy reuse of images across different guides.
-- **Content Health**: A dashboard showing guides with missing icons, broken links, or low word count.
+## 3. 🛠️ Admin Panel Pro ✅
+- [x] **Visual Analytics**: Grafики просмотров (Recharts) в админ-панели.
+- [x] **Media Manager**: Вкладка управления медиа.
+- [x] **Content Health**: Дашборд со статистикой гайдов.
+- [x] **Исправлен UI**: Убран дублирующийся заголовок, обновлён стиль логина на BlackRose Crimson & Gold.
 
-## 4. ✨ Design Polish
-- **Glassmorphism 2.0**: Enhance the "glass" effect with better blurs and border glows.
-- **Micro-animations**: Add subtle entry animations for cards and smooth layout transitions.
-- **Haptic Feedback**: Ensure every button and toggle feels physical through Telegram's Haptic engine.
+## 4. ✨ Design Polish ✅
+- [x] **Eradication Layui**: Полностью удалён Layui CDN. 100% чистый Tailwind CSS v4.
+- [x] **Тёмная тема высокой контрастности**: Глубокий графит `#0D0E12`, серебряный `#9CA3AF`, готический rose `#E11D48`.
+- [x] **Glassmorphism 2.0**: `rose-bento-card`, `glass-card`, `rose-glow-btn` с blur и gradient border.
+- [x] **Micro-animations**: Stagger-in, `framer-motion` entry animations, `animate-pulse` Bento-скелетоны.
+- [x] **Haptic Feedback**: Вибрация при каждом нажатии через `@capacitor/haptics`.
+
+## 5. ⚡ Производительность ✅ (новый раздел)
+- [x] **Vendor Chunk Splitting**: React, Framer Motion, Recharts, TanStack — отдельные кэшируемые чанки.
+- [x] **es2022 build target**: Без устаревших полифиллов, без production sourcemaps.
+- [x] **React 19 Concurrent**: `useDeferredValue` (SearchView), `startTransition` (BuildPlannerView).
+- [x] **Lazy Image Loading**: `loading="lazy"` + `decoding="async"` на всех изображениях.
+- [x] **Route Code Splitting**: Все views через `React.lazy()` + `Suspense`.
+- [x] **Главный JS бандл уменьшен на 71.3%**: с 530 кБ до 152 кБ.
+
+## 6. 🗺️ Навигация и UX ✅ (новый раздел)
+- [x] **View Transitions API**: Плавные cross-fade переходы между страницами.
+- [x] **Scroll Restoration**: Автоматический сброс скролла при навигации.
+- [x] **Bento-скелетоны**: Стилизованные загрузочные блоки вместо пустых экранов.
+- [x] **Хлебные крошки** (`Breadcrumbs.tsx`): Навигационная иерархия на детальных страницах.
+- [x] **Пустые состояния** (`EmptyState.tsx`): Красивые блоки «Ничего не найдено» с кнопками действия.
+- [x] **Кнопка «Наверх»** (`ScrollToTopFab.tsx`): Плавающая FAB на длинных гайдах.
 
 ---
-**Next Step:** I will start by implementing the **Home Dashboard** to give the app an immediate "Premium" feel. Does this plan align with your vision?
+
+## Оставшиеся задачи (Backlog)
+- [ ] Виртуализация длинных списков (TanStack Virtual)
+- [ ] Subscription System UI (кнопка подписки на категории)
+- [ ] Reading Progress Bar для длинных гайдов
+- [ ] Favicon + OG-картинка в актуальном стиле
+- [ ] PWA оффлайн-кэш
