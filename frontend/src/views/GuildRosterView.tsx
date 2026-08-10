@@ -22,6 +22,7 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
   const { data, isLoading } = useQuery({
     queryKey: ['guild-roster', guildId],
     queryFn: () => apiGuildRoster(guildId),
+    enabled: !Number.isNaN(guildId) && guildId > 0,
   })
 
   const { data: myProfileData } = useQuery({
