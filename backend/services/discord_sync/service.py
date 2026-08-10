@@ -95,19 +95,22 @@ class DiscordSyncService:
             return True
 
     @classmethod
-    async def process_discord_message(cls, message_data: dict) -> dict:
+    async def process_discord_message(
+        cls, message_data: dict, parent_channel_id: str | None = None, custom_title: str | None = None
+    ) -> dict:
         """
         Processes an incoming Discord message or thread payload.
         Checks target channel mapping, computes SHA-256 diff, sanitizes, translates, and upserts to DB.
         """
-        channel_id = str(message_data.get("channel_id", ""))
+        raw_channel_id = str(message_data.get("channel_id", ""))
+        target_channel_id = parent_channel_id or raw_channel_id
         message_id = str(message_data.get("id", ""))
         raw_content = message_data.get("content", "")
         attachments = message_data.get("attachments", [])
         author_info = message_data.get("author", {})
         author_tag = f"{author_info.get('username', 'author')}#{author_info.get('discriminator', '0000')}" if author_info else "Discord Author"
 
-        if not channel_id or not message_id or not raw_content.strip():
+        if not target_channel_id or not message_id or not raw_content.strip():
             return {"skipped": True, "reason": "empty content or missing channel/message id"}
 
         try:
@@ -115,13 +118,13 @@ class DiscordSyncService:
                 # 1. Verify channel is tracked
                 res = await session.execute(
                     select(DiscordSyncChannel).where(
-                        DiscordSyncChannel.channel_id == channel_id,
+                        DiscordSyncChannel.channel_id == target_channel_id,
                         DiscordSyncChannel.is_active,
                     )
                 )
                 config = res.scalar_one_or_none()
                 if not config:
-                    return {"skipped": True, "reason": f"channel {channel_id} is not configured for sync"}
+                    return {"skipped": True, "reason": f"channel {target_channel_id} is not configured for sync"}
 
                 category_key = config.category_key
                 auto_translate = config.auto_translate
@@ -151,7 +154,7 @@ class DiscordSyncService:
                     url = att.get("url") if isinstance(att, dict) else str(att)
                     if url:
                         try:
-                            saved_path = await MediaService.import_from_url(url, folder=f"discord/{channel_id}")
+                            saved_path = await MediaService.import_from_url(url, folder=f"discord/{target_channel_id}")
                             if saved_path:
                                 local_photos.append(saved_path)
                         except Exception as err:
@@ -165,7 +168,7 @@ class DiscordSyncService:
 
                 # 5. Extract Title
                 first_line = clean_text.split("\n")[0].strip("# ").strip()
-                title = first_line[:80] if first_line else f"Гайд от {author_tag}"
+                title = custom_title or (first_line[:80] if first_line else f"Гайд от {author_tag}")
 
                 # Key generation
                 guide_key = existing_synced.guide_key if existing_synced else f"discord_{message_id}"
@@ -197,7 +200,7 @@ class DiscordSyncService:
                 if not existing_synced:
                     synced_record = DiscordSyncedGuide(
                         discord_message_id=message_id,
-                        discord_channel_id=channel_id,
+                        discord_channel_id=target_channel_id,
                         guide_key=guide_key,
                         content_hash=content_hash,
                         author_tag=author_tag,
@@ -208,7 +211,7 @@ class DiscordSyncService:
                     existing_synced.author_tag = author_tag
 
                 await session.commit()
-                logger.info(f"Successfully synced Discord guide '{guide_key}' from channel {channel_id}")
+                logger.info(f"Successfully synced Discord guide '{guide_key}' from channel {target_channel_id}")
 
                 # Send Telegram broadcast notification if it's a new guide
                 if is_new_guide:

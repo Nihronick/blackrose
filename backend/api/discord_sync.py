@@ -99,10 +99,10 @@ async def backfill_channel(channel_id: str, user=Depends(require_admin)):
         )
     stealth_discord_worker.set_token(active_token)
 
-    ok = await stealth_discord_worker.fetch_channel_history(channel_id, limit=30)
-    if not ok:
-        raise HTTPException(status_code=400, detail="Ошибка загрузки истории канала (проверьте доступ к каналу и валидность токена)")
-    return {"ok": True, "message": f"Сканирование истории канала {channel_id} успешно завершено"}
+    res = await stealth_discord_worker.fetch_channel_history(channel_id, limit=30)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Ошибка загрузки истории канала"))
+    return {"ok": True, "message": res.get("message", f"Сканирование канала {channel_id} успешно завершено")}
 
 
 @router.post("/backfill-all")
@@ -121,17 +121,19 @@ async def backfill_all_channels(user=Depends(require_admin)):
 
     success_count = 0
     failed_count = 0
+    total_guides = 0
 
     for ch in channels:
         ch_id = ch["channel_id"]
-        ok = await stealth_discord_worker.fetch_channel_history(ch_id, limit=30)
-        if ok:
+        res = await stealth_discord_worker.fetch_channel_history(ch_id, limit=30)
+        if res.get("ok"):
             success_count += 1
+            total_guides += res.get("processed", 0)
         else:
             failed_count += 1
 
     return {
         "ok": True,
-        "message": f"Сканирование всех каналов завершено: {success_count} из {len(channels)} каналов успешно обработано"
+        "message": f"Сканирование всех каналов завершено: {success_count} из {len(channels)} каналов успешно обработано (импортировано {total_guides} гайдов)",
     }
 

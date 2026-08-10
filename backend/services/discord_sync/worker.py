@@ -44,13 +44,14 @@ class StealthDiscordWorker:
             self.task = None
         logger.info("Stealth Discord Gateway worker stopped")
 
-    async def fetch_channel_history(self, channel_id: str, limit: int = 30) -> bool:
+    async def fetch_channel_history(self, channel_id: str, limit: int = 30) -> dict:
         """
-        Fetch recent messages from Discord channel via REST API using stealth user token.
+        Fetch recent messages or forum posts from Discord channel/forum via REST API using stealth user token.
+        Supports: Forum Channels (Type 15), Threads (Type 11/12), and Text Channels (Type 0/5).
+        Returns {"ok": True, "processed": N, "message": "..."} or {"ok": False, "error": "..."}
         """
         if not self.user_token:
-            logger.warning("fetch_channel_history requested without user_token")
-            return False
+            return {"ok": False, "error": "Токен Discord не указан"}
 
         headers = {
             "Authorization": self.user_token,
@@ -58,35 +59,128 @@ class StealthDiscordWorker:
             "Accept-Language": "en-US,en;q=0.9",
         }
 
-        url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit={limit}"
-
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as resp:
-                    if resp.status != 200:
-                        err_body = await resp.text()
-                        logger.error(f"Failed to fetch channel history: HTTP {resp.status} - {err_body}")
-                        return False
+                # 1. Fetch channel metadata to determine type
+                ch_url = f"https://discord.com/api/v10/channels/{channel_id}"
+                async with session.get(ch_url, headers=headers) as ch_resp:
+                    if ch_resp.status == 401:
+                        return {"ok": False, "error": "Недействительный токен Discord (HTTP 401)"}
+                    if ch_resp.status == 403:
+                        return {"ok": False, "error": f"Нет доступа к каналу {channel_id} (HTTP 403 - аккаунт не состоит на сервере или нет прав)"}
+                    if ch_resp.status == 404:
+                        return {"ok": False, "error": f"Канал {channel_id} не найден в Discord (HTTP 404)"}
+                    if ch_resp.status != 200:
+                        err_body = await ch_resp.text()
+                        return {"ok": False, "error": f"Ошибка Discord API (HTTP {ch_resp.status}): {err_body[:100]}"}
 
-                    messages = await resp.json()
-                    if not isinstance(messages, list):
-                        logger.error(f"Unexpected response format from Discord API: {messages}")
-                        return False
+                    ch_data = await ch_resp.json()
 
-                    logger.info(f"Fetched {len(messages)} messages for channel {channel_id}. Processing...")
+                ch_type = ch_data.get("type", 0)
+                guild_id = ch_data.get("guild_id")
+                processed_count = 0
 
-                    processed_count = 0
-                    for msg in reversed(messages):
-                        if isinstance(msg, dict) and msg.get("content"):
-                            res = await discord_sync_service.process_discord_message(msg)
-                            if not res.get("skipped"):
-                                processed_count += 1
+                # 2. Case A: Forum Channel (Type 15)
+                if ch_type == 15:
+                    logger.info(f"Channel {channel_id} is a Discord Forum Channel (Type 15). Fetching forum posts/threads...")
+                    threads_to_process = []
 
-                    logger.info(f"Backfill complete for channel {channel_id}: processed {processed_count} new/updated guides")
-                    return True
+                    # Fetch active threads
+                    if guild_id:
+                        active_url = f"https://discord.com/api/v10/guilds/{guild_id}/threads/active"
+                        async with session.get(active_url, headers=headers) as t_resp:
+                            if t_resp.status == 200:
+                                t_data = await t_resp.json()
+                                for th in t_data.get("threads", []):
+                                    if str(th.get("parent_id")) == str(channel_id):
+                                        threads_to_process.append(th)
+
+                    # Fetch archived public threads
+                    archived_url = f"https://discord.com/api/v10/channels/{channel_id}/threads/archived/public"
+                    async with session.get(archived_url, headers=headers) as a_resp:
+                        if a_resp.status == 200:
+                            a_data = await a_resp.json()
+                            for th in a_data.get("threads", []):
+                                if not any(t["id"] == th["id"] for t in threads_to_process):
+                                    threads_to_process.append(th)
+
+                    logger.info(f"Found {len(threads_to_process)} forum threads in channel {channel_id}")
+
+                    for th in threads_to_process:
+                        thread_id = th.get("id")
+                        thread_name = th.get("name", "Форум Гайд")
+                        msgs_url = f"https://discord.com/api/v10/channels/{thread_id}/messages?limit=50"
+                        async with session.get(msgs_url, headers=headers) as m_resp:
+                            if m_resp.status == 200:
+                                msgs = await m_resp.json()
+                                if isinstance(msgs, list) and msgs:
+                                    msgs.sort(key=lambda x: x.get("id", ""))
+                                    starter_msg = msgs[0]
+                                    combined_content = "\n\n".join(
+                                        m.get("content", "") for m in msgs if m.get("content")
+                                    )
+                                    starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                                    res = await discord_sync_service.process_discord_message(
+                                        starter_msg, parent_channel_id=channel_id, custom_title=thread_name
+                                    )
+                                    if not res.get("skipped"):
+                                        processed_count += 1
+
+                    return {
+                        "ok": True,
+                        "processed": processed_count,
+                        "message": f"Форум-канал {channel_id} обработан: получено {len(threads_to_process)} тем, импортировано {processed_count} гайдов",
+                    }
+
+                # 3. Case B: Single Thread / Post (Type 11 or 12)
+                elif ch_type in (11, 12):
+                    thread_name = ch_data.get("name", "Гайд")
+                    parent_id = ch_data.get("parent_id")
+                    msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit=50"
+                    async with session.get(msgs_url, headers=headers) as m_resp:
+                        if m_resp.status == 200:
+                            msgs = await m_resp.json()
+                            if isinstance(msgs, list) and msgs:
+                                msgs.sort(key=lambda x: x.get("id", ""))
+                                starter_msg = msgs[0]
+                                combined_content = "\n\n".join(m.get("content", "") for m in msgs if m.get("content"))
+                                starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                                res = await discord_sync_service.process_discord_message(
+                                    starter_msg, parent_channel_id=parent_id or channel_id, custom_title=thread_name
+                                )
+                                if not res.get("skipped"):
+                                    processed_count += 1
+                    return {
+                        "ok": True,
+                        "processed": processed_count,
+                        "message": f"Тема {channel_id} обработана: импортировано {processed_count} гайдов",
+                    }
+
+                # 4. Case C: Standard Text / Announcement Channel (Type 0, 5, etc.)
+                else:
+                    msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit={limit}"
+                    async with session.get(msgs_url, headers=headers) as m_resp:
+                        if m_resp.status != 200:
+                            err_body = await m_resp.text()
+                            return {"ok": False, "error": f"Ошибка получения сообщений (HTTP {m_resp.status}): {err_body[:100]}"}
+
+                        messages = await m_resp.json()
+                        if isinstance(messages, list):
+                            for msg in reversed(messages):
+                                if isinstance(msg, dict) and msg.get("content"):
+                                    res = await discord_sync_service.process_discord_message(msg)
+                                    if not res.get("skipped"):
+                                        processed_count += 1
+
+                    return {
+                        "ok": True,
+                        "processed": processed_count,
+                        "message": f"Текстовый канал {channel_id} обработан: импортировано {processed_count} новых гайдов",
+                    }
+
         except Exception as e:
-            logger.error(f"Exception during fetch_channel_history: {e}", exc_info=True)
-            return False
+            logger.error(f"Exception during fetch_channel_history for {channel_id}: {e}", exc_info=True)
+            return {"ok": False, "error": f"Исключение при сканировании: {str(e)}"}
 
     async def _run_loop(self):
         ws_url = "wss://gateway.discord.gg/?v=10&encoding=json"
