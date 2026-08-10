@@ -135,96 +135,96 @@ class DiscordSyncService:
                 # 2. SHA-256 hash check for diffing
                 content_hash = hashlib.sha256(raw_content.encode("utf-8")).hexdigest()
 
-            synced_res = await session.execute(
-                select(DiscordSyncedGuide).where(DiscordSyncedGuide.discord_message_id == message_id)
-            )
-            existing_synced = synced_res.scalar_one_or_none()
-            if existing_synced and existing_synced.content_hash == content_hash:
-                return {"skipped": True, "reason": "content unchanged (hash match)"}
-
-            # 3. Clean Discord Markdown & handle media
-            clean_text = sanitize_discord_markdown(raw_content)
-
-            # Download Discord attachments to local storage so URLs never expire
-            local_photos: list[str] = []
-            for att in attachments:
-                url = att.get("url") if isinstance(att, dict) else str(att)
-                if url:
-                    try:
-                        saved_path = await MediaService.import_from_url(url, folder=f"discord/{channel_id}")
-                        if saved_path:
-                            local_photos.append(saved_path)
-                    except Exception as err:
-                        logger.warning(f"Failed to import attachment {url}: {err}")
-
-            # 4. Optional Translation (EN -> RU) & TL;DR block
-            final_text = clean_text
-            if auto_translate:
-                final_text = await translate_en_to_ru(clean_text)
-                final_text = generate_tldr_block(final_text)
-
-            # 5. Extract Title
-            first_line = clean_text.split("\n")[0].strip("# ").strip()
-            title = first_line[:80] if first_line else f"Гайд от {author_tag}"
-
-            # Key generation
-            guide_key = existing_synced.guide_key if existing_synced else f"discord_{message_id}"
-
-            # 6. Upsert into Guide table
-            guide_res = await session.execute(select(Guide).where(Guide.key == guide_key))
-            guide = guide_res.scalar_one_or_none()
-
-            is_new_guide = guide is None
-
-            if not guide:
-                guide = Guide(
-                    key=guide_key,
-                    category_key=category_key,
-                    title=title,
-                    text=final_text,
-                    photo=local_photos,
-                    views=0,
+                synced_res = await session.execute(
+                    select(DiscordSyncedGuide).where(DiscordSyncedGuide.discord_message_id == message_id)
                 )
-                session.add(guide)
-            else:
-                guide.title = title
-                guide.text = final_text
-                guide.category_key = category_key
-                if local_photos:
-                    guide.photo = local_photos
+                existing_synced = synced_res.scalar_one_or_none()
+                if existing_synced and existing_synced.content_hash == content_hash:
+                    return {"skipped": True, "reason": "content unchanged (hash match)"}
 
-            # 7. Upsert into DiscordSyncedGuide tracker
-            if not existing_synced:
-                synced_record = DiscordSyncedGuide(
-                    discord_message_id=message_id,
-                    discord_channel_id=channel_id,
-                    guide_key=guide_key,
-                    content_hash=content_hash,
-                    author_tag=author_tag,
-                )
-                session.add(synced_record)
-            else:
-                existing_synced.content_hash = content_hash
-                existing_synced.author_tag = author_tag
+                # 3. Clean Discord Markdown & handle media
+                clean_text = sanitize_discord_markdown(raw_content)
 
-            await session.commit()
-            logger.info(f"Successfully synced Discord guide '{guide_key}' from channel {channel_id}")
+                # Download Discord attachments to local storage so URLs never expire
+                local_photos: list[str] = []
+                for att in attachments:
+                    url = att.get("url") if isinstance(att, dict) else str(att)
+                    if url:
+                        try:
+                            saved_path = await MediaService.import_from_url(url, folder=f"discord/{channel_id}")
+                            if saved_path:
+                                local_photos.append(saved_path)
+                        except Exception as err:
+                            logger.warning(f"Failed to import attachment {url}: {err}")
 
-            # Send Telegram broadcast notification if it's a new guide
-            if is_new_guide:
-                asyncio.create_task(
-                    telegram_notify_service.send_guide_notification(
-                        title=title,
+                # 4. Optional Translation (EN -> RU) & TL;DR block
+                final_text = clean_text
+                if auto_translate:
+                    final_text = await translate_en_to_ru(clean_text)
+                    final_text = generate_tldr_block(final_text)
+
+                # 5. Extract Title
+                first_line = clean_text.split("\n")[0].strip("# ").strip()
+                title = first_line[:80] if first_line else f"Гайд от {author_tag}"
+
+                # Key generation
+                guide_key = existing_synced.guide_key if existing_synced else f"discord_{message_id}"
+
+                # 6. Upsert into Guide table
+                guide_res = await session.execute(select(Guide).where(Guide.key == guide_key))
+                guide = guide_res.scalar_one_or_none()
+
+                is_new_guide = guide is None
+
+                if not guide:
+                    guide = Guide(
+                        key=guide_key,
                         category_key=category_key,
+                        title=title,
+                        text=final_text,
+                        photo=local_photos,
+                        views=0,
+                    )
+                    session.add(guide)
+                else:
+                    guide.title = title
+                    guide.text = final_text
+                    guide.category_key = category_key
+                    if local_photos:
+                        guide.photo = local_photos
+
+                # 7. Upsert into DiscordSyncedGuide tracker
+                if not existing_synced:
+                    synced_record = DiscordSyncedGuide(
+                        discord_message_id=message_id,
+                        discord_channel_id=channel_id,
                         guide_key=guide_key,
+                        content_hash=content_hash,
                         author_tag=author_tag,
                     )
-                )
+                    session.add(synced_record)
+                else:
+                    existing_synced.content_hash = content_hash
+                    existing_synced.author_tag = author_tag
 
-            return {"ok": True, "guide_key": guide_key, "title": title}
-        except Exception as err:
-            logger.error(f"Error processing Discord message {message_id} in channel {channel_id}: {err}", exc_info=True)
-            return {"skipped": True, "reason": str(err)}
+                await session.commit()
+                logger.info(f"Successfully synced Discord guide '{guide_key}' from channel {channel_id}")
+
+                # Send Telegram broadcast notification if it's a new guide
+                if is_new_guide:
+                    asyncio.create_task(
+                        telegram_notify_service.send_guide_notification(
+                            title=title,
+                            category_key=category_key,
+                            guide_key=guide_key,
+                            author_tag=author_tag,
+                        )
+                    )
+
+                return {"ok": True, "guide_key": guide_key}
+        except Exception as e:
+            logger.error(f"Error processing Discord message {message_id}: {e}", exc_info=True)
+            return {"error": str(e)}
 
     @classmethod
     async def get_synced_guides(cls, limit: int = 50) -> list[dict]:
