@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from core.auth import require_admin
 from core.logging import get_logger
+from pydantic import BaseModel
 from models.schemas import DiscordSyncChannelIn, DiscordSyncTokenIn
 from services.discord_sync.service import discord_sync_service
 from services.discord_sync.worker import stealth_discord_worker
@@ -156,5 +157,40 @@ async def backfill_all_channels(user=Depends(require_admin)):
     return {
         "ok": True,
         "message": msg,
+    }
+
+
+class DiscordLinkImportIn(BaseModel):
+    link: str
+
+
+@router.post("/import-link")
+async def import_discord_link(body: DiscordLinkImportIn, user=Depends(require_admin)):
+    import re
+    link = body.link.strip()
+    match = re.search(r"channels/\d+/(\d+)(?:/(\d+))?", link)
+    if not match:
+        raise HTTPException(
+            status_code=400,
+            detail="Неверная ссылка Discord. Нажмите правой кнопкой по сообщению/теме и выберите 'Копировать ссылку'."
+        )
+
+    channel_or_thread_id = match.group(1)
+
+    active_token = stealth_discord_worker.user_token or await discord_sync_service.get_setting("discord_user_token")
+    if not active_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Токен Discord не привязан. Нажмите 'Привязать токен' перед импортом по ссылке."
+        )
+    stealth_discord_worker.set_token(active_token)
+
+    res = await stealth_discord_worker.fetch_channel_history(channel_or_thread_id, limit=30)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Не удалось забрать гайд по ссылке"))
+
+    return {
+        "ok": True,
+        "message": f"Гайд по ссылке успешно импортирован! ({res.get('message')})"
     }
 

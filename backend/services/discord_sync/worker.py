@@ -1,7 +1,6 @@
 import asyncio
 import json
 import random
-import socket
 import aiohttp
 from core.logging import get_logger
 from services.discord_sync.service import discord_sync_service
@@ -46,6 +45,53 @@ class StealthDiscordWorker:
             self.task = None
         logger.info("Stealth Discord Gateway worker stopped")
 
+    @staticmethod
+    def _sync_fetch_json(url: str, token: str) -> tuple[int, dict | list | str]:
+        import urllib.request
+        import ssl
+        clean_token = token.strip().strip("\"'")
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": clean_token,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+        )
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=25) as resp:
+                raw = resp.read().decode("utf-8")
+                return resp.status, json.loads(raw)
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", errors="ignore")
+            try:
+                return e.code, json.loads(body)
+            except Exception:
+                return e.code, body
+        except Exception as e:
+            return 0, str(e)
+
+    async def _get_json(self, session: aiohttp.ClientSession, url: str, headers: dict) -> tuple[int, dict | list | str]:
+        try:
+            async with session.get(url, headers=headers, ssl=False) as resp:
+                status = resp.status
+                if status == 200:
+                    data = await resp.json()
+                    return status, data
+                else:
+                    text = await resp.text()
+                    try:
+                        return status, json.loads(text)
+                    except Exception:
+                        return status, text
+        except Exception as e:
+            logger.warning(f"aiohttp request failed ({e}); attempting urllib fallback for {url}")
+            token = headers.get("Authorization", "")
+            return await asyncio.to_thread(self._sync_fetch_json, url, token)
+
     async def fetch_channel_history(self, channel_id: str, limit: int = 30) -> dict:
         """
         Fetch recent messages or forum posts from Discord channel/forum via REST API using stealth user token.
@@ -62,25 +108,20 @@ class StealthDiscordWorker:
             "Accept-Language": "en-US,en;q=0.9",
         }
 
-        connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=False)
-        timeout = aiohttp.ClientTimeout(total=30)
-
         try:
-            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
                 # 1. Fetch channel metadata to determine type
                 ch_url = f"https://discord.com/api/v10/channels/{channel_id}"
-                async with session.get(ch_url, headers=headers) as ch_resp:
-                    if ch_resp.status == 401:
-                        return {"ok": False, "error": "Недействительный токен Discord (HTTP 401)"}
-                    if ch_resp.status == 403:
-                        return {"ok": False, "error": f"Нет доступа к каналу {channel_id} (HTTP 403 - аккаунт не состоит на сервере или нет прав)"}
-                    if ch_resp.status == 404:
-                        return {"ok": False, "error": f"Канал {channel_id} не найден в Discord (HTTP 404)"}
-                    if ch_resp.status != 200:
-                        err_body = await ch_resp.text()
-                        return {"ok": False, "error": f"Ошибка Discord API (HTTP {ch_resp.status}): {err_body[:100]}"}
-
-                    ch_data = await ch_resp.json()
+                status, ch_data = await self._get_json(session, ch_url, headers)
+                if status == 401:
+                    return {"ok": False, "error": "Недействительный токен Discord (HTTP 401)"}
+                if status == 403:
+                    return {"ok": False, "error": f"Нет доступа к каналу {channel_id} (HTTP 403 - аккаунт не состоит на сервере или нет прав)"}
+                if status == 404:
+                    return {"ok": False, "error": f"Канал {channel_id} не найден в Discord (HTTP 404)"}
+                if status != 200 or not isinstance(ch_data, dict):
+                    err_str = str(ch_data)[:100]
+                    return {"ok": False, "error": f"Ошибка Discord API (HTTP {status}): {err_str}"}
 
                 ch_type = ch_data.get("type", 0)
                 guild_id = ch_data.get("guild_id")
@@ -94,21 +135,19 @@ class StealthDiscordWorker:
                     # Fetch active threads
                     if guild_id:
                         active_url = f"https://discord.com/api/v10/guilds/{guild_id}/threads/active"
-                        async with session.get(active_url, headers=headers) as t_resp:
-                            if t_resp.status == 200:
-                                t_data = await t_resp.json()
-                                for th in t_data.get("threads", []):
-                                    if str(th.get("parent_id")) == str(channel_id):
-                                        threads_to_process.append(th)
+                        a_status, t_data = await self._get_json(session, active_url, headers)
+                        if a_status == 200 and isinstance(t_data, dict):
+                            for th in t_data.get("threads", []):
+                                if str(th.get("parent_id")) == str(channel_id):
+                                    threads_to_process.append(th)
 
                     # Fetch archived public threads
                     archived_url = f"https://discord.com/api/v10/channels/{channel_id}/threads/archived/public"
-                    async with session.get(archived_url, headers=headers) as a_resp:
-                        if a_resp.status == 200:
-                            a_data = await a_resp.json()
-                            for th in a_data.get("threads", []):
-                                if not any(t["id"] == th["id"] for t in threads_to_process):
-                                    threads_to_process.append(th)
+                    ar_status, a_data = await self._get_json(session, archived_url, headers)
+                    if ar_status == 200 and isinstance(a_data, dict):
+                        for th in a_data.get("threads", []):
+                            if not any(t["id"] == th["id"] for t in threads_to_process):
+                                threads_to_process.append(th)
 
                     logger.info(f"Found {len(threads_to_process)} forum threads in channel {channel_id}")
 
@@ -116,21 +155,19 @@ class StealthDiscordWorker:
                         thread_id = th.get("id")
                         thread_name = th.get("name", "Форум Гайд")
                         msgs_url = f"https://discord.com/api/v10/channels/{thread_id}/messages?limit=50"
-                        async with session.get(msgs_url, headers=headers) as m_resp:
-                            if m_resp.status == 200:
-                                msgs = await m_resp.json()
-                                if isinstance(msgs, list) and msgs:
-                                    msgs.sort(key=lambda x: x.get("id", ""))
-                                    starter_msg = msgs[0]
-                                    combined_content = "\n\n".join(
-                                        m.get("content", "") for m in msgs if m.get("content")
-                                    )
-                                    starter_msg["content"] = combined_content or starter_msg.get("content", "")
-                                    res = await discord_sync_service.process_discord_message(
-                                        starter_msg, parent_channel_id=channel_id, custom_title=thread_name
-                                    )
-                                    if not res.get("skipped"):
-                                        processed_count += 1
+                        m_status, msgs = await self._get_json(session, msgs_url, headers)
+                        if m_status == 200 and isinstance(msgs, list) and msgs:
+                            msgs.sort(key=lambda x: x.get("id", ""))
+                            starter_msg = msgs[0]
+                            combined_content = "\n\n".join(
+                                m.get("content", "") for m in msgs if m.get("content")
+                            )
+                            starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                            res = await discord_sync_service.process_discord_message(
+                                starter_msg, parent_channel_id=channel_id, custom_title=thread_name
+                            )
+                            if not res.get("skipped"):
+                                processed_count += 1
 
                     return {
                         "ok": True,
@@ -143,19 +180,17 @@ class StealthDiscordWorker:
                     thread_name = ch_data.get("name", "Гайд")
                     parent_id = ch_data.get("parent_id")
                     msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit=50"
-                    async with session.get(msgs_url, headers=headers) as m_resp:
-                        if m_resp.status == 200:
-                            msgs = await m_resp.json()
-                            if isinstance(msgs, list) and msgs:
-                                msgs.sort(key=lambda x: x.get("id", ""))
-                                starter_msg = msgs[0]
-                                combined_content = "\n\n".join(m.get("content", "") for m in msgs if m.get("content"))
-                                starter_msg["content"] = combined_content or starter_msg.get("content", "")
-                                res = await discord_sync_service.process_discord_message(
-                                    starter_msg, parent_channel_id=parent_id or channel_id, custom_title=thread_name
-                                )
-                                if not res.get("skipped"):
-                                    processed_count += 1
+                    m_status, msgs = await self._get_json(session, msgs_url, headers)
+                    if m_status == 200 and isinstance(msgs, list) and msgs:
+                        msgs.sort(key=lambda x: x.get("id", ""))
+                        starter_msg = msgs[0]
+                        combined_content = "\n\n".join(m.get("content", "") for m in msgs if m.get("content"))
+                        starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                        res = await discord_sync_service.process_discord_message(
+                            starter_msg, parent_channel_id=parent_id or channel_id, custom_title=thread_name
+                        )
+                        if not res.get("skipped"):
+                            processed_count += 1
                     return {
                         "ok": True,
                         "processed": processed_count,
@@ -165,25 +200,22 @@ class StealthDiscordWorker:
                 # 4. Case C: Standard Text / Announcement Channel (Type 0, 5, etc.)
                 else:
                     msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit={limit}"
-                    async with session.get(msgs_url, headers=headers) as m_resp:
-                        if m_resp.status != 200:
-                            err_body = await m_resp.text()
-                            return {"ok": False, "error": f"Ошибка получения сообщений (HTTP {m_resp.status}): {err_body[:100]}"}
+                    m_status, messages = await self._get_json(session, msgs_url, headers)
+                    if m_status != 200 or not isinstance(messages, list):
+                        err_str = str(messages)[:100]
+                        return {"ok": False, "error": f"Ошибка получения сообщений (HTTP {m_status}): {err_str}"}
 
-                        messages = await m_resp.json()
-                        if isinstance(messages, list):
-                            for msg in reversed(messages):
-                                if isinstance(msg, dict) and msg.get("content"):
-                                    res = await discord_sync_service.process_discord_message(msg)
-                                    if not res.get("skipped"):
-                                        processed_count += 1
+                    for msg in reversed(messages):
+                        if isinstance(msg, dict) and msg.get("content"):
+                            res = await discord_sync_service.process_discord_message(msg)
+                            if not res.get("skipped"):
+                                processed_count += 1
 
                     return {
                         "ok": True,
                         "processed": processed_count,
                         "message": f"Текстовый канал {channel_id} обработан: импортировано {processed_count} новых гайдов",
                     }
-
         except Exception as e:
             logger.error(f"Exception during fetch_channel_history for {channel_id}: {e}", exc_info=True)
             return {"ok": False, "error": f"Исключение при сканировании: {str(e)}"}

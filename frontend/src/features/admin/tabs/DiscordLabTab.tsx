@@ -20,6 +20,7 @@ import {
   apiClearSyncedDiscordGuides,
   apiBackfillDiscordChannel,
   apiBackfillAllDiscordChannels,
+  apiImportDiscordLink,
 } from '@/lib/api'
 import { getGameIconUrl } from '@/lib/gameIcons'
 import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck, RefreshCw, ExternalLink, Clock, History, Sparkles, Search } from '@/lib/icons'
@@ -168,6 +169,24 @@ export const DiscordLabTab: FC = () => {
       alert('Ошибка сканирования: ' + (e.message || e))
     } finally {
       setIsBackfillingAll(false)
+    }
+  }
+
+  const [importLinkUrl, setImportLinkUrl] = useState('')
+  const [isImportingLink, setIsImportingLink] = useState(false)
+
+  const handleImportLink = async () => {
+    if (!importLinkUrl.trim()) return
+    setIsImportingLink(true)
+    try {
+      const res = await apiImportDiscordLink(importLinkUrl.trim())
+      alert(res.message || 'Импорт по ссылке успешно выполнен!')
+      setImportLinkUrl('')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка импорта: ' + (e.message || e))
+    } finally {
+      setIsImportingLink(false)
     }
   }
 
@@ -684,6 +703,34 @@ export const DiscordLabTab: FC = () => {
             </div>
           </div>
         )}
+
+        {/* Instant Import by Discord Link */}
+        <div className="bg-gradient-to-r from-violet-950/30 via-background/60 to-indigo-950/30 p-5 rounded-2xl border border-violet-500/20 backdrop-blur-md space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-black uppercase tracking-wider text-violet-300 font-heading flex items-center gap-2">
+              <ExternalLink className="size-4 text-violet-400" />
+              🚀 Мгновенный Импорт по Ссылке на Пост / Сообщение Discord
+            </h4>
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">1-Click Link Import</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              placeholder="Вставьте ссылку на пост Discord (например: https://discord.com/channels/1066.../1266...)"
+              className="h-11 flex-1 rounded-xl bg-background/80 border border-violet-500/30 text-xs font-mono text-foreground placeholder:text-muted-foreground/50"
+              value={importLinkUrl}
+              onChange={(e) => setImportLinkUrl(e.target.value)}
+            />
+            <Button
+              onClick={handleImportLink}
+              disabled={!importLinkUrl.trim() || isImportingLink}
+              className="h-11 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs gap-2 cursor-pointer shadow-lg shadow-violet-500/20"
+            >
+              <Sparkles className={`size-4 ${isImportingLink ? 'animate-spin' : ''}`} />
+              {isImportingLink ? 'Импортирую...' : 'Импортировать Гайд'}
+            </Button>
+          </div>
+        </div>
 
         {/* Channel Sync Rules Table & Add Form */}
         <div className="space-y-4 pt-2">

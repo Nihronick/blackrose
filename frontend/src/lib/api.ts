@@ -263,6 +263,8 @@ export const apiBackfillDiscordChannel = (channel_id: string) =>
   apiPost<{ ok: boolean; message: string }>(`/api/admin/discord-sync/channels/${channel_id}/backfill`, {})
 export const apiBackfillAllDiscordChannels = () =>
   apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/backfill-all', {})
+export const apiImportDiscordLink = (link: string) =>
+  apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/import-link', { link })
 
 // --- User Management API ---
 export interface AdminUserItem {
