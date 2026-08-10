@@ -44,6 +44,50 @@ class StealthDiscordWorker:
             self.task = None
         logger.info("Stealth Discord Gateway worker stopped")
 
+    async def fetch_channel_history(self, channel_id: str, limit: int = 30) -> bool:
+        """
+        Fetch recent messages from Discord channel via REST API using stealth user token.
+        """
+        if not self.user_token:
+            logger.warning("fetch_channel_history requested without user_token")
+            return False
+
+        headers = {
+            "Authorization": self.user_token,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+
+        url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit={limit}"
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as resp:
+                    if resp.status != 200:
+                        err_body = await resp.text()
+                        logger.error(f"Failed to fetch channel history: HTTP {resp.status} - {err_body}")
+                        return False
+
+                    messages = await resp.json()
+                    if not isinstance(messages, list):
+                        logger.error(f"Unexpected response format from Discord API: {messages}")
+                        return False
+
+                    logger.info(f"Fetched {len(messages)} messages for channel {channel_id}. Processing...")
+
+                    processed_count = 0
+                    for msg in reversed(messages):
+                        if isinstance(msg, dict) and msg.get("content"):
+                            res = await discord_sync_service.process_discord_message(msg)
+                            if not res.get("skipped"):
+                                processed_count += 1
+
+                    logger.info(f"Backfill complete for channel {channel_id}: processed {processed_count} new/updated guides")
+                    return True
+        except Exception as e:
+            logger.error(f"Exception during fetch_channel_history: {e}", exc_info=True)
+            return False
+
     async def _run_loop(self):
         ws_url = "wss://gateway.discord.gg/?v=10&encoding=json"
         headers = {
