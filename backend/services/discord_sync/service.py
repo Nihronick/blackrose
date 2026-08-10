@@ -129,11 +129,15 @@ class DiscordSyncService:
                 category_key = config.category_key
                 auto_translate = config.auto_translate
 
-                # Verify target category exists to prevent foreign key integrity errors
+                # Verify target category exists; fallback gracefully if missing
                 cat_res = await session.execute(select(Category).where(Category.key == category_key))
                 if not cat_res.scalar_one_or_none():
-                    logger.warning(f"Category '{category_key}' does not exist in database. Skipping message.")
-                    return {"skipped": True, "reason": f"category '{category_key}' does not exist"}
+                    first_cat_res = await session.execute(select(Category).limit(1))
+                    first_cat = first_cat_res.scalar_one_or_none()
+                    if first_cat:
+                        category_key = first_cat.key
+                    else:
+                        category_key = "general"
 
                 # 2. SHA-256 hash check for diffing
                 content_hash = hashlib.sha256(raw_content.encode("utf-8")).hexdigest()

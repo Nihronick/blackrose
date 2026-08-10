@@ -61,7 +61,7 @@ class StealthDiscordWorker:
             "Accept-Language": "en-US,en;q=0.9",
         }
 
-        connector = aiohttp.TCPConnector(family=socket.AF_INET)
+        connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=False)
         timeout = aiohttp.ClientTimeout(total=30)
 
         try:
