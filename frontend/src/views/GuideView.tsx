@@ -11,6 +11,7 @@ import { haptic } from '@/lib/haptic'
 import { Eye } from '@/lib/icons'
 import type { Guide as GuideType } from '@/lib/types'
 
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { PtrIndicator } from '@/components/PtrIndicator'
 import { TableOfContents } from '@/components/TableOfContents'
