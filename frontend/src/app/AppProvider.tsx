@@ -20,13 +20,18 @@ export const AppProvider: FC<AppProviderProps> = ({ children }) => {
 
     const applyTheme = (t: string) => {
       root.classList.remove('light', 'dark')
+      let effectiveTheme = t
       if (t === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+        effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
           ? 'dark'
           : 'light'
-        root.classList.add(systemTheme)
-      } else {
-        root.classList.add(t)
+      }
+      root.classList.add(effectiveTheme)
+
+      // Sync meta theme-color with current theme for status bar & mobile chrome
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      if (metaThemeColor) {
+        metaThemeColor.setAttribute('content', effectiveTheme === 'dark' ? '#0D0E12' : '#F9FAFB')
       }
     }
 

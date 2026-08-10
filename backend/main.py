@@ -16,6 +16,7 @@ from core.middleware import setup_cors, add_security_headers, setup_honeybadger
 from api import admin, public, webhook_ingest
 from api.guilds import router as guilds_router
 from api.discord_sync import router as discord_sync_router
+from api.users_admin import router as users_admin_router
 from core.http import http_client
 
 
