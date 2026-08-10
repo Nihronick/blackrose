@@ -31,18 +31,28 @@ export const DashboardTab: FC = () => {
   const [loading, setLoading] = useState(true)
   const [clearing, setClearing] = useState(false)
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
   const loadData = async () => {
+    setLoading(true)
+    setErrorMsg(null)
     try {
       const [s, c, g] = await Promise.all([
-        apiFetch<AdminStats>('/api/admin/stats'),
-        apiFetch<AnalyticsData[]>('/api/admin/analytics/views?days=30'),
-        apiFetch<Guide[]>('/api/admin/guides?limit=5'),
+        apiFetch<AdminStats>('/api/admin/stats').catch(() => ({
+          guides: 0,
+          categories: 0,
+          views: 0,
+          comments: 0,
+        })),
+        apiFetch<AnalyticsData[]>('/api/admin/analytics/views?days=30').catch(() => []),
+        apiFetch<Guide[]>('/api/admin/guides?limit=5').catch(() => []),
       ])
-      setStats(s)
+      setStats(s || { guides: 0, categories: 0, views: 0, comments: 0 })
       setChartData(c || [])
       setGuides(g || [])
-    } catch {
-      // Error handled silently
+    } catch (ex) {
+      setErrorMsg('Не удалось загрузить часть системной статистики')
+      setStats({ guides: 0, categories: 0, views: 0, comments: 0 })
     } finally {
       setLoading(false)
     }
@@ -56,10 +66,9 @@ export const DashboardTab: FC = () => {
     setClearing(true)
     try {
       await apiPost('/api/admin/cache/clear', {})
-      alert('Кэш Redis успешно очищен')
+      toast.success('Кэш Redis успешно очищен')
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      alert(`Ошибка очистки: ${msg}`)
+      toast.error('Ошибка очистки кэша')
     } finally {
       setClearing(false)
     }
@@ -76,7 +85,7 @@ export const DashboardTab: FC = () => {
       a.click()
       URL.revokeObjectURL(url)
     } catch (e: any) {
-      alert('Ошибка экспорт бэкапа: ' + (e.message || e))
+      toast.error('Ошибка экспорта бэкапа: ' + (e.message || e))
     }
   }
 
@@ -97,42 +106,45 @@ export const DashboardTab: FC = () => {
     }
   }
 
-  if (loading || !stats) {
+  if (loading) {
     return (
-      <div className="flex h-60 items-center justify-center">
+      <div className="flex h-96 items-center justify-center flex-col gap-4">
         <div className="adm2-spinner" />
+        <span className="text-xs font-bold text-muted-foreground uppercase font-heading">Загрузка данных системы...</span>
       </div>
     )
   }
 
+  const activeStats = stats || { guides: 0, categories: 0, views: 0, comments: 0 }
+
   const statCards = [
     {
       label: 'Гайдов',
-      value: stats.guides,
+      value: activeStats.guides,
       icon: FileText,
-      color: 'text-blue-500',
-      bg: 'bg-blue-500/10',
+      color: 'text-rose-400',
+      bg: 'bg-rose-500/10',
     },
     {
       label: 'Категорий',
-      value: stats.categories,
+      value: activeStats.categories,
       icon: LayoutGrid,
-      color: 'text-green-500',
-      bg: 'bg-green-500/10',
+      color: 'text-amber-400',
+      bg: 'bg-amber-500/10',
     },
     {
       label: 'Просмотров',
-      value: (stats.views ?? 0).toLocaleString(),
+      value: (activeStats.views ?? 0).toLocaleString(),
       icon: Eye,
-      color: 'text-orange-500',
-      bg: 'bg-orange-500/10',
+      color: 'text-cyan-400',
+      bg: 'bg-cyan-500/10',
     },
     {
       label: 'Комментариев',
-      value: stats.comments ?? 0,
+      value: activeStats.comments ?? 0,
       icon: MessageSquare,
-      color: 'text-purple-500',
-      bg: 'bg-purple-500/10',
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
     },
   ]
 

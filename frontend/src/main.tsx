@@ -7,7 +7,6 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppEnvProvider } from './hooks/useAppEnv'
 import { initTheme } from './lib/theme'
 import './index.css'
-import './lib/layui-components'
 // import '@fontsource-variable/geist'
 
 import Honeybadger from '@honeybadger-io/js'

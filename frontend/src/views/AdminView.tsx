@@ -131,35 +131,49 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
   }
 
   if (error) {
+    if (error === 'auth') {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-2xl animate-in fade-in duration-300 rose-mesh-bg">
+          <div className="w-full max-w-md relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-3 top-3 z-10 rounded-full h-8 w-8 hover:bg-white/10 text-muted-foreground"
+              onClick={onClose}
+            >
+              <X className="size-4" />
+            </Button>
+            <LocalAdminLogin onSuccess={() => window.location.reload()} />
+          </div>
+        </div>
+      )
+    }
+
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300 rose-mesh-bg">
         <div className="w-full max-w-md space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 rounded-3xl rose-bento-card border-rose-500/20">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/10 rounded-2xl text-primary border border-primary/20 shadow-inner">
+              <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-400 border border-rose-500/20 shadow-inner">
                 <ShieldCheck className="size-6" />
               </div>
               <div>
-                <h1 className="text-base font-black tracking-tight uppercase font-heading">Доступ ограничен</h1>
-                <p className="text-[11px] font-bold text-muted-foreground/70">Административная панель BlackRose</p>
+                <h1 className="text-base font-black tracking-tight uppercase font-heading text-foreground">Доступ ограничен</h1>
+                <p className="text-[11px] font-bold text-muted-foreground">Административная панель BlackRose</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" onClick={onClose}>
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10" onClick={onClose}>
               <X className="size-5" />
             </Button>
           </div>
 
-          {error === 'auth' ? (
-            <LocalAdminLogin onSuccess={() => window.location.reload()} />
-          ) : (
-            <Card className="p-6 border border-destructive/20 glass-card rounded-3xl text-center space-y-4">
-              <AlertCircle className="size-10 text-destructive opacity-80 animate-bounce mx-auto" />
-              <div className="text-sm font-bold text-foreground">{error}</div>
-              <Button variant="default" className="rounded-2xl h-11 px-8 font-bold bg-primary text-primary-foreground font-heading" onClick={load}>
-                Попробовать снова
-              </Button>
-            </Card>
-          )}
+          <Card className="p-6 border border-destructive/30 rose-bento-card rounded-3xl text-center space-y-4">
+            <AlertCircle className="size-10 text-destructive opacity-80 animate-bounce mx-auto" />
+            <div className="text-sm font-bold text-foreground font-heading">{error}</div>
+            <Button variant="default" className="rose-glow-btn h-11 px-8 font-bold text-xs uppercase font-heading" onClick={load}>
+              Попробовать снова
+            </Button>
+          </Card>
         </div>
       </div>
     )
