@@ -34,8 +34,11 @@
 - [x] **Пустые состояния**: Новый компонент `EmptyState.tsx` интегрирован в `SearchView`, `FavoritesView`, `HistoryView`.
 - [x] **Кнопка «Наверх»**: Новый компонент `ScrollToTopFab.tsx` интегрирован в `GuideView.tsx`.
 
-### 🛡️ Reliability
-- [ ] **Error Monitoring**: Backend integration for Honeybadger/Sentry (Frontend is already implemented).
+- [x] **Санитизация комментариев (S1)**: Внедрена чистка через `nh3.clean` в Pydantic валидаторе `CommentIn`.
+- [x] **Rate Limiting (S2)**: Подключён `slowapi` Limiter (10 req/min для комментариев, 5 req/min для заявок в гильдии).
+- [x] **JWT_SECRET Warning (S3)**: Добавлено предупреждение в лог при старте приложения, если секрет не изменён.
+- [x] **Roster Query Limit (D1)**: Добавлен предохранительный `limit(100)` на выборку участников гильдии.
+- [x] **Root Health Alias (A1)**: Добавлен роут `/health` на корневом уровне для внешних мониторингов.
 
 ### 💡 Nice to Have
 - [ ] Тёмная/светлая тема с переключателем.
