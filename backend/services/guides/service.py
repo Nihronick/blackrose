@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, update, desc, func, delete
 from sqlalchemy.orm import selectinload
@@ -137,7 +138,8 @@ class GuideService:
             old_snapshot = None
             if not is_new and existing_guide:
                 try:
-                    old_snapshot = cls._to_dict(existing_guide)
+                    raw_dict = cls._to_dict(existing_guide)
+                    old_snapshot = json.loads(json.dumps(raw_dict, default=str))
                 except Exception as err:
                     logger.warning(f"Failed to create old_snapshot for history: {err}")
 
@@ -149,13 +151,14 @@ class GuideService:
             await session.execute(stmt)
 
             try:
-                history = GuideHistory(
-                    guide_key=key,
-                    action="created" if is_new else "updated",
-                    changed_by=changed_by,
-                    snapshot=old_snapshot
-                )
-                session.add(history)
+                async with session.begin_nested():
+                    history = GuideHistory(
+                        guide_key=key,
+                        action="created" if is_new else "updated",
+                        changed_by=changed_by,
+                        snapshot=old_snapshot
+                    )
+                    session.add(history)
             except Exception as err:
                 logger.warning(f"Failed to record GuideHistory: {err}")
 
