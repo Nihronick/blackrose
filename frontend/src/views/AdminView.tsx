@@ -10,6 +10,7 @@ import {
   HistoryTab,
   LocalAdminLogin,
   MediaTab,
+  UsersTab,
 } from '@/features/admin/AdminTabs'
 import { AdminSidebar } from '@/features/admin/components/AdminSidebar'
 import { apiFetch } from '@/lib/api'
@@ -29,6 +30,7 @@ import {
   Palette,
   Shield,
   ShieldCheck,
+  Users,
   X,
 } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
@@ -48,6 +50,7 @@ interface AdminTab {
 
 const TABS: readonly AdminTab[] = [
   { id: 'dash', label: 'Обзор', title: 'Системная панель', icon: BarChart3 },
+  { id: 'users', label: 'Пользователи', title: 'Управление пользователями & RBAC', icon: Users },
   { id: 'guilds', label: 'Гильдии', title: 'Управление гильдиями', icon: Shield },
   { id: 'guides', label: 'Гайды', title: 'Управление гайдами', icon: FileText },
   { id: 'categories', label: 'Категории', title: 'Структура контента', icon: LayoutGrid },
@@ -229,6 +232,7 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
             <Suspense fallback={<TabSpinner />}>
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {activeTab?.id === 'dash' && <DashboardTab />}
+                {activeTab?.id === 'users' && <UsersTab />}
                 {activeTab?.id === 'guilds' && <GuildsTab />}
                 {activeTab?.id === 'guides' && (
                   <GuidesTab

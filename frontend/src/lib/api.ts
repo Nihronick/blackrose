@@ -242,7 +242,7 @@ export const apiAdminDeleteGuild = (id: number) =>
 
 // --- Discord Sync API ---
 export const apiGetDiscordSyncStatus = () =>
-  apiFetch<{ running: boolean; channels_count: number; has_token: boolean }>('/api/admin/discord-sync/status')
+  apiFetch<{ running: boolean; channels_count: number; has_token: boolean; has_saved_token?: boolean; token_preview?: string | null }>('/api/admin/discord-sync/status')
 export const apiStartDiscordSync = (user_token: string) =>
   apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/start', { user_token })
 export const apiStopDiscordSync = () =>
@@ -257,5 +257,29 @@ export const apiGetSyncedDiscordGuides = () =>
   apiFetch<{ synced_guides: Array<{ id: number; discord_message_id: string; discord_channel_id: string; guide_key: string; author_tag: string; created_at: string; title: string; category_key: string; views: number }> }>('/api/admin/discord-sync/synced-guides')
 export const apiBackfillDiscordChannel = (channel_id: string) =>
   apiPost<{ ok: boolean; message: string }>(`/api/admin/discord-sync/channels/${channel_id}/backfill`, {})
+
+// --- User Management API ---
+export interface AdminUserItem {
+  user_id: number
+  username?: string
+  first_name?: string
+  role: string
+  is_active: boolean
+  created_at?: string
+}
+
+export const apiGetAdminUsers = (query?: string) =>
+  apiFetch<{ total: number; users: AdminUserItem[] }>(`/api/admin/users${query ? `?query=${encodeURIComponent(query)}` : ''}`)
+export const apiUpdateUserRole = (userId: number, role: string) =>
+  apiPut<{ ok: boolean }>(`/api/admin/users/${userId}/role`, { role })
+export const apiToggleUserStatus = (userId: number, isActive: boolean) =>
+  apiPut<{ ok: boolean }>(`/api/admin/users/${userId}/status`, { is_active: isActive })
+export const apiUploadMediaFile = (file: File) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  return apiRaw<{ ok: boolean; url: string; filename: string }>('/api/admin/media/upload', 'POST', fd, true)
+}
+export const apiExportFullBackup = () => apiFetch<unknown>('/api/admin/backup/export')
+
 
 

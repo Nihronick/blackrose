@@ -5,6 +5,7 @@ export { HistoryTab } from './HistoryTab'
 export { LocalAdminLogin } from './LocalAdminLogin'
 export { MediaTab } from './MediaTab'
 export { DiscordLabTab } from './DiscordLabTab'
+export { UsersTab } from './UsersTab'
 export { IconPreview } from './components/IconPreview'
 
 export type { IconPreviewProps } from './components/IconPreview'

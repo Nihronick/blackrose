@@ -1,16 +1,18 @@
 import { Card } from '@/components/ui/card'
-import { apiDelete, apiMediaList } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { apiDelete, apiMediaList, apiUploadMediaFile } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { Copy, Film, Image as ImageIcon, Search, Trash2 } from '@/lib/icons'
+import { Copy, Film, Image as ImageIcon, Search, Trash2, Upload, Plus, Check } from '@/lib/icons'
 import type { MediaGroup, MediaItem, MediaListResponse } from '@/lib/types'
 import { normalizeUrl } from '@/lib/utils'
-import { type FC, type MouseEvent, useEffect, useState } from 'react'
+import { type FC, type MouseEvent, type ChangeEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 export const MediaTab: FC = () => {
   const [data, setData] = useState<MediaListResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -22,6 +24,29 @@ export const MediaTab: FC = () => {
   useEffect(() => {
     load()
   }, [])
+
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+    let uploadedCount = 0
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const res = await apiUploadMediaFile(file)
+        if (res.ok) uploadedCount++
+      }
+      toast.success(`Успешно загружено файлов: ${uploadedCount}`)
+      haptic.success()
+      load()
+    } catch (err: any) {
+      toast.error('Ошибка загрузки: ' + (err.message || err))
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
 
   if (loading)
     return (
@@ -62,15 +87,47 @@ export const MediaTab: FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full space-y-8 animate-in fade-in duration-500">
+      {/* Upload Banner */}
+      <Card className="p-6 border border-primary/20 bg-gradient-to-br from-card/90 via-card/50 to-card/90 backdrop-blur-xl rounded-3xl space-y-4 shadow-2xl">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-2xl text-white shadow-lg shadow-violet-500/25 border border-white/10">
+              <Upload className="size-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black uppercase font-heading text-foreground">
+                Прямая Загрузка Медиафайлов (Upload Manager)
+              </h3>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                Загружайте фотографии и видео с вашего устройства прямо на сайт
+              </p>
+            </div>
+          </div>
+
+          <label className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white cursor-pointer shadow-xl shadow-violet-900/40 border border-white/10 active:scale-95 transition-all">
+            <Plus className="size-4" />
+            <span>{uploading ? 'Загрузка...' : 'Выбрать Файлы'}</span>
+            <input
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={handleFileUpload}
+            />
+          </label>
+        </div>
+      </Card>
+
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black tracking-tight uppercase">
+        <h2 className="text-xl font-black tracking-tight uppercase text-foreground">
           Библиотека медиа ({data?.total})
         </h2>
         <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/40" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
-            className="w-full bg-muted/40 border-none rounded-xl h-10 pl-10 pr-4 text-sm font-medium focus:ring-1 ring-primary/20 transition-all outline-none"
+            className="w-full bg-background/80 border border-white/10 rounded-2xl h-10 pl-10 pr-4 text-xs font-medium focus:ring-2 ring-primary/40 outline-none text-foreground"
             placeholder="Поиск по названию..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}

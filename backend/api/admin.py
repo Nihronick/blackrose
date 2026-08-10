@@ -202,12 +202,26 @@ async def admin_media_list(user=Depends(require_admin)):
     ]
     return {"total": sum(len(g["items"]) for g in groups), "groups": groups}
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
+
 @router.delete("/media")
 async def admin_media_delete(url: str, user=Depends(require_admin)):
     ok = await storage_service.delete(url)
     if not ok:
         raise HTTPException(status_code=404, detail="Media not found")
     return {"ok": True}
+
+@router.post("/media/upload")
+async def admin_media_upload(file: UploadFile = File(...), user=Depends(require_admin)):
+    try:
+        contents = await file.read()
+        saved_path = await storage_service.save_file(
+            file.filename or "upload.jpg", contents, folder="uploads"
+        )
+        return {"ok": True, "url": saved_path, "filename": file.filename}
+    except Exception as e:
+        logger.error(f"Error uploading file: {e}")
+        raise HTTPException(status_code=400, detail=f"Ошибка загрузки файла: {e}")
 
 @router.get("/export")
 async def admin_export(user=Depends(require_admin)):

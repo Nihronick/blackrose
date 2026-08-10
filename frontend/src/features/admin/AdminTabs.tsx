@@ -6,6 +6,7 @@ export {
   LocalAdminLogin,
   MediaTab,
   DiscordLabTab,
+  UsersTab,
   IconPreview,
   type IconPreviewProps,
 } from './tabs'
