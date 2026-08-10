@@ -12,6 +12,7 @@ from core.inngest_client import inngest_client
 from functions.discord_import import discord_import_guide
 from services.cache.redis_cache import cache_service
 from core.db import init_db, close_pool
+from core.http import http_client
 from core.middleware import setup_cors, add_security_headers, setup_honeybadger
 from api import admin, public, webhook_ingest
 from api.guilds import router as guilds_router

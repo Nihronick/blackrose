@@ -202,7 +202,6 @@ async def admin_media_list(user=Depends(require_admin)):
     ]
     return {"total": sum(len(g["items"]) for g in groups), "groups": groups}
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
 
 @router.delete("/media")
 async def admin_media_delete(url: str, user=Depends(require_admin)):

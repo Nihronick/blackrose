@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from core.auth import require_admin, require_user
 from core.logging import get_logger
+from core.rate_limit import limiter
 from models.schemas import (
     GuildIn, GuildMemberProfileIn, GuildMemberAdminIn,
     GuildJoinRequestIn, GuildStatusIn, MemberRoleIn,
@@ -56,8 +57,6 @@ async def update_my_profile(body: GuildMemberProfileIn, user=Depends(require_use
         raise HTTPException(status_code=404, detail="Вы не состоите в гильдии")
     return {"ok": True}
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from core.rate_limit import limiter
 
 @router.post("/guilds/join")
 @limiter.limit("5/minute")

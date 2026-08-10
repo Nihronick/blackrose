@@ -10,6 +10,7 @@ from core.auth import (
 )
 from core.config import settings
 from core.logging import get_logger
+from core.rate_limit import limiter
 from core.db import get_health as get_db_health
 from services.guides.service import guide_service, category_service
 from services.cache.redis_cache import cache_service
@@ -200,7 +201,6 @@ async def unsubscribe(category_key: str, user=Depends(require_public_user)):
     await category_service.unsubscribe(uid, category_key)
     return {"ok": True}
 
-from core.rate_limit import limiter
 
 @router.get("/guide/{guide_key}/comments")
 async def comments(guide_key: str, user=Depends(require_public_user)):
