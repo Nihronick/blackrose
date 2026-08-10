@@ -148,8 +148,10 @@ async def admin_set_guide_tags(key: str, body: TagsIn, user=Depends(require_admi
     return {"ok": True}
 
 @router.get("/analytics")
+@router.get("/analytics/views")
 async def admin_analytics(days: int = 30, user=Depends(require_admin)):
-    return {"chart": await guide_service.get_analytics(days)}
+    chart_data = await guide_service.get_analytics(days)
+    return chart_data
 
 @router.get("/icons")
 async def admin_icons(user=Depends(require_admin)):
