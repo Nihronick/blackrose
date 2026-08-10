@@ -94,126 +94,180 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-4 stagger-in px-4 sm:px-6 lg:px-10 xl:px-12 w-full max-w-[1800px] mx-auto">
-      {/* 1. Hero Welcome Banner */}
-      <section className="pt-2">
-        <div className="relative overflow-hidden rounded-3xl sm:rounded-[40px] mesh-bg p-5 sm:p-8 border border-primary/15 shadow-2xl shadow-primary/10 transition-transform duration-500 hover:scale-[1.005] ambient-glow texture-noise">
-          <div className="absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-[80px] animate-pulse" />
-          <div className="absolute -left-10 -bottom-10 size-32 rounded-full bg-primary/10 blur-[60px]" />
+    <div className="flex flex-col gap-8 pb-4 stagger-in px-4 sm:px-6 lg:px-10 xl:px-12 w-full max-w-[1800px] mx-auto rose-mesh-bg rounded-3xl py-4">
+      {/* 1. Bento Grid Hero Banner & Quick Actions */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Large Hero Card (8 cols) */}
+        <div className="lg:col-span-8 rose-bento-card p-6 sm:p-10 min-h-[320px] flex flex-col justify-between relative group border-rose-500/30">
+          <div className="absolute inset-0 z-0 opacity-40 mix-blend-luminosity group-hover:opacity-60 transition-opacity duration-700">
+            <img
+              src="/images/black_rose_hero.jpg"
+              alt="BlackRose Hero"
+              className="size-full object-cover object-center scale-105 group-hover:scale-100 transition-transform duration-1000"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
+          </div>
 
-          <div className="relative z-10 flex flex-col gap-4 py-2">
-            <div className="flex items-center gap-2">
-              <div className="size-2 rounded-full bg-primary animate-ping" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
-                Live Updates
-              </span>
+          <div className="relative z-10 space-y-4">
+            <div className="gold-accent-badge">
+              <Star className="size-3.5 fill-amber-400" />
+              <span>Slayer Legend Database & Calculators</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground font-heading flex flex-wrap gap-x-2 items-baseline">
-              <span>Привет,</span>
-              <span
-                className="bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent pb-2"
-                style={{
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                {userName}!
-              </span>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight font-heading text-foreground uppercase">
+              Black<span className="bg-gradient-to-r from-rose-500 via-rose-400 to-amber-400 bg-clip-text text-transparent">Rose</span>
             </h1>
-            <p className="text-sm sm:text-[15px] font-medium text-muted-foreground/80 leading-relaxed max-w-md sm:max-w-xl">
-              {recentGuides.length > 0
-                ? `У нас появилось ${recentGuides.length} новых гайдов. Пора стать сильнее!`
-                : 'Сегодня отличный день, чтобы изучить что-то новое.'}
+
+            <p className="text-sm sm:text-base font-medium text-muted-foreground/90 leading-relaxed max-w-xl">
+              Интерактивная база знаний, калькуляторы навыков, ростер гильдий и гайды по игре Slayer Legend.
             </p>
           </div>
+
+          <div className="relative z-10 flex flex-wrap gap-3 pt-6">
+            <Button
+              className="rose-glow-btn h-12 px-6 text-xs gap-2"
+              onClick={() => {
+                haptic.light()
+                push({ type: 'build-planner' })
+              }}
+            >
+              <Compass className="size-4" />
+              <span>Калькулятор Билдов</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-12 px-6 rounded-2xl border-white/10 bg-background/50 backdrop-blur-md text-xs font-black uppercase tracking-wider hover:bg-white/10 transition-all cursor-pointer"
+              onClick={() => {
+                haptic.light()
+                push({ type: 'categories' })
+              }}
+            >
+              <BookOpen className="size-4" />
+              <span>Все Гайды</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Feature Bento Card: Build Planner Quick Access (4 cols) */}
+        <motion.div
+          whileHover={{ y: -4, scale: 1.015 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => {
+            haptic.light()
+            push({ type: 'build-planner' })
+          }}
+          className="lg:col-span-4 rose-bento-card p-6 flex flex-col justify-between cursor-pointer border-rose-500/25 bg-gradient-to-br from-rose-950/40 via-card/70 to-card/90"
+        >
+          <div className="flex items-center justify-between">
+            <div className="size-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold border border-rose-500/30">
+              <Compass className="size-6" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+              Инструмент
+            </span>
+          </div>
+
+          <div className="space-y-2 mt-6">
+            <h3 className="text-xl font-black uppercase font-heading text-foreground group-hover:text-rose-400 transition-colors">
+              Калькулятор Билдов & Навыков
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Рассчитывайте комбинации навыков, урон и требования продвижений для вашего Слеера.
+            </p>
+          </div>
+
+          <div className="pt-4 flex items-center justify-between text-xs font-bold text-rose-400">
+            <span>Открыть калькулятор</span>
+            <ChevronRight className="size-4" />
+          </div>
+        </motion.div>
       </section>
 
-      {/* 2. Interactive Quick Action Buttons Hub */}
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      {/* 2. Interactive Bento Quick Action Cards Hub */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <motion.div
-          whileHover={{ y: -4, scale: 1.02 }}
+          whileHover={{ y: -3, scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           onClick={() => {
             haptic.light()
             push({ type: 'guilds' })
           }}
-          className="glass-card cursor-pointer p-4 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-transparent flex flex-col justify-between h-28 relative overflow-hidden group shadow-lg shadow-primary/10 transition-all hover:border-primary/40"
+          className="rose-bento-card p-5 cursor-pointer flex flex-col justify-between h-32 group border-rose-500/20"
         >
           <div className="flex justify-between items-start">
-            <div className="size-10 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold">
+            <div className="size-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold border border-rose-500/30">
               <Shield className="size-5" />
             </div>
-            <Badge className="bg-primary/20 text-primary border-0 text-[9px] font-black uppercase">
-              NEW
+            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] font-black uppercase">
+              Гильдии
             </Badge>
           </div>
           <div>
-            <h3 className="font-black text-sm text-foreground group-hover:text-primary transition-colors font-heading">
-              Гильдии
+            <h3 className="font-black text-sm text-foreground group-hover:text-rose-400 transition-colors font-heading">
+              Клановый Состав
             </h3>
-            <p className="text-[10px] font-medium text-muted-foreground/80">Состав & Рейтинг</p>
+            <p className="text-[10px] font-bold text-muted-foreground/80 mt-0.5">Ранги и заявки</p>
           </div>
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -4, scale: 1.02 }}
+          whileHover={{ y: -3, scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           onClick={() => {
             haptic.light()
             push({ type: 'categories' })
           }}
-          className="glass-card cursor-pointer p-4 rounded-3xl border border-border/10 bg-gradient-to-br from-violet-500/10 via-card to-transparent flex flex-col justify-between h-28 relative overflow-hidden group transition-all hover:border-violet-500/30"
+          className="rose-bento-card p-5 cursor-pointer flex flex-col justify-between h-32 group border-rose-500/15"
         >
-          <div className="size-10 rounded-2xl bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold">
+          <div className="size-10 rounded-2xl bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold border border-violet-500/30">
             <LayoutGrid className="size-5" />
           </div>
           <div>
             <h3 className="font-black text-sm text-foreground group-hover:text-violet-400 transition-colors font-heading">
               Категории
             </h3>
-            <p className="text-[10px] font-medium text-muted-foreground/80">База всех знаний</p>
+            <p className="text-[10px] font-bold text-muted-foreground/80 mt-0.5">Каталог знаний</p>
           </div>
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -4, scale: 1.02 }}
+          whileHover={{ y: -3, scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           onClick={() => {
             haptic.light()
             push({ type: 'roadmap' })
           }}
-          className="glass-card cursor-pointer p-4 rounded-3xl border border-border/10 bg-gradient-to-br from-emerald-500/10 via-card to-transparent flex flex-col justify-between h-28 relative overflow-hidden group transition-all hover:border-emerald-500/30"
+          className="rose-bento-card p-5 cursor-pointer flex flex-col justify-between h-32 group border-rose-500/15"
         >
-          <div className="size-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+          <div className="size-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/30">
             <Compass className="size-5" />
           </div>
           <div>
             <h3 className="font-black text-sm text-foreground group-hover:text-emerald-400 transition-colors font-heading">
               Дорожная карта
             </h3>
-            <p className="text-[10px] font-medium text-muted-foreground/80">Планы & Обновления</p>
+            <p className="text-[10px] font-bold text-muted-foreground/80 mt-0.5">Обновления игры</p>
           </div>
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -4, scale: 1.02 }}
+          whileHover={{ y: -3, scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           onClick={() => {
             haptic.light()
             push({ type: 'favorites' })
           }}
-          className="glass-card cursor-pointer p-4 rounded-3xl border border-border/10 bg-gradient-to-br from-amber-500/10 via-card to-transparent flex flex-col justify-between h-28 relative overflow-hidden group transition-all hover:border-amber-500/30"
+          className="rose-bento-card p-5 cursor-pointer flex flex-col justify-between h-32 group border-rose-500/15"
         >
-          <div className="size-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-            <Star className="size-5" />
+          <div className="size-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold border border-amber-500/30">
+            <Star className="size-5 fill-amber-400/20" />
           </div>
           <div>
             <h3 className="font-black text-sm text-foreground group-hover:text-amber-400 transition-colors font-heading">
               Избранное
             </h3>
-            <p className="text-[10px] font-medium text-muted-foreground/80">Сохраненные гайды</p>
+            <p className="text-[10px] font-bold text-muted-foreground/80 mt-0.5">Сохраненные файлы</p>
           </div>
         </motion.div>
       </section>

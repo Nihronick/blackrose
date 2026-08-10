@@ -43,49 +43,49 @@ textarea:-webkit-autofill:active {
 }
 
 :root {
-  --background: oklch(0.96 0.015 250);
-  --foreground: oklch(0.12 0.03 260);
+  --background: oklch(0.96 0.015 15);
+  --foreground: oklch(0.12 0.03 15);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.03 260);
+  --card-foreground: oklch(0.12 0.03 15);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.03 260);
-  --primary: oklch(0.55 0.22 270); /* Vibrant Violet Indigo */
-  --primary-foreground: oklch(0.99 0.01 240);
-  --secondary: oklch(0.92 0.02 250);
-  --secondary-foreground: oklch(0.15 0.03 260);
-  --muted: oklch(0.93 0.02 250);
-  --muted-foreground: oklch(0.42 0.03 260);
-  --accent: oklch(0.93 0.02 250);
-  --accent-foreground: oklch(0.15 0.03 260);
+  --popover-foreground: oklch(0.12 0.03 15);
+  --primary: oklch(0.48 0.22 15); /* Deep Wine Red / Black Rose #8B1E3F */
+  --primary-foreground: oklch(0.99 0.01 15);
+  --secondary: oklch(0.92 0.02 15);
+  --secondary-foreground: oklch(0.15 0.03 15);
+  --muted: oklch(0.93 0.02 15);
+  --muted-foreground: oklch(0.42 0.03 15);
+  --accent: oklch(0.75 0.18 70); /* Warm Gold Accent #F59E0B */
+  --accent-foreground: oklch(0.15 0.03 15);
   --destructive: oklch(0.58 0.22 20);
-  --destructive-foreground: oklch(0.99 0.01 240);
-  --border: oklch(0.88 0.02 250);
-  --input: oklch(0.88 0.02 250);
-  --ring: oklch(0.55 0.22 270);
+  --destructive-foreground: oklch(0.99 0.01 15);
+  --border: oklch(0.88 0.02 15);
+  --input: oklch(0.88 0.02 15);
+  --ring: oklch(0.48 0.22 15);
   --radius: 1.25rem;
-  --primary-rgb: 124, 58, 237;
+  --primary-rgb: 139, 30, 63;
 }
 
 .dark {
-  --background: oklch(0.09 0.02 260);
-  --foreground: oklch(0.98 0.01 240);
-  --card: oklch(0.14 0.03 260);
-  --card-foreground: oklch(0.98 0.01 240);
-  --popover: oklch(0.14 0.03 260);
-  --popover-foreground: oklch(0.98 0.01 240);
-  --primary: oklch(0.68 0.22 270);
-  --primary-foreground: oklch(0.09 0.01 240);
-  --secondary: oklch(0.18 0.03 260);
-  --secondary-foreground: oklch(0.98 0.01 240);
-  --muted: oklch(0.18 0.03 260);
-  --muted-foreground: oklch(0.68 0.03 260);
-  --accent: oklch(0.18 0.03 260);
-  --accent-foreground: oklch(0.98 0.01 240);
+  --background: oklch(0.08 0.02 15); /* Deep Velvet Dark Obsidian */
+  --foreground: oklch(0.98 0.01 15);
+  --card: oklch(0.12 0.03 15);
+  --card-foreground: oklch(0.98 0.01 15);
+  --popover: oklch(0.12 0.03 15);
+  --popover-foreground: oklch(0.98 0.01 15);
+  --primary: oklch(0.52 0.24 18); /* Vivid Black Rose Crimson #A61C3A */
+  --primary-foreground: oklch(0.99 0.01 15);
+  --secondary: oklch(0.16 0.03 15);
+  --secondary-foreground: oklch(0.98 0.01 15);
+  --muted: oklch(0.16 0.03 15);
+  --muted-foreground: oklch(0.65 0.03 15);
+  --accent: oklch(0.75 0.18 70); /* Warm Gold Accent #F59E0B */
+  --accent-foreground: oklch(0.08 0.01 15);
   --destructive: oklch(0.52 0.2 20);
-  --destructive-foreground: oklch(0.98 0.01 240);
-  --border: oklch(0.22 0.03 260);
-  --input: oklch(0.22 0.03 260);
-  --ring: oklch(0.68 0.22 270);
+  --destructive-foreground: oklch(0.98 0.01 15);
+  --border: oklch(0.20 0.03 15 / 0.6);
+  --input: oklch(0.20 0.03 15 / 0.6);
+  --ring: oklch(0.52 0.24 18);
 }
 
 @layer base {
@@ -347,3 +347,27 @@ textarea:-webkit-autofill:active {
 .stagger-in > *:nth-child(4) { animation-delay: 0.12s; }
 .stagger-in > *:nth-child(5) { animation-delay: 0.15s; }
 .stagger-in > *:nth-child(6) { animation-delay: 0.18s; }
+
+/* --- 2026 Black Rose Design System Utilities --- */
+.rose-mesh-bg {
+  background: radial-gradient(circle at 50% -20%, oklch(0.28 0.18 18 / 0.35), transparent 70%),
+              radial-gradient(circle at 90% 80%, oklch(0.22 0.14 70 / 0.15), transparent 50%),
+              oklch(0.08 0.02 15);
+}
+
+.rose-bento-card {
+  @apply relative overflow-hidden rounded-3xl border border-rose-500/15 bg-card/60 backdrop-blur-2xl transition-all duration-300 hover:scale-[1.015] hover:border-rose-500/40 hover:shadow-2xl hover:shadow-rose-950/40;
+}
+
+.rose-glow-btn {
+  @apply relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-800 via-rose-700 to-rose-900 text-white font-black tracking-wider uppercase shadow-xl shadow-rose-950/50 border border-rose-400/30 transition-all duration-300 hover:shadow-rose-600/40 hover:scale-[1.02] active:scale-95 cursor-pointer;
+}
+
+.gold-accent-badge {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-amber-500/15 text-amber-400 border border-amber-500/30 backdrop-blur-md shadow-sm;
+}
+
+/* Tabular Nums for Calculators */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
