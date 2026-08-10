@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from core.auth import require_admin, require_user, require_public_user
+from core.auth import require_admin, require_user
 from core.logging import get_logger
 from models.schemas import (
     GuildIn, GuildMemberProfileIn, GuildMemberAdminIn,
@@ -13,21 +13,35 @@ logger = get_logger("blackrose.api.guilds")
 
 # Public endpoints (prefix /api/guilds)
 @router.get("/guilds")
-async def list_guilds(user=Depends(require_public_user)):
-    guilds = await guild_service.get_all_guilds()
-    return {"guilds": guilds}
+async def list_guilds():
+    try:
+        guilds = await guild_service.get_all_guilds()
+        return {"guilds": guilds}
+    except Exception as e:
+        logger.error(f"Error in list_guilds endpoint: {e}")
+        return {"guilds": []}
 
 @router.get("/guilds/{guild_id}/roster")
-async def guild_roster(guild_id: int, user=Depends(require_public_user)):
-    data = await guild_service.get_guild_roster(guild_id)
-    if not data:
-        raise HTTPException(status_code=404, detail="Гильдия не найдена")
-    return data
+async def guild_roster(guild_id: int):
+    try:
+        data = await guild_service.get_guild_roster(guild_id)
+        if not data:
+            raise HTTPException(status_code=404, detail="Гильдия не найдена")
+        return data
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in guild_roster: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/guilds/{guild_id}/statuses")
-async def guild_statuses(guild_id: int, user=Depends(require_public_user)):
-    statuses = await guild_service.get_guild_statuses(guild_id)
-    return {"statuses": statuses}
+async def guild_statuses(guild_id: int):
+    try:
+        statuses = await guild_service.get_guild_statuses(guild_id)
+        return {"statuses": statuses}
+    except Exception as e:
+        logger.error(f"Error in guild_statuses: {e}")
+        return {"statuses": []}
 
 # Member self-service endpoints
 @router.get("/guilds/my/profile")
