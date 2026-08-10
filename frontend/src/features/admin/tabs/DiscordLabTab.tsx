@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -110,15 +111,34 @@ export const DiscordLabTab: FC = () => {
   const [workerLoading, setWorkerLoading] = useState(false)
   const [backfillingId, setBackfillingId] = useState<string | null>(null)
 
-  const fetchSyncState = async () => {
-    try {
+  // TanStack Query optimized polling: 10s interval, automatically paused when tab is hidden
+  const { data: syncStateData, refetch: refetchSyncState } = useQuery({
+    queryKey: ['discord-lab-sync-state'],
+    queryFn: async () => {
       const st = await apiGetDiscordSyncStatus()
-      setWorkerStatus(st)
       const chs = await apiGetDiscordSyncChannels()
-      setSyncChannels(chs.channels || [])
       const sg = await apiGetSyncedDiscordGuides()
-      setSyncedGuides(sg.synced_guides || [])
-    } catch {}
+      return { status: st, channels: chs.channels || [], synced_guides: sg.synced_guides || [] }
+    },
+    refetchInterval: (query) => {
+      if (document.visibilityState === 'hidden') return false
+      return query.state.data?.status?.running ? 10_000 : 30_000
+    },
+    refetchIntervalInBackground: false,
+    staleTime: 5_000,
+    gcTime: 10 * 60_000,
+  })
+
+  useEffect(() => {
+    if (syncStateData) {
+      setWorkerStatus(syncStateData.status)
+      setSyncChannels(syncStateData.channels)
+      setSyncedGuides(syncStateData.synced_guides)
+    }
+  }, [syncStateData])
+
+  const fetchSyncState = () => {
+    refetchSyncState()
   }
 
   const [isBackfillingAll, setIsBackfillingAll] = useState(false)
@@ -437,18 +457,7 @@ export const DiscordLabTab: FC = () => {
     }
   }
 
-  // Auto-polling for live updates when listener is active
-  useEffect(() => {
-    let interval: any = null
-    if (workerStatus.running) {
-      interval = setInterval(() => {
-        fetchSyncState()
-      }, 4000)
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [workerStatus.running])
+
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-500">
