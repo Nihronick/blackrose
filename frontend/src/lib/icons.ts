@@ -84,6 +84,7 @@ export {
   Underline,
   Upload,
   User,
+  UserPlus,
   Users,
   Unlock,
   Volume2,

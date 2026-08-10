@@ -255,6 +255,10 @@ export const apiRemoveDiscordSyncChannel = (channel_id: string) =>
   apiDelete<{ ok: boolean }>(`/api/admin/discord-sync/channels/${channel_id}`)
 export const apiGetSyncedDiscordGuides = () =>
   apiFetch<{ synced_guides: Array<{ id: number; discord_message_id: string; discord_channel_id: string; guide_key: string; author_tag: string; created_at: string; title: string; category_key: string; views: number }> }>('/api/admin/discord-sync/synced-guides')
+export const apiDeleteSyncedDiscordGuide = (id: number, deleteGuide: boolean = false) =>
+  apiDelete<{ ok: boolean; message: string }>(`/api/admin/discord-sync/synced-guides/${id}?delete_guide=${deleteGuide}`)
+export const apiClearSyncedDiscordGuides = (deleteGuides: boolean = false) =>
+  apiPost<{ ok: boolean; message: string }>(`/api/admin/discord-sync/synced-guides/clear?delete_guides=${deleteGuides}`, {})
 export const apiBackfillDiscordChannel = (channel_id: string) =>
   apiPost<{ ok: boolean; message: string }>(`/api/admin/discord-sync/channels/${channel_id}/backfill`, {})
 export const apiBackfillAllDiscordChannels = () =>

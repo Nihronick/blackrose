@@ -253,5 +253,43 @@ class DiscordSyncService:
                 })
             return items
 
+    @classmethod
+    async def remove_synced_guide(cls, synced_id: int, delete_guide: bool = False) -> bool:
+        async with get_sessionmaker()() as session:
+            res = await session.execute(
+                select(DiscordSyncedGuide).where(DiscordSyncedGuide.id == synced_id)
+            )
+            item = res.scalar_one_or_none()
+            if not item:
+                return False
+
+            guide_key = item.guide_key
+            await session.delete(item)
+
+            if delete_guide and guide_key:
+                guide_res = await session.execute(
+                    select(Guide).where(Guide.key == guide_key)
+                )
+                guide = guide_res.scalar_one_or_none()
+                if guide:
+                    await session.delete(guide)
+
+            await session.commit()
+            return True
+
+    @classmethod
+    async def clear_synced_guides(cls, delete_guides: bool = False) -> int:
+        async with get_sessionmaker()() as session:
+            if delete_guides:
+                res = await session.execute(select(DiscordSyncedGuide.guide_key))
+                guide_keys = [k for k in res.scalars().all() if k]
+                if guide_keys:
+                    await session.execute(delete(Guide).where(Guide.key.in_(guide_keys)))
+
+            result = await session.execute(delete(DiscordSyncedGuide))
+            count = result.rowcount
+            await session.commit()
+            return count
+
 
 discord_sync_service = DiscordSyncService()

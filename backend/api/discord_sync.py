@@ -89,6 +89,20 @@ async def list_synced_guides(user=Depends(require_admin)):
     return {"synced_guides": guides}
 
 
+@router.delete("/synced-guides/{synced_id}")
+async def remove_synced_guide(synced_id: int, delete_guide: bool = False, user=Depends(require_admin)):
+    ok = await discord_sync_service.remove_synced_guide(synced_id, delete_guide=delete_guide)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Запись в очереди не найдена")
+    return {"ok": True, "message": "Запись успешно удалена из очереди"}
+
+
+@router.post("/synced-guides/clear")
+async def clear_synced_guides(delete_guides: bool = False, user=Depends(require_admin)):
+    count = await discord_sync_service.clear_synced_guides(delete_guides=delete_guides)
+    return {"ok": True, "message": f"Журнал очереди очищен (удалено записей: {count})"}
+
+
 @router.post("/channels/{channel_id}/backfill")
 async def backfill_channel(channel_id: str, user=Depends(require_admin)):
     active_token = stealth_discord_worker.user_token or await discord_sync_service.get_setting("discord_user_token")

@@ -16,11 +16,13 @@ import {
   apiAddDiscordSyncChannel,
   apiRemoveDiscordSyncChannel,
   apiGetSyncedDiscordGuides,
+  apiDeleteSyncedDiscordGuide,
+  apiClearSyncedDiscordGuides,
   apiBackfillDiscordChannel,
   apiBackfillAllDiscordChannels,
 } from '@/lib/api'
 import { getGameIconUrl } from '@/lib/gameIcons'
-import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck, RefreshCw, ExternalLink, Clock, History, Sparkles } from '@/lib/icons'
+import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck, RefreshCw, ExternalLink, Clock, History, Sparkles, Search } from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
 import { type ChangeEvent, type FC, useEffect, useMemo, useState } from 'react'
 
@@ -168,6 +170,55 @@ export const DiscordLabTab: FC = () => {
       setIsBackfillingAll(false)
     }
   }
+
+  const [syncedSearch, setSyncedSearch] = useState('')
+  const [deletingSyncedId, setDeletingSyncedId] = useState<number | null>(null)
+
+  const handleDeleteSyncedGuide = async (id: number, deleteGuide: boolean) => {
+    const confirmMsg = deleteGuide
+      ? 'Вы уверены, что хотите удалить эту запись из очереди И сам гайд с сайта?'
+      : 'Удалить эту запись из журнала очереди?'
+    if (!window.confirm(confirmMsg)) return
+
+    setDeletingSyncedId(id)
+    try {
+      const res = await apiDeleteSyncedDiscordGuide(id, deleteGuide)
+      alert(res.message || 'Запись удалена из очереди')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка удаления: ' + (e.message || e))
+    } finally {
+      setDeletingSyncedId(null)
+    }
+  }
+
+  const handleClearSyncedHistory = async (deleteGuides: boolean) => {
+    const confirmMsg = deleteGuides
+      ? '⚠️ ВНИМАНИЕ! Вы уверены, что хотите очистить ВСЮ очередь И УДАЛИТЬ все соответствующие гайды с сайта?'
+      : 'Очистить историю журнала очереди?'
+    if (!window.confirm(confirmMsg)) return
+
+    try {
+      const res = await apiClearSyncedDiscordGuides(deleteGuides)
+      alert(res.message || 'Журнал очереди очищен')
+      fetchSyncState()
+    } catch (e: any) {
+      alert('Ошибка очистки: ' + (e.message || e))
+    }
+  }
+
+  const filteredSyncedGuides = useMemo(() => {
+    if (!syncedSearch.trim()) return syncedGuides
+    const q = syncedSearch.toLowerCase()
+    return syncedGuides.filter(
+      (g) =>
+        (g.title || '').toLowerCase().includes(q) ||
+        (g.author_tag || '').toLowerCase().includes(q) ||
+        (g.category_key || '').toLowerCase().includes(q) ||
+        (g.discord_message_id || '').includes(q) ||
+        (g.discord_channel_id || '').includes(q)
+    )
+  }, [syncedGuides, syncedSearch])
 
   useEffect(() => {
     apiFetch<Guide[]>('/api/admin/guides')
@@ -741,46 +792,87 @@ export const DiscordLabTab: FC = () => {
 
         {/* Live Sync Activity Feed & History Table */}
         <div className="space-y-4 pt-4 border-t border-white/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <History className="size-4 text-primary" />
               <h4 className="text-xs font-black uppercase tracking-wider text-foreground font-heading">
-                Журнал синхронизированных гайдов ({syncedGuides.length})
+                Журнал очереди и импорта ({syncedGuides.length})
               </h4>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-[11px] uppercase font-black gap-1.5 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl"
-              onClick={fetchSyncState}
-            >
-              <RefreshCw className="size-3.5" /> Обновить лог
-            </Button>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-[11px] uppercase font-black gap-1.5 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl cursor-pointer"
+                onClick={fetchSyncState}
+              >
+                <RefreshCw className="size-3.5" /> Обновить лог
+              </Button>
+              {syncedGuides.length > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-[11px] font-bold text-rose-400 border-rose-500/30 hover:bg-rose-500/20 rounded-xl cursor-pointer"
+                    onClick={() => handleClearSyncedHistory(false)}
+                    title="Удалит историю из очереди, сохранив гайды на сайте"
+                  >
+                    <Trash2 className="size-3.5 mr-1" /> Очистить лог
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-[11px] font-bold text-rose-400 bg-rose-500/10 border-rose-500/40 hover:bg-rose-500/30 rounded-xl cursor-pointer"
+                    onClick={() => handleClearSyncedHistory(true)}
+                    title="Удалит историю И ВСЕ ИМПОРТИРОВАННЫЕ ГАЙДЫ с сайта"
+                  >
+                    <Trash2 className="size-3.5 mr-1" /> Очистить лог + Гайды
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
-          {syncedGuides.length === 0 ? (
+          {syncedGuides.length > 0 && (
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по журналу очереди (название, автор, ID)..."
+                className="h-10 pl-10 rounded-xl bg-background/60 border border-white/10 text-xs font-medium text-foreground placeholder:text-muted-foreground/60"
+                value={syncedSearch}
+                onChange={(e) => setSyncedSearch(e.target.value)}
+              />
+            </div>
+          )}
+
+          {filteredSyncedGuides.length === 0 ? (
             <div className="p-10 text-center bg-background/30 rounded-3xl border border-dashed border-white/10 space-y-3">
               <Sparkles className="size-10 text-primary/40 mx-auto animate-bounce" />
-              <p className="text-sm font-bold text-foreground">История синхронизации пока пуста</p>
+              <p className="text-sm font-bold text-foreground">
+                {syncedGuides.length === 0 ? 'История очереди пока пуста' : 'Ничего не найдено по вашему запросу'}
+              </p>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                Запустите слушатель или нажмите «Сканировать очередь» у канала, чтобы начать автоматический импорт гайдов.
+                {syncedGuides.length === 0
+                  ? 'Запустите слушатель или нажмите «Сканировать очередь» у канала, чтобы начать автоматический импорт гайдов.'
+                  : 'Попробуйте изменить поисковый запрос.'}
               </p>
             </div>
           ) : (
             <div className="divide-y divide-white/10 rounded-2xl border border-white/10 overflow-hidden bg-background/50 backdrop-blur-md">
-              {syncedGuides.map((item) => (
+              {filteredSyncedGuides.map((item) => (
                 <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 text-xs hover:bg-white/5 transition-colors">
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                         Синхронизировано
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground">
-                        ID: {item.discord_message_id}
+                        ID сообщения: {item.discord_message_id}
                       </span>
                     </div>
                     <div className="font-bold text-foreground text-sm line-clamp-1">{item.title}</div>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
                       <span>Автор: <strong className="text-foreground">{item.author_tag}</strong></span>
                       <span>• Категория: <strong className="text-primary">{item.category_key}</strong></span>
                       {item.created_at && (
@@ -788,15 +880,38 @@ export const DiscordLabTab: FC = () => {
                       )}
                     </div>
                   </div>
-                  <div className="shrink-0">
+
+                  <div className="flex items-center gap-2 shrink-0">
                     <a
                       href={`#/guide/${item.guide_key}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 transition-all border border-white/10 shadow-md"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 transition-all border border-white/10 shadow-md"
                     >
-                      <ExternalLink className="size-4" /> Открыть гайд
+                      <ExternalLink className="size-3.5" /> Открыть
                     </a>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={deletingSyncedId === item.id}
+                      className="h-9 px-3 text-xs font-bold text-rose-400 border-rose-500/30 hover:bg-rose-500/20 rounded-xl cursor-pointer"
+                      onClick={() => handleDeleteSyncedGuide(item.id, false)}
+                      title="Удалить эту запись из очереди (гайд на сайте сохранится)"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={deletingSyncedId === item.id}
+                      className="h-9 px-3 text-xs font-bold text-rose-400 bg-rose-500/10 border-rose-500/40 hover:bg-rose-500/30 rounded-xl cursor-pointer"
+                      onClick={() => handleDeleteSyncedGuide(item.id, true)}
+                      title="Удалить эту запись из очереди И удалить гайд с сайта"
+                    >
+                      <Trash2 className="size-3.5" /> + Гайд
+                    </Button>
                   </div>
                 </div>
               ))}

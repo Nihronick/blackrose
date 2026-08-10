@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { apiUpload } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { Columns, Edit3, Eye, ImageIcon, Sparkles } from '@/lib/icons'
