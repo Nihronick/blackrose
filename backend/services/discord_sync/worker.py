@@ -1,6 +1,7 @@
 import asyncio
 import json
 import random
+import socket
 import aiohttp
 from core.logging import get_logger
 from services.discord_sync.service import discord_sync_service
@@ -19,22 +20,23 @@ class StealthDiscordWorker:
         self.task: asyncio.Task | None = None
 
     def set_token(self, token: str):
-        self.user_token = token.strip()
+        self.user_token = token.strip() if token else None
 
-    async def start(self, user_token: str | None = None):
+    async def start(self, user_token: str | None = None) -> bool:
         if user_token:
-            self.user_token = user_token
+            self.set_token(user_token)
+
         if not self.user_token:
-            logger.warning("Discord worker start requested without user_token")
+            logger.error("Cannot start StealthDiscordWorker without user_token")
             return False
 
         if self.running:
-            logger.info("Discord worker is already running")
+            logger.info("StealthDiscordWorker already running")
             return True
 
         self.running = True
         self.task = asyncio.create_task(self._run_loop())
-        logger.info("Stealth Discord Gateway worker started")
+        logger.info("Stealth Discord Gateway worker task created")
         return True
 
     async def stop(self):
@@ -59,8 +61,11 @@ class StealthDiscordWorker:
             "Accept-Language": "en-US,en;q=0.9",
         }
 
+        connector = aiohttp.TCPConnector(family=socket.AF_INET)
+        timeout = aiohttp.ClientTimeout(total=30)
+
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
                 # 1. Fetch channel metadata to determine type
                 ch_url = f"https://discord.com/api/v10/channels/{channel_id}"
                 async with session.get(ch_url, headers=headers) as ch_resp:
