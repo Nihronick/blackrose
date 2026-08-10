@@ -44,23 +44,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           pip install huggingface_hub
-          mkdir -p .deploy
-          cp -r backend/* .deploy/
-          cp backend/Dockerfile.hf .deploy/Dockerfile
-          python - << 'EOF'
-import os
-from huggingface_hub import HfApi
-
-token = os.environ.get("HF_TOKEN")
-api = HfApi()
-api.upload_folder(
-    folder_path=".deploy",
-    repo_id="Nihronick/blackrose-backend",
-    repo_type="space",
-    token=token,
-)
-print("Successfully uploaded backend to Hugging Face Space!")
-EOF
+          python scripts/deploy_hf.py
 
       - name: Clean up Credentials & Deployment Folder
         if: always()
