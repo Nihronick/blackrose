@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -114,26 +115,21 @@ export const SearchView: FC = () => {
       {/* 2. Results Area */}
       <main className="flex-1 p-4 container-padding overflow-y-auto">
         {!hasSearched && (
-          <div className="flex flex-col items-center justify-center h-full text-center mt-20 opacity-60">
-            <div className="size-20 rounded-full bg-muted/50 flex items-center justify-center mb-4 border border-border/10 shadow-inner">
-              <Search className="size-8 text-muted-foreground" />
-            </div>
-            <h2 className="text-xl font-black font-heading text-foreground">Поиск</h2>
-            <p className="text-sm font-medium text-muted-foreground mt-2 max-w-xs">
-              Введите хотя бы 2 символа, чтобы найти гайды, советы и калькуляторы.
-            </p>
-          </div>
+          <EmptyState
+            icon={<Search className="size-8 text-rose-400" />}
+            title="Поиск по базе знаний"
+            description="Введите хотя бы 2 символа, чтобы найти нужные гайды, советы и калькуляторы Slayer Legend."
+          />
         )}
 
         {showEmpty && (
-          <div className="flex flex-col items-center justify-center h-full text-center mt-20">
-            <div className="text-6xl mb-4 grayscale opacity-50 filter drop-shadow-sm">🥀</div>
-            <h2 className="text-xl font-black font-heading text-foreground">Ничего не найдено</h2>
-            <p className="text-sm font-medium text-muted-foreground mt-2">
-              По запросу «<span className="text-foreground">{debouncedQuery}</span>» нет
-              результатов.
-            </p>
-          </div>
+          <EmptyState
+            icon="🥀"
+            title="Ничего не найдено"
+            description={`По запросу «${debouncedQuery}» материалов не найдено. Попробуйте сформулировать иначе.`}
+            actionLabel="Сбросить поиск"
+            onAction={() => setQuery('')}
+          />
         )}
 
         {hasSearched && results.length > 0 && (

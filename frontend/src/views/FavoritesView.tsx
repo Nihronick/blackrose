@@ -17,20 +17,16 @@ interface FavoritesViewProps {
 /**
  * FavoritesView refactored with TSX, shadcn/ui and premium visuals.
  */
+import { EmptyState } from '@/components/EmptyState'
+
 export const FavoritesView: FC<FavoritesViewProps> = ({ favorites, onSelectGuide, onToggle }) => {
   if (favorites.length === 0) {
     return (
-      <div className="flex h-[80vh] flex-col items-center justify-center px-10 text-center animate-in fade-in zoom-in duration-500 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
-        <div className="flex size-24 items-center justify-center rounded-[32px] bg-primary/10 text-primary text-4xl shadow-inner mb-6 ring-1 ring-primary/20 relative z-10">
-          ⭐
-        </div>
-        <h3 className="text-xl font-black tracking-tight text-foreground mb-2">Избранное пусто</h3>
-        <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-          Нажмите на <span className="text-yellow-500 font-bold">⭐</span> в любом гайде, чтобы
-          сохранить его здесь для быстрого доступа.
-        </p>
-      </div>
+      <EmptyState
+        icon="⭐"
+        title="Избранное пусто"
+        description="Нажмите на звездочку ⭐ на странице любого гайда, чтобы сохранить его здесь для быстрого доступа."
+      />
     )
   }
 

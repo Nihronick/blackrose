@@ -16,20 +16,16 @@ interface HistoryViewProps {
 /**
  * HistoryView refactored with TSX, shadcn/ui and premium visuals.
  */
+import { EmptyState } from '@/components/EmptyState'
+
 export const HistoryView: FC<HistoryViewProps> = ({ history, onSelectGuide }) => {
   if (!history || history.length === 0) {
     return (
-      <div className="flex h-[80vh] flex-col items-center justify-center px-10 text-center animate-in fade-in zoom-in duration-500 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
-        <div className="flex size-24 items-center justify-center rounded-[32px] bg-primary/10 text-primary text-4xl shadow-inner mb-6 ring-1 ring-primary/20 relative z-10">
-          <Clock className="size-10" />
-        </div>
-        <h3 className="text-xl font-black tracking-tight text-foreground mb-2">История пуста</h3>
-        <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-          Здесь появятся гайды, которые вы недавно открывали. Исследуйте базу знаний, чтобы
-          наполнить историю!
-        </p>
-      </div>
+      <EmptyState
+        icon={<Clock className="size-10 text-rose-400" />}
+        title="История просмотров пуста"
+        description="Здесь появятся гайды и материалы, которые вы недавно открывали. Исследуйте базу знаний Slayer Legend!"
+      />
     )
   }
 

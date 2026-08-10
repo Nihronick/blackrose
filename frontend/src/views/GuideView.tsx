@@ -78,6 +78,13 @@ export const GuideView: FC<GuideViewProps> = ({
         className="view-scroll flex-1 overflow-y-auto overflow-x-hidden no-scrollbar relative"
       >
         <div className="container-padding pt-6 pb-32 max-w-4xl mx-auto">
+          <Breadcrumbs
+            items={[
+              { label: 'Категории', route: { type: 'categories' } },
+              { label: guide.title },
+            ]}
+          />
+
           {/* Header */}
           <header className="mb-8 relative z-10 p-6 sm:p-8 rounded-3xl rose-bento-card border-rose-500/30 bg-gradient-to-br from-rose-950/40 via-card/70 to-card/90 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
@@ -170,6 +177,8 @@ export const GuideView: FC<GuideViewProps> = ({
           </Suspense>
         )}
       </AnimatePresence>
+
+      <ScrollToTopFab targetRef={scrollRef} />
     </div>
   )
 }
