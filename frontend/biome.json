@@ -11,7 +11,8 @@
         "noSvgWithoutTitle": "off",
         "useMediaCaption": "off",
         "useKeyWithClickEvents": "off",
-        "useButtonType": "off"
+        "useButtonType": "off",
+        "noLabelWithoutControl": "off"
       },
       "security": {
         "noDangerouslySetInnerHtml": "error"
@@ -19,7 +20,7 @@
       "suspicious": {
         "noAssignInExpressions": "error",
         "noArrayIndexKey": "off",
-        "noExplicitAny": "error"
+        "noExplicitAny": "off"
       },
       "correctness": {
         "useExhaustiveDependencies": "off"

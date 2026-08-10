@@ -398,7 +398,9 @@ export const RichEditor: FC<RichEditorProps> = ({
       </div>
 
       {showSheet && <IconSheet onInsert={insertIcon} onClose={() => setShowSheet(false)} />}
-      {showMediaSheet && <MediaSheet onInsert={insertMedia} onClose={() => setShowMediaSheet(false)} />}
+      {showMediaSheet && (
+        <MediaSheet onInsert={insertMedia} onClose={() => setShowMediaSheet(false)} />
+      )}
     </div>
   )
 }

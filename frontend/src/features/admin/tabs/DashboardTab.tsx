@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { apiFetch, apiPost, apiImport } from '@/lib/api'
+import { apiFetch, apiImport, apiPost } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { toast } from 'sonner'
 import {
   ChevronRight,
   Download,
@@ -16,8 +15,9 @@ import {
 } from '@/lib/icons'
 import type { AdminStats, Guide } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { type FC, type ChangeEvent, useEffect, useState } from 'react'
+import { type ChangeEvent, type FC, useEffect, useState } from 'react'
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { toast } from 'sonner'
 
 interface AnalyticsData {
   day: string
@@ -96,7 +96,9 @@ export const DashboardTab: FC = () => {
       const text = await file.text()
       const parsed = JSON.parse(text)
       const res = (await apiImport(parsed)) as { categories?: number; guides?: number }
-      toast.success(`База успешно восстановлена! Категорий: ${res.categories || 0}, Гайдов: ${res.guides || 0}`)
+      toast.success(
+        `База успешно восстановлена! Категорий: ${res.categories || 0}, Гайдов: ${res.guides || 0}`
+      )
       haptic.success()
       loadData()
     } catch (err: any) {
@@ -110,7 +112,9 @@ export const DashboardTab: FC = () => {
     return (
       <div className="flex h-96 items-center justify-center flex-col gap-4">
         <div className="adm2-spinner" />
-        <span className="text-xs font-bold text-muted-foreground uppercase font-heading">Загрузка данных системы...</span>
+        <span className="text-xs font-bold text-muted-foreground uppercase font-heading">
+          Загрузка данных системы...
+        </span>
       </div>
     )
   }
@@ -156,7 +160,13 @@ export const DashboardTab: FC = () => {
             key={stat.label}
             className="p-6 border border-border/10 glass-card rounded-3xl shadow-lg hover:border-primary/30 hover:-translate-y-1 transition-all duration-300 group"
           >
-            <div className={cn('inline-flex p-3 rounded-2xl mb-4 group-hover:scale-110 transition-transform', stat.bg, stat.color)}>
+            <div
+              className={cn(
+                'inline-flex p-3 rounded-2xl mb-4 group-hover:scale-110 transition-transform',
+                stat.bg,
+                stat.color
+              )}
+            >
               <stat.icon className="size-6" />
             </div>
             <div className="text-3xl font-black tracking-tight mb-1 font-heading">{stat.value}</div>
@@ -183,10 +193,28 @@ export const DashboardTab: FC = () => {
                   <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="day" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="day"
+                stroke="#888888"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+              />
               <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: '#0c101c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }} />
-              <Area type="monotone" dataKey="count" stroke="var(--color-primary)" fillOpacity={1} fill="url(#colorViews)" />
+              <Tooltip
+                contentStyle={{
+                  background: '#0c101c',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '16px',
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="count"
+                stroke="var(--color-primary)"
+                fillOpacity={1}
+                fill="url(#colorViews)"
+              />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -235,7 +263,9 @@ export const DashboardTab: FC = () => {
           <Card className="p-6 border border-border/10 glass-card rounded-3xl shadow-lg">
             <div className="flex flex-col justify-between h-full gap-4">
               <div className="space-y-1">
-                <div className="text-sm font-bold text-foreground font-heading">Очистка кэша Redis</div>
+                <div className="text-sm font-bold text-foreground font-heading">
+                  Очистка кэша Redis
+                </div>
                 <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed">
                   Принудительно удаляет кэшированные данные из оперативной памяти сервера.
                 </div>
@@ -255,7 +285,9 @@ export const DashboardTab: FC = () => {
           <Card className="p-6 border border-primary/20 glass-card rounded-3xl shadow-lg bg-gradient-to-br from-primary/10 via-card to-transparent">
             <div className="flex flex-col justify-between h-full gap-4">
               <div className="space-y-1">
-                <div className="text-sm font-bold text-foreground font-heading">Полный Бэкап Базы (JSON)</div>
+                <div className="text-sm font-bold text-foreground font-heading">
+                  Полный Бэкап Базы (JSON)
+                </div>
                 <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed">
                   Скачать резервный снимок всех гайдов, категорий, гильдий и настроек.
                 </div>
@@ -274,7 +306,9 @@ export const DashboardTab: FC = () => {
           <Card className="p-6 border border-emerald-500/20 glass-card rounded-3xl shadow-lg bg-gradient-to-br from-emerald-500/10 via-card to-transparent">
             <div className="flex flex-col justify-between h-full gap-4">
               <div className="space-y-1">
-                <div className="text-sm font-bold text-foreground font-heading">Восстановить Бэкап (JSON)</div>
+                <div className="text-sm font-bold text-foreground font-heading">
+                  Восстановить Бэкап (JSON)
+                </div>
                 <div className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed">
                   Загрузить JSON файл резервной копии для развертывания контента.
                 </div>

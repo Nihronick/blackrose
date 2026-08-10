@@ -11,11 +11,11 @@ import { useAppStore } from '@/store'
 
 export const GuildsView: FC = () => {
   const { push } = useAppNavigation()
-  const { isAdmin } = useAppStore() // or we could use some auth check, the prompt says "If user is logged in" 
+  const { isAdmin } = useAppStore() // or we could use some auth check, the prompt says "If user is logged in"
   // Wait, user login is admin/local_admin? Let's check `isAdmin` for login state. Or we just show it always if not in guild?
   // Let's check the prompt: "If user is logged in and not in a guild, show a subtle "Подать заявку" button"
   // For now I'll use isAdmin as the logged-in proxy, or maybe there's an apiMyGuildProfile we can use.
-  
+
   const { data, isLoading } = useQuery({
     queryKey: ['guilds'],
     queryFn: apiGuilds,
@@ -31,8 +31,12 @@ export const GuildsView: FC = () => {
             <Shield className="size-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-black font-heading tracking-tight uppercase text-foreground">Гильдии Slayer Legend</h1>
-            <p className="text-xs font-bold text-rose-400/80 uppercase tracking-widest mt-0.5">Официальный клановый ростер и рейтинг</p>
+            <h1 className="text-3xl font-black font-heading tracking-tight uppercase text-foreground">
+              Гильдии Slayer Legend
+            </h1>
+            <p className="text-xs font-bold text-rose-400/80 uppercase tracking-widest mt-0.5">
+              Официальный клановый ростер и рейтинг
+            </p>
           </div>
         </div>
 
@@ -55,28 +59,40 @@ export const GuildsView: FC = () => {
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="size-14 rounded-2xl bg-rose-500/10 overflow-hidden flex items-center justify-center border border-rose-500/30 shadow-inner shrink-0">
                     {guild.icon_url ? (
-                      <img src={guild.icon_url} alt={guild.name} className="size-full object-cover" />
+                      <img
+                        src={guild.icon_url}
+                        alt={guild.name}
+                        className="size-full object-cover"
+                      />
                     ) : (
                       <Shield className="size-6 text-rose-400" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-lg font-heading truncate group-hover:text-rose-400 transition-colors uppercase text-foreground">{guild.name}</h3>
+                    <h3 className="font-black text-lg font-heading truncate group-hover:text-rose-400 transition-colors uppercase text-foreground">
+                      {guild.name}
+                    </h3>
                     {guild.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{guild.description}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                        {guild.description}
+                      </p>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="relative z-10 mt-1">
                   <div className="flex justify-between text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1.5">
                     <span>Участники</span>
-                    <span>{guild.member_count} / {guild.max_members}</span>
+                    <span>
+                      {guild.member_count} / {guild.max_members}
+                    </span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-primary/80 transition-all rounded-full" 
-                      style={{ width: `${Math.min(100, (guild.member_count / guild.max_members) * 100)}%` }}
+                    <div
+                      className="h-full bg-primary/80 transition-all rounded-full"
+                      style={{
+                        width: `${Math.min(100, (guild.member_count / guild.max_members) * 100)}%`,
+                      }}
                     />
                   </div>
                 </div>

@@ -6,7 +6,7 @@ import { useAppEnv } from '@/hooks/useAppEnv'
 import { useSheet } from '@/hooks/useSheet'
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton'
 import { haptic } from '@/lib/haptic'
-import { Compass, History, Home, Star, User, Shield } from '@/lib/icons'
+import { Compass, History, Home, Shield, Star, User } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
@@ -105,7 +105,10 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         ) : (
           <header className="sticky top-0 z-40 flex h-16 items-center container-padding glass border-b border-border/10 shrink-0">
             <div className="flex w-full items-center justify-between gap-4">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => push({ type: 'home' })}>
+              <div
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => push({ type: 'home' })}
+              >
                 <div className="flex size-10 items-center justify-center overflow-hidden rounded-2xl border border-border/20 bg-background shadow-lg shadow-primary/20">
                   {!logoFailed ? (
                     <img
@@ -127,11 +130,31 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
               <nav className="hidden md:flex items-center gap-1 font-heading">
                 {[
                   { label: 'Главная', route: { type: 'home' } as const, active: isHome },
-                  { label: 'Категории', route: { type: 'categories' } as const, active: location.pathname === '/categories' },
-                  { label: 'Гильдии', route: { type: 'guilds' } as const, active: location.pathname.startsWith('/guilds') },
-                  { label: 'Билды', route: { type: 'build' } as const, active: location.pathname === '/build' },
-                  { label: 'Дорожная карта', route: { type: 'roadmap' } as const, active: location.pathname === '/roadmap' },
-                  { label: 'Избранное', route: { type: 'favorites' } as const, active: location.pathname === '/favorites' },
+                  {
+                    label: 'Категории',
+                    route: { type: 'categories' } as const,
+                    active: location.pathname === '/categories',
+                  },
+                  {
+                    label: 'Гильдии',
+                    route: { type: 'guilds' } as const,
+                    active: location.pathname.startsWith('/guilds'),
+                  },
+                  {
+                    label: 'Билды',
+                    route: { type: 'build' } as const,
+                    active: location.pathname === '/build',
+                  },
+                  {
+                    label: 'Дорожная карта',
+                    route: { type: 'roadmap' } as const,
+                    active: location.pathname === '/roadmap',
+                  },
+                  {
+                    label: 'Избранное',
+                    route: { type: 'favorites' } as const,
+                    active: location.pathname === '/favorites',
+                  },
                 ].map((item) => (
                   <Button
                     key={item.label}

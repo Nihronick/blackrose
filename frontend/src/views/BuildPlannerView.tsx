@@ -1,13 +1,13 @@
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { getRankIcon, getRankName } from '@/lib/rankIcons'
 import { haptic } from '@/lib/haptic'
-import { Shield, Sparkles, Share2, Copy, Check, Zap, Flame, Award, RefreshCw } from '@/lib/icons'
-import { type FC, useState, useMemo, useEffect } from 'react'
+import { Award, Check, Copy, Flame, RefreshCw, Share2, Shield, Sparkles, Zap } from '@/lib/icons'
+import { getRankIcon, getRankName } from '@/lib/rankIcons'
+import { motion } from 'framer-motion'
+import { type FC, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
 
 const AVAILABLE_SKILLS = [
   { id: 'rave', name: 'Rave (Рейв)', icon: '⚡', type: 'Buff', multiplier: 2.5 },
@@ -15,7 +15,13 @@ const AVAILABLE_SKILLS = [
   { id: 'golem', name: 'Golem Summon (Голем)', icon: '🗿', type: 'Summon', multiplier: 1.8 },
   { id: 'blitz_gold', name: 'Blitz Gold (Блиц Голд)', icon: '⚔️', type: 'Passive', multiplier: 2.1 },
   { id: 'curse', name: 'Curse (Проклятие)', icon: '💀', type: 'Debuff', multiplier: 1.5 },
-  { id: 'flame_slash', name: 'Flame Slash (Огненный Взмах)', icon: '🗡️', type: 'Active', multiplier: 2.2 },
+  {
+    id: 'flame_slash',
+    name: 'Flame Slash (Огненный Взмах)',
+    icon: '🗡️',
+    type: 'Active',
+    multiplier: 2.2,
+  },
 ]
 
 const AVAILABLE_SPIRITS = [
@@ -27,8 +33,12 @@ const AVAILABLE_SPIRITS = [
 
 export const BuildPlannerView: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedRank, setSelectedRank] = useState<number>(() => Number(searchParams.get('rank')) || 12)
-  const [selectedSpirit, setSelectedSpirit] = useState<string>(() => searchParams.get('spirit') || 'loia')
+  const [selectedRank, setSelectedRank] = useState<number>(
+    () => Number(searchParams.get('rank')) || 12
+  )
+  const [selectedSpirit, setSelectedSpirit] = useState<string>(
+    () => searchParams.get('spirit') || 'loia'
+  )
   const [selectedSkills, setSelectedSkills] = useState<string[]>(() => {
     const fromUrl = searchParams.get('skills')
     return fromUrl ? fromUrl.split(',') : ['rave', 'rage', 'golem', 'blitz_gold']
@@ -48,13 +58,12 @@ export const BuildPlannerView: FC = () => {
       setSelectedSkills((prev) => {
         if (prev.includes(skillId)) {
           return prev.filter((s) => s !== skillId)
-        } else {
-          if (prev.length >= 4) {
-            toast.error('Максимум 4 активных навыка в билде!')
-            return prev
-          }
-          return [...prev, skillId]
         }
+        if (prev.length >= 4) {
+          toast.error('Максимум 4 активных навыка в билде!')
+          return prev
+        }
+        return [...prev, skillId]
       })
     })
   }
@@ -67,7 +76,7 @@ export const BuildPlannerView: FC = () => {
       const found = AVAILABLE_SKILLS.find((s) => s.id === skillId)
       return acc + (found ? found.multiplier : 1.0)
     }, 1.0)
-    
+
     const spiritObj = AVAILABLE_SPIRITS.find((s) => s.id === selectedSpirit)
     const spiritBonus = spiritObj ? 1.15 : 1.0
 
@@ -100,7 +109,7 @@ export const BuildPlannerView: FC = () => {
     params.set('rank', String(selectedRank))
     params.set('spirit', selectedSpirit)
     params.set('skills', selectedSkills.join(','))
-    
+
     const fullUrl = `${window.location.origin}${window.location.pathname}#/build?${params.toString()}`
     navigator.clipboard.writeText(fullUrl)
     setCopied(true)
@@ -125,7 +134,8 @@ export const BuildPlannerView: FC = () => {
               Калькулятор Билда & Промоутов
             </h1>
             <p className="text-xs sm:text-sm font-medium text-muted-foreground max-w-xl">
-              Настраивайте ранги промоута, подбирайте духов и комбо навыков. Считайте DPS и делитесь готовым билдом с согильдийцами!
+              Настраивайте ранги промоута, подбирайте духов и комбо навыков. Считайте DPS и делитесь
+              готовым билдом с согильдийцами!
             </p>
           </div>
 
@@ -153,7 +163,9 @@ export const BuildPlannerView: FC = () => {
                   Ранг Промоута (Ранг {selectedRank})
                 </h3>
               </div>
-              <span className="text-xs font-bold text-amber-400 font-mono gold-accent-badge">{getRankName(selectedRank)}</span>
+              <span className="text-xs font-bold text-amber-400 font-mono gold-accent-badge">
+                {getRankName(selectedRank)}
+              </span>
             </div>
 
             <div className="flex items-center gap-4 bg-background/50 p-4 rounded-2xl border border-white/10">
@@ -191,7 +203,9 @@ export const BuildPlannerView: FC = () => {
                   Активные Навыки ({selectedSkills.length} / 4)
                 </h3>
               </div>
-              <span className="text-[10px] font-bold text-rose-400 uppercase">Выберите 4 навыка</span>
+              <span className="text-[10px] font-bold text-rose-400 uppercase">
+                Выберите 4 навыка
+              </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -212,7 +226,9 @@ export const BuildPlannerView: FC = () => {
                     <span className="text-xl">{skill.icon}</span>
                     <div className="min-w-0 flex-1">
                       <div className="font-black text-xs truncate font-heading">{skill.name}</div>
-                      <div className="text-[10px] text-muted-foreground">x{skill.multiplier} DPS</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        x{skill.multiplier} DPS
+                      </div>
                     </div>
                   </motion.div>
                 )
@@ -261,7 +277,9 @@ export const BuildPlannerView: FC = () => {
             <div className="flex items-center justify-between border-b border-border/10 pb-4">
               <div className="flex items-center gap-2">
                 <Zap className="size-5 text-primary animate-pulse" />
-                <h3 className="text-base font-black uppercase font-heading">Расчётные Характеристики</h3>
+                <h3 className="text-base font-black uppercase font-heading">
+                  Расчётные Характеристики
+                </h3>
               </div>
               <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-[10px] font-black">
                 READY
@@ -270,19 +288,29 @@ export const BuildPlannerView: FC = () => {
 
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-background/60 border border-border/10 flex justify-between items-center">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Расчётный DPS Билда</span>
-                <span className="text-2xl font-black text-primary font-heading">{calculatedStats.totalDPS.toLocaleString()}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase">
+                  Расчётный DPS Билда
+                </span>
+                <span className="text-2xl font-black text-primary font-heading">
+                  {calculatedStats.totalDPS.toLocaleString()}
+                </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3.5 rounded-2xl bg-background/40 border border-border/10 space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Базовая Атака</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Базовая Атака
+                  </span>
                   <div className="text-base font-black font-heading">{calculatedStats.baseAtk}</div>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-background/40 border border-border/10 space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Бонус Промоута</span>
-                  <div className="text-base font-black text-emerald-400 font-heading">+{calculatedStats.rankBonus}%</div>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Бонус Промоута
+                  </span>
+                  <div className="text-base font-black text-emerald-400 font-heading">
+                    +{calculatedStats.rankBonus}%
+                  </div>
                 </div>
               </div>
             </div>

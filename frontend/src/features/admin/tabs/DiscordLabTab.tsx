@@ -1,30 +1,49 @@
-import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  apiAddDiscordSyncChannel,
+  apiBackfillAllDiscordChannels,
+  apiBackfillDiscordChannel,
+  apiClearSyncedDiscordGuides,
+  apiDeleteSyncedDiscordGuide,
   apiFetch,
+  apiGetDiscordSyncChannels,
+  apiGetDiscordSyncStatus,
   apiGetProxyUrl,
+  apiGetSyncedDiscordGuides,
+  apiImportDiscordLink,
   apiImportMedia,
   apiPost,
   apiPut,
-  apiGetDiscordSyncStatus,
+  apiRemoveDiscordSyncChannel,
   apiStartDiscordSync,
   apiStopDiscordSync,
-  apiGetDiscordSyncChannels,
-  apiAddDiscordSyncChannel,
-  apiRemoveDiscordSyncChannel,
-  apiGetSyncedDiscordGuides,
-  apiDeleteSyncedDiscordGuide,
-  apiClearSyncedDiscordGuides,
-  apiBackfillDiscordChannel,
-  apiBackfillAllDiscordChannels,
-  apiImportDiscordLink,
 } from '@/lib/api'
 import { getGameIconUrl } from '@/lib/gameIcons'
-import { Beaker, Copy, Database, Globe, RefreshCcw, Send, Settings, Play, Pause, Trash2, Plus, ShieldCheck, RefreshCw, ExternalLink, Clock, History, Sparkles, Search } from '@/lib/icons'
+import {
+  Beaker,
+  Clock,
+  Copy,
+  Database,
+  ExternalLink,
+  Globe,
+  History,
+  Pause,
+  Play,
+  Plus,
+  RefreshCcw,
+  RefreshCw,
+  Search,
+  Send,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+} from '@/lib/icons'
 import type { Category, Guide } from '@/lib/types'
+import { useQuery } from '@tanstack/react-query'
 import { type ChangeEvent, type FC, useEffect, useMemo, useState } from 'react'
 
 interface DiscordAttachment {
@@ -81,7 +100,13 @@ export const DiscordLabTab: FC = () => {
     has_token: boolean
     has_saved_token?: boolean
     token_preview?: string | null
-  }>({ running: false, channels_count: 0, has_token: false, has_saved_token: false, token_preview: null })
+  }>({
+    running: false,
+    channels_count: 0,
+    has_token: false,
+    has_saved_token: false,
+    token_preview: null,
+  })
 
   const handleClearToken = async () => {
     try {
@@ -106,8 +131,28 @@ export const DiscordLabTab: FC = () => {
       setWorkerLoading(false)
     }
   }
-  const [syncChannels, setSyncChannels] = useState<Array<{ channel_id: string; channel_name?: string; category_key: string; auto_translate: boolean; is_active: boolean }>>([])
-  const [syncedGuides, setSyncedGuides] = useState<Array<{ id: number; discord_message_id: string; discord_channel_id: string; guide_key: string; author_tag: string; created_at: string; title: string; category_key: string; views: number }>>([])
+  const [syncChannels, setSyncChannels] = useState<
+    Array<{
+      channel_id: string
+      channel_name?: string
+      category_key: string
+      auto_translate: boolean
+      is_active: boolean
+    }>
+  >([])
+  const [syncedGuides, setSyncedGuides] = useState<
+    Array<{
+      id: number
+      discord_message_id: string
+      discord_channel_id: string
+      guide_key: string
+      author_tag: string
+      created_at: string
+      title: string
+      category_key: string
+      views: number
+    }>
+  >([])
   const [newChannelId, setNewChannelId] = useState('')
   const [newChannelName, setNewChannelName] = useState('')
   const [newChannelCat, setNewChannelCat] = useState('')
@@ -527,8 +572,6 @@ export const DiscordLabTab: FC = () => {
     }
   }
 
-
-
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-500">
       {/* Header Banner */}
@@ -549,7 +592,9 @@ export const DiscordLabTab: FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-4 py-2 bg-background/60 rounded-2xl border border-white/10 backdrop-blur-md">
-            <div className={`size-2.5 rounded-full ${workerStatus.running ? 'bg-emerald-400 animate-ping' : 'bg-rose-500'}`} />
+            <div
+              className={`size-2.5 rounded-full ${workerStatus.running ? 'bg-emerald-400 animate-ping' : 'bg-rose-500'}`}
+            />
             <span className="text-xs font-black uppercase tracking-wider text-foreground">
               {workerStatus.running ? 'Шлюз Активен' : 'Шлюз Остановлен'}
             </span>
@@ -570,11 +615,41 @@ export const DiscordLabTab: FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           {[
-            { step: '1', title: '1. Gateway Listener', desc: 'Пассивный WebSocket', status: workerStatus.running ? 'active' : 'idle', icon: ShieldCheck },
-            { step: '2', title: '2. SHA-256 Diffing', desc: 'Сверка версий', status: workerStatus.running ? 'active' : 'idle', icon: RefreshCw },
-            { step: '3', title: '3. ИИ-Перевод', desc: 'EN ➔ RU + TL;DR', status: workerStatus.running ? 'active' : 'idle', icon: Globe },
-            { step: '4', title: '4. Кэш Медиа', desc: 'Сохранение фото', status: workerStatus.running ? 'active' : 'idle', icon: Database },
-            { step: '5', title: '5. Публикация', desc: 'Обновление в БД', status: workerStatus.running ? 'active' : 'idle', icon: Sparkles },
+            {
+              step: '1',
+              title: '1. Gateway Listener',
+              desc: 'Пассивный WebSocket',
+              status: workerStatus.running ? 'active' : 'idle',
+              icon: ShieldCheck,
+            },
+            {
+              step: '2',
+              title: '2. SHA-256 Diffing',
+              desc: 'Сверка версий',
+              status: workerStatus.running ? 'active' : 'idle',
+              icon: RefreshCw,
+            },
+            {
+              step: '3',
+              title: '3. ИИ-Перевод',
+              desc: 'EN ➔ RU + TL;DR',
+              status: workerStatus.running ? 'active' : 'idle',
+              icon: Globe,
+            },
+            {
+              step: '4',
+              title: '4. Кэш Медиа',
+              desc: 'Сохранение фото',
+              status: workerStatus.running ? 'active' : 'idle',
+              icon: Database,
+            },
+            {
+              step: '5',
+              title: '5. Публикация',
+              desc: 'Обновление в БД',
+              status: workerStatus.running ? 'active' : 'idle',
+              icon: Sparkles,
+            },
           ].map((s) => (
             <div
               key={s.step}
@@ -585,8 +660,12 @@ export const DiscordLabTab: FC = () => {
               }`}
             >
               <div className="flex items-center gap-2 mb-1.5">
-                <s.icon className={`size-4 ${s.status === 'active' ? 'text-primary animate-pulse' : 'text-muted-foreground/40'}`} />
-                <span className="text-xs font-black uppercase tracking-wide font-heading">{s.title}</span>
+                <s.icon
+                  className={`size-4 ${s.status === 'active' ? 'text-primary animate-pulse' : 'text-muted-foreground/40'}`}
+                />
+                <span className="text-xs font-black uppercase tracking-wide font-heading">
+                  {s.title}
+                </span>
               </div>
               <p className="text-[10px] font-medium text-muted-foreground">{s.desc}</p>
             </div>
@@ -613,11 +692,14 @@ export const DiscordLabTab: FC = () => {
                       : 'bg-muted/60 text-muted-foreground border border-white/10'
                   }`}
                 >
-                  {workerStatus.running ? '🟢 Активен (Слушает в реальном времени)' : '🔴 Остановлен'}
+                  {workerStatus.running
+                    ? '🟢 Активен (Слушает в реальном времени)'
+                    : '🔴 Остановлен'}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground/80 font-medium mt-1">
-                Пассивный WebSocket-слушатель чужих каналов Discord с автопереводом EN ➔ RU и локальным кэшированием медиа.
+                Пассивный WebSocket-слушатель чужих каналов Discord с автопереводом EN ➔ RU и
+                локальным кэшированием медиа.
               </p>
             </div>
           </div>
@@ -663,7 +745,11 @@ export const DiscordLabTab: FC = () => {
                   🔒 Токен зафиксирован за вашей учётной записью
                 </div>
                 <div className="text-[11px] text-muted-foreground mt-0.5">
-                  Активный токен: <code className="font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md">{workerStatus.token_preview || '••••••••'}</code>. Вам больше не нужно вводить его вручную!
+                  Активный токен:{' '}
+                  <code className="font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                    {workerStatus.token_preview || '••••••••'}
+                  </code>
+                  . Вам больше не нужно вводить его вручную!
                 </div>
               </div>
             </div>
@@ -682,11 +768,17 @@ export const DiscordLabTab: FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-background/60 p-5 rounded-2xl border border-white/10 backdrop-blur-md">
             <div className="sm:col-span-9 space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 ml-1 font-heading">
-                {workerStatus.has_saved_token ? 'Изменить зафиксированный токен Discord' : 'Ввести токен Discord для привязки'}
+                {workerStatus.has_saved_token
+                  ? 'Изменить зафиксированный токен Discord'
+                  : 'Ввести токен Discord для привязки'}
               </label>
               <Input
                 type="password"
-                placeholder={workerStatus.has_saved_token ? 'Введите новый токен для обновления...' : 'Вставьте токен вашего аккаунта-читателя...'}
+                placeholder={
+                  workerStatus.has_saved_token
+                    ? 'Введите новый токен для обновления...'
+                    : 'Вставьте токен вашего аккаунта-читателя...'
+                }
                 className="h-11 rounded-2xl bg-background/80 border border-white/10 font-mono text-xs text-foreground focus-visible:ring-primary/40 focus-visible:border-primary/50"
                 value={workerToken}
                 onChange={(e) => setWorkerToken(e.target.value)}
@@ -708,10 +800,12 @@ export const DiscordLabTab: FC = () => {
         <div className="bg-gradient-to-r from-violet-950/30 via-background/60 to-indigo-950/30 p-5 rounded-2xl border border-violet-500/20 backdrop-blur-md space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-black uppercase tracking-wider text-violet-300 font-heading flex items-center gap-2">
-              <ExternalLink className="size-4 text-violet-400" />
-              🚀 Мгновенный Импорт по Ссылке на Пост / Сообщение Discord
+              <ExternalLink className="size-4 text-violet-400" />🚀 Мгновенный Импорт по Ссылке на
+              Пост / Сообщение Discord
             </h4>
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">1-Click Link Import</span>
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+              1-Click Link Import
+            </span>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
@@ -747,7 +841,9 @@ export const DiscordLabTab: FC = () => {
                 className="h-8 rounded-xl border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-bold gap-2 cursor-pointer transition-all"
               >
                 <Sparkles className={`size-3.5 ${isBackfillingAll ? 'animate-spin' : ''}`} />
-                {isBackfillingAll ? 'Сканирование всех каналов...' : `⚡ Сканировать ВСЕ каналы (${syncChannels.length})`}
+                {isBackfillingAll
+                  ? 'Сканирование всех каналов...'
+                  : `⚡ Сканировать ВСЕ каналы (${syncChannels.length})`}
               </Button>
             )}
           </div>
@@ -797,15 +893,22 @@ export const DiscordLabTab: FC = () => {
           {syncChannels.length > 0 && (
             <div className="divide-y divide-white/10 rounded-2xl border border-white/10 overflow-hidden bg-background/40 backdrop-blur-md">
               {syncChannels.map((ch) => (
-                <div key={ch.channel_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 text-xs">
+                <div
+                  key={ch.channel_id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 text-xs"
+                >
                   <div className="flex items-center gap-3">
                     <div className="font-mono font-bold text-primary px-3 py-1 bg-primary/10 rounded-xl border border-primary/20">
                       #{ch.channel_id}
                     </div>
                     <div>
-                      <div className="font-bold text-foreground text-sm">{ch.channel_name || 'Канал Discord'}</div>
+                      <div className="font-bold text-foreground text-sm">
+                        {ch.channel_name || 'Канал Discord'}
+                      </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
-                        Категория на сайте: <span className="font-bold text-primary">{ch.category_key}</span> • Автоперевод EN➔RU
+                        Категория на сайте:{' '}
+                        <span className="font-bold text-primary">{ch.category_key}</span> •
+                        Автоперевод EN➔RU
                       </div>
                     </div>
                   </div>
@@ -818,7 +921,9 @@ export const DiscordLabTab: FC = () => {
                       onClick={() => handleBackfillChannel(ch.channel_id)}
                       title="Сканировать историю этого канала и занести гайды в очередь"
                     >
-                      <RefreshCw className={`size-3.5 ${backfillingId === ch.channel_id ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`size-3.5 ${backfillingId === ch.channel_id ? 'animate-spin' : ''}`}
+                      />
                       {backfillingId === ch.channel_id ? 'Сканирование...' : 'Сканировать очередь'}
                     </Button>
                     <Button
@@ -897,7 +1002,9 @@ export const DiscordLabTab: FC = () => {
             <div className="p-10 text-center bg-background/30 rounded-3xl border border-dashed border-white/10 space-y-3">
               <Sparkles className="size-10 text-primary/40 mx-auto animate-bounce" />
               <p className="text-sm font-bold text-foreground">
-                {syncedGuides.length === 0 ? 'История очереди пока пуста' : 'Ничего не найдено по вашему запросу'}
+                {syncedGuides.length === 0
+                  ? 'История очереди пока пуста'
+                  : 'Ничего не найдено по вашему запросу'}
               </p>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 {syncedGuides.length === 0
@@ -908,7 +1015,10 @@ export const DiscordLabTab: FC = () => {
           ) : (
             <div className="divide-y divide-white/10 rounded-2xl border border-white/10 overflow-hidden bg-background/50 backdrop-blur-md">
               {filteredSyncedGuides.map((item) => (
-                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 text-xs hover:bg-white/5 transition-colors">
+                <div
+                  key={item.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 text-xs hover:bg-white/5 transition-colors"
+                >
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -918,12 +1028,21 @@ export const DiscordLabTab: FC = () => {
                         ID сообщения: {item.discord_message_id}
                       </span>
                     </div>
-                    <div className="font-bold text-foreground text-sm line-clamp-1">{item.title}</div>
+                    <div className="font-bold text-foreground text-sm line-clamp-1">
+                      {item.title}
+                    </div>
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
-                      <span>Автор: <strong className="text-foreground">{item.author_tag}</strong></span>
-                      <span>• Категория: <strong className="text-primary">{item.category_key}</strong></span>
+                      <span>
+                        Автор: <strong className="text-foreground">{item.author_tag}</strong>
+                      </span>
+                      <span>
+                        • Категория: <strong className="text-primary">{item.category_key}</strong>
+                      </span>
                       {item.created_at && (
-                        <span>• <Clock className="inline size-3 mr-1" />{new Date(item.created_at).toLocaleString('ru-RU')}</span>
+                        <span>
+                          • <Clock className="inline size-3 mr-1" />
+                          {new Date(item.created_at).toLocaleString('ru-RU')}
+                        </span>
                       )}
                     </div>
                   </div>

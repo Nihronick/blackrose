@@ -1,11 +1,11 @@
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { apiDelete, apiMediaList, apiUploadMediaFile } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { Copy, Film, Image as ImageIcon, Search, Trash2, Upload, Plus, Check } from '@/lib/icons'
+import { Check, Copy, Film, Image as ImageIcon, Plus, Search, Trash2, Upload } from '@/lib/icons'
 import type { MediaGroup, MediaItem, MediaListResponse } from '@/lib/types'
 import { normalizeUrl } from '@/lib/utils'
-import { type FC, type MouseEvent, type ChangeEvent, useEffect, useState } from 'react'
+import { type ChangeEvent, type FC, type MouseEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 export const MediaTab: FC = () => {

@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  apiGuilds,
   apiAdminCreateGuild,
   apiAdminDeleteGuild,
-  apiGuildRequests,
   apiApproveGuildRequest,
-  apiRejectGuildRequest,
-  apiUpdateGuildMember,
-  apiRemoveGuildMember,
+  apiGuildRequests,
   apiGuildRoster,
+  apiGuilds,
+  apiRejectGuildRequest,
+  apiRemoveGuildMember,
+  apiUpdateGuildMember,
 } from '@/lib/api'
-import type { Guild, GuildJoinRequest, GuildMember } from '@/lib/types'
-import { Shield, Plus, Check, X, Trash2, UserCheck, Settings, ShieldAlert } from 'lucide-react'
 import { getRankIcon, getRankName } from '@/lib/rankIcons'
+import type { Guild, GuildJoinRequest, GuildMember } from '@/lib/types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Check, Plus, Settings, Shield, ShieldAlert, Trash2, UserCheck, X } from 'lucide-react'
+import { useState } from 'react'
 
 export const GuildsTab = () => {
   const queryClient = useQueryClient()
@@ -32,11 +32,12 @@ export const GuildsTab = () => {
   const guilds = guildsData?.guilds ?? []
 
   // Fetch pending requests for selected guild or first guild
-  const currentGuildId = selectedGuildId ?? (guilds[0]?.id ?? null)
+  const currentGuildId = selectedGuildId ?? guilds[0]?.id ?? null
 
   const { data: requestsData } = useQuery({
     queryKey: ['admin_guild_requests', currentGuildId],
-    queryFn: () => (currentGuildId ? apiGuildRequests(currentGuildId) : Promise.resolve({ requests: [] })),
+    queryFn: () =>
+      currentGuildId ? apiGuildRequests(currentGuildId) : Promise.resolve({ requests: [] }),
     enabled: !!currentGuildId,
   })
 
@@ -166,7 +167,8 @@ export const GuildsTab = () => {
           {/* Pending Requests Section */}
           <div className="lg:col-span-1 space-y-4">
             <h3 className="text-base font-semibold flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-amber-500" /> Заявки на вступление ({requests.length})
+              <UserCheck className="w-4 h-4 text-amber-500" /> Заявки на вступление (
+              {requests.length})
             </h3>
             {requests.length === 0 ? (
               <div className="text-sm text-muted-foreground p-4 text-center border border-border/20 rounded-xl bg-card/30">
@@ -336,14 +338,19 @@ export const GuildsTab = () => {
           <div className="w-full max-w-md bg-card border border-border/40 rounded-2xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold">Создать новую гильдию</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-sm">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Название гильдии</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Название гильдии
+                </label>
                 <input
                   type="text"
                   value={newGuildName}
@@ -354,7 +361,9 @@ export const GuildsTab = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Описание</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Описание
+                </label>
                 <textarea
                   value={newGuildDesc}
                   onChange={(e) => setNewGuildDesc(e.target.value)}
@@ -365,7 +374,9 @@ export const GuildsTab = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Макс. участников</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Макс. участников
+                </label>
                 <input
                   type="number"
                   value={newGuildMax}

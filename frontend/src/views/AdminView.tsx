@@ -12,9 +12,9 @@ import {
   MediaTab,
   UsersTab,
 } from '@/features/admin/AdminTabs'
+import { GuildsTab } from '@/features/admin/GuildsTab'
 import { AdminSidebar } from '@/features/admin/components/AdminSidebar'
 import { apiFetch } from '@/lib/api'
-import { GuildsTab } from '@/features/admin/GuildsTab'
 import {
   AlertCircle,
   BarChart3,
@@ -158,11 +158,20 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
                 <ShieldCheck className="size-6" />
               </div>
               <div>
-                <h1 className="text-base font-black tracking-tight uppercase font-heading text-foreground">Доступ ограничен</h1>
-                <p className="text-[11px] font-bold text-muted-foreground">Административная панель BlackRose</p>
+                <h1 className="text-base font-black tracking-tight uppercase font-heading text-foreground">
+                  Доступ ограничен
+                </h1>
+                <p className="text-[11px] font-bold text-muted-foreground">
+                  Административная панель BlackRose
+                </p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10" onClick={onClose}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-white/10"
+              onClick={onClose}
+            >
               <X className="size-5" />
             </Button>
           </div>
@@ -170,7 +179,11 @@ export const AdminView: FC<AdminViewProps> = ({ onClose }) => {
           <Card className="p-6 border border-destructive/30 rose-bento-card rounded-3xl text-center space-y-4">
             <AlertCircle className="size-10 text-destructive opacity-80 animate-bounce mx-auto" />
             <div className="text-sm font-bold text-foreground font-heading">{error}</div>
-            <Button variant="default" className="rose-glow-btn h-11 px-8 font-bold text-xs uppercase font-heading" onClick={load}>
+            <Button
+              variant="default"
+              className="rose-glow-btn h-11 px-8 font-bold text-xs uppercase font-heading"
+              onClick={load}
+            >
               Попробовать снова
             </Button>
           </Card>

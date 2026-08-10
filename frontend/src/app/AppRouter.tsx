@@ -17,7 +17,9 @@ const FavoritesView = lazy(() =>
 const GuideView = lazy(() => import('@/views/GuideView').then((m) => ({ default: m.GuideView })))
 const GuidesView = lazy(() => import('@/views/GuidesView').then((m) => ({ default: m.GuidesView })))
 const GuildsView = lazy(() => import('@/views/GuildsView').then((m) => ({ default: m.GuildsView })))
-const GuildRosterView = lazy(() => import('@/views/GuildRosterView').then((m) => ({ default: m.GuildRosterView })))
+const GuildRosterView = lazy(() =>
+  import('@/views/GuildRosterView').then((m) => ({ default: m.GuildRosterView }))
+)
 const HistoryView = lazy(() =>
   import('@/views/HistoryView').then((m) => ({ default: m.HistoryView }))
 )
@@ -32,7 +34,9 @@ const ProfileView = lazy(() =>
   import('@/views/ProfileView').then((m) => ({ default: m.ProfileView }))
 )
 const SearchView = lazy(() => import('@/views/SearchView').then((m) => ({ default: m.SearchView })))
-const BuildPlannerView = lazy(() => import('@/views/BuildPlannerView').then((m) => ({ default: m.BuildPlannerView })))
+const BuildPlannerView = lazy(() =>
+  import('@/views/BuildPlannerView').then((m) => ({ default: m.BuildPlannerView }))
+)
 
 const ViewLoader = () => (
   <div className="flex h-full flex-col overflow-hidden container-padding pt-6 pb-24 space-y-6 animate-pulse">

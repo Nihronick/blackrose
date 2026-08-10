@@ -82,4 +82,3 @@ export const useAppInitialization = () => {
     navigator.serviceWorker?.register?.('sw.js').catch(() => {})
   }, [])
 }
-

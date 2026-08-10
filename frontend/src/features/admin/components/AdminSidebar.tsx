@@ -46,7 +46,9 @@ export const AdminSidebar: FC<AdminSidebarProps> = ({
               BR
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-black uppercase tracking-tighter font-heading text-foreground">BlackRose</span>
+              <span className="text-xs font-black uppercase tracking-tighter font-heading text-foreground">
+                BlackRose
+              </span>
               <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 font-mono leading-none">
                 Admin Panel
               </span>
@@ -80,7 +82,12 @@ export const AdminSidebar: FC<AdminSidebarProps> = ({
                     : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
                 )}
               >
-                <Icon className={cn('size-4 transition-transform duration-200', active ? 'scale-110 text-rose-400' : 'opacity-70')} />
+                <Icon
+                  className={cn(
+                    'size-4 transition-transform duration-200',
+                    active ? 'scale-110 text-rose-400' : 'opacity-70'
+                  )}
+                />
                 <span className="truncate">{t.label}</span>
               </button>
             )

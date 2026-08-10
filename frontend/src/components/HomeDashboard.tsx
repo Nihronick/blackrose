@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CategoryList } from '@/features/categories'
 import type { Category } from '@/features/categories'
-import { apiGuilds, apiRecentComments, apiRecentGuides, apiTopGuides, apiFetch } from '@/lib/api'
+import { apiFetch, apiGuilds, apiRecentComments, apiRecentGuides, apiTopGuides } from '@/lib/api'
 import { getStoredUser } from '@/lib/auth'
 import { APP_CONFIG } from '@/lib/constants'
 import { haptic } from '@/lib/haptic'
@@ -116,11 +116,15 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight font-heading text-foreground uppercase">
-              Black<span className="bg-gradient-to-r from-rose-500 via-rose-400 to-amber-400 bg-clip-text text-transparent">Rose</span>
+              Black
+              <span className="bg-gradient-to-r from-rose-500 via-rose-400 to-amber-400 bg-clip-text text-transparent">
+                Rose
+              </span>
             </h1>
 
             <p className="text-sm sm:text-base font-medium text-muted-foreground/90 leading-relaxed max-w-xl">
-              Интерактивная база знаний, калькуляторы навыков, ростер гильдий и гайды по игре Slayer Legend.
+              Интерактивная база знаний, калькуляторы навыков, ростер гильдий и гайды по игре Slayer
+              Legend.
             </p>
           </div>
 
@@ -268,7 +272,9 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
             <h3 className="font-black text-sm text-foreground group-hover:text-amber-400 transition-colors font-heading">
               Избранное
             </h3>
-            <p className="text-[10px] font-bold text-muted-foreground/80 mt-0.5">Сохраненные файлы</p>
+            <p className="text-[10px] font-bold text-muted-foreground/80 mt-0.5">
+              Сохраненные файлы
+            </p>
           </div>
         </motion.div>
       </section>

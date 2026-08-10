@@ -26,9 +26,7 @@ export const EmptyState: FC<EmptyStateProps> = ({
       <div className="size-20 rounded-3xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-5 text-3xl shadow-inner animate-bounce">
         {icon || '🥀'}
       </div>
-      <h3 className="text-xl font-black uppercase font-heading text-foreground mb-2">
-        {title}
-      </h3>
+      <h3 className="text-xl font-black uppercase font-heading text-foreground mb-2">{title}</h3>
       <p className="text-xs font-medium text-muted-foreground leading-relaxed mb-6">
         {description}
       </p>

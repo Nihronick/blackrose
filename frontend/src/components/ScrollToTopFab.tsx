@@ -4,7 +4,9 @@ import { ChevronUp } from '@/lib/icons'
 import { AnimatePresence, motion } from 'framer-motion'
 import { type FC, useEffect, useState } from 'react'
 
-export const ScrollToTopFab: FC<{ targetRef?: React.RefObject<HTMLElement | null> }> = ({ targetRef }) => {
+export const ScrollToTopFab: FC<{ targetRef?: React.RefObject<HTMLElement | null> }> = ({
+  targetRef,
+}) => {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {

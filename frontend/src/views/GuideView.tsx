@@ -80,10 +80,7 @@ export const GuideView: FC<GuideViewProps> = ({
       >
         <div className="container-padding pt-6 pb-32 max-w-4xl mx-auto">
           <Breadcrumbs
-            items={[
-              { label: 'Категории', route: { type: 'categories' } },
-              { label: guide.title },
-            ]}
+            items={[{ label: 'Категории', route: { type: 'categories' } }, { label: guide.title }]}
           />
 
           {/* Header */}

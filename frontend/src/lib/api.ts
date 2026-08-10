@@ -11,16 +11,16 @@ import type {
   ApiResponse,
   CategoriesResponse,
   CommentsResponse,
+  Guild,
+  GuildJoinRequest,
+  GuildMember,
+  GuildRosterResponse,
+  GuildStatusOption,
   IconsGroupedResponse,
   MediaListResponse,
   SubscriptionsResponse,
   TagsResponse,
   TopGuidesResponse,
-  Guild,
-  GuildMember,
-  GuildRosterResponse,
-  GuildJoinRequest,
-  GuildStatusOption,
 } from './types'
 
 const BASE = import.meta.env.VITE_API_URL ?? ''
@@ -231,36 +231,76 @@ export const apiRejectGuildRequest = (id: number) =>
   apiPost<unknown>(`/api/guilds/requests/${id}/reject`, {})
 export const apiUpdateGuildMember = (id: number, data: Record<string, unknown>) =>
   apiPut<unknown>(`/api/guilds/members/${id}`, data)
-export const apiRemoveGuildMember = (id: number) =>
-  apiDelete<unknown>(`/api/guilds/members/${id}`)
-export const apiAdminCreateGuild = (data: { name: string; icon_url?: string; description?: string; max_members?: number }) =>
-  apiPost<unknown>('/api/admin/guilds', data)
+export const apiRemoveGuildMember = (id: number) => apiDelete<unknown>(`/api/guilds/members/${id}`)
+export const apiAdminCreateGuild = (data: {
+  name: string
+  icon_url?: string
+  description?: string
+  max_members?: number
+}) => apiPost<unknown>('/api/admin/guilds', data)
 export const apiAdminUpdateGuild = (id: number, data: Record<string, unknown>) =>
   apiPut<unknown>(`/api/admin/guilds/${id}`, data)
-export const apiAdminDeleteGuild = (id: number) =>
-  apiDelete<unknown>(`/api/admin/guilds/${id}`)
+export const apiAdminDeleteGuild = (id: number) => apiDelete<unknown>(`/api/admin/guilds/${id}`)
 
 // --- Discord Sync API ---
 export const apiGetDiscordSyncStatus = () =>
-  apiFetch<{ running: boolean; channels_count: number; has_token: boolean; has_saved_token?: boolean; token_preview?: string | null }>('/api/admin/discord-sync/status')
+  apiFetch<{
+    running: boolean
+    channels_count: number
+    has_token: boolean
+    has_saved_token?: boolean
+    token_preview?: string | null
+  }>('/api/admin/discord-sync/status')
 export const apiStartDiscordSync = (user_token: string) =>
   apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/start', { user_token })
 export const apiStopDiscordSync = () =>
   apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/stop', {})
 export const apiGetDiscordSyncChannels = () =>
-  apiFetch<{ channels: Array<{ channel_id: string; channel_name?: string; category_key: string; auto_translate: boolean; is_active: boolean }> }>('/api/admin/discord-sync/channels')
-export const apiAddDiscordSyncChannel = (data: { channel_id: string; category_key: string; channel_name?: string; auto_translate?: boolean }) =>
-  apiPost<{ ok: boolean; channel: unknown }>('/api/admin/discord-sync/channels', data)
+  apiFetch<{
+    channels: Array<{
+      channel_id: string
+      channel_name?: string
+      category_key: string
+      auto_translate: boolean
+      is_active: boolean
+    }>
+  }>('/api/admin/discord-sync/channels')
+export const apiAddDiscordSyncChannel = (data: {
+  channel_id: string
+  category_key: string
+  channel_name?: string
+  auto_translate?: boolean
+}) => apiPost<{ ok: boolean; channel: unknown }>('/api/admin/discord-sync/channels', data)
 export const apiRemoveDiscordSyncChannel = (channel_id: string) =>
   apiDelete<{ ok: boolean }>(`/api/admin/discord-sync/channels/${channel_id}`)
 export const apiGetSyncedDiscordGuides = () =>
-  apiFetch<{ synced_guides: Array<{ id: number; discord_message_id: string; discord_channel_id: string; guide_key: string; author_tag: string; created_at: string; title: string; category_key: string; views: number }> }>('/api/admin/discord-sync/synced-guides')
-export const apiDeleteSyncedDiscordGuide = (id: number, deleteGuide: boolean = false) =>
-  apiDelete<{ ok: boolean; message: string }>(`/api/admin/discord-sync/synced-guides/${id}?delete_guide=${deleteGuide}`)
-export const apiClearSyncedDiscordGuides = (deleteGuides: boolean = false) =>
-  apiPost<{ ok: boolean; message: string }>(`/api/admin/discord-sync/synced-guides/clear?delete_guides=${deleteGuides}`, {})
+  apiFetch<{
+    synced_guides: Array<{
+      id: number
+      discord_message_id: string
+      discord_channel_id: string
+      guide_key: string
+      author_tag: string
+      created_at: string
+      title: string
+      category_key: string
+      views: number
+    }>
+  }>('/api/admin/discord-sync/synced-guides')
+export const apiDeleteSyncedDiscordGuide = (id: number, deleteGuide = false) =>
+  apiDelete<{ ok: boolean; message: string }>(
+    `/api/admin/discord-sync/synced-guides/${id}?delete_guide=${deleteGuide}`
+  )
+export const apiClearSyncedDiscordGuides = (deleteGuides = false) =>
+  apiPost<{ ok: boolean; message: string }>(
+    `/api/admin/discord-sync/synced-guides/clear?delete_guides=${deleteGuides}`,
+    {}
+  )
 export const apiBackfillDiscordChannel = (channel_id: string) =>
-  apiPost<{ ok: boolean; message: string }>(`/api/admin/discord-sync/channels/${channel_id}/backfill`, {})
+  apiPost<{ ok: boolean; message: string }>(
+    `/api/admin/discord-sync/channels/${channel_id}/backfill`,
+    {}
+  )
 export const apiBackfillAllDiscordChannels = () =>
   apiPost<{ ok: boolean; message: string }>('/api/admin/discord-sync/backfill-all', {})
 export const apiImportDiscordLink = (link: string) =>
@@ -277,7 +317,9 @@ export interface AdminUserItem {
 }
 
 export const apiGetAdminUsers = (query?: string) =>
-  apiFetch<{ total: number; users: AdminUserItem[] }>(`/api/admin/users${query ? `?query=${encodeURIComponent(query)}` : ''}`)
+  apiFetch<{ total: number; users: AdminUserItem[] }>(
+    `/api/admin/users${query ? `?query=${encodeURIComponent(query)}` : ''}`
+  )
 export const apiUpdateUserRole = (userId: number, role: string) =>
   apiPut<{ ok: boolean }>(`/api/admin/users/${userId}/role`, { role })
 export const apiToggleUserStatus = (userId: number, isActive: boolean) =>
@@ -285,9 +327,11 @@ export const apiToggleUserStatus = (userId: number, isActive: boolean) =>
 export const apiUploadMediaFile = (file: File) => {
   const fd = new FormData()
   fd.append('file', file)
-  return apiRaw<{ ok: boolean; url: string; filename: string }>('/api/admin/media/upload', 'POST', fd, true)
+  return apiRaw<{ ok: boolean; url: string; filename: string }>(
+    '/api/admin/media/upload',
+    'POST',
+    fd,
+    true
+  )
 }
 export const apiExportFullBackup = () => apiFetch<unknown>('/api/admin/backup/export')
-
-
-

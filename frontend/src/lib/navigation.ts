@@ -28,15 +28,15 @@ export const useAppNavigation = () => {
   const safeNavigate = useCallback(
     (to: string | number) => {
       if (typeof document !== 'undefined' && 'startViewTransition' in document) {
-        ;(document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(
-          () => {
-            if (typeof to === 'number') {
-              navigate(to)
-            } else {
-              navigate(to)
-            }
+        ;(
+          document as unknown as { startViewTransition: (cb: () => void) => void }
+        ).startViewTransition(() => {
+          if (typeof to === 'number') {
+            navigate(to)
+          } else {
+            navigate(to)
           }
-        )
+        })
       } else {
         if (typeof to === 'number') {
           navigate(to)

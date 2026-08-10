@@ -118,7 +118,10 @@ export const AdminLoginModal: FC<AdminLoginModalProps> = ({ onSuccess, onClose }
           </div>
 
           {error && (
-            <Alert variant="destructive" className="bg-destructive/15 border border-destructive/30 text-destructive rounded-2xl">
+            <Alert
+              variant="destructive"
+              className="bg-destructive/15 border border-destructive/30 text-destructive rounded-2xl"
+            >
               <AlertCircle className="size-4" />
               <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
             </Alert>

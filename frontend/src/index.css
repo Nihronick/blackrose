@@ -28,8 +28,8 @@
 
 /* Override WebKit input autofill bright blue backgrounds */
 input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
 input:-webkit-autofill:active,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
@@ -80,7 +80,7 @@ textarea:-webkit-autofill:active {
   --muted: oklch(0.18 0.02 260);
   --muted-foreground: oklch(0.75 0.01 240); /* High-contrast Silver Gray #9CA3AF */
   --accent: oklch(0.78 0.18 70); /* Warm Amber Gold Accent #F59E0B */
-  --accent-foreground: oklch(0.10 0.01 260);
+  --accent-foreground: oklch(0.1 0.01 260);
   --destructive: oklch(0.55 0.22 20);
   --destructive-foreground: oklch(0.98 0.01 240);
   --border: oklch(0.24 0.02 260 / 0.6);
@@ -300,9 +300,15 @@ textarea:-webkit-autofill:active {
 
 /* Animations */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
@@ -311,8 +317,12 @@ textarea:-webkit-autofill:active {
 
 /* Premium Skeleton Shimmer */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton {
@@ -341,18 +351,30 @@ textarea:-webkit-autofill:active {
   }
 }
 
-.stagger-in > *:nth-child(1) { animation-delay: 0.03s; }
-.stagger-in > *:nth-child(2) { animation-delay: 0.06s; }
-.stagger-in > *:nth-child(3) { animation-delay: 0.09s; }
-.stagger-in > *:nth-child(4) { animation-delay: 0.12s; }
-.stagger-in > *:nth-child(5) { animation-delay: 0.15s; }
-.stagger-in > *:nth-child(6) { animation-delay: 0.18s; }
+.stagger-in > *:nth-child(1) {
+  animation-delay: 0.03s;
+}
+.stagger-in > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.stagger-in > *:nth-child(3) {
+  animation-delay: 0.09s;
+}
+.stagger-in > *:nth-child(4) {
+  animation-delay: 0.12s;
+}
+.stagger-in > *:nth-child(5) {
+  animation-delay: 0.15s;
+}
+.stagger-in > *:nth-child(6) {
+  animation-delay: 0.18s;
+}
 
 /* --- 2026 Black Rose Design System Utilities --- */
 .rose-mesh-bg {
   background: radial-gradient(circle at 50% -20%, oklch(0.28 0.18 18 / 0.35), transparent 70%),
-              radial-gradient(circle at 90% 80%, oklch(0.22 0.14 70 / 0.15), transparent 50%),
-              oklch(0.08 0.02 15);
+    radial-gradient(circle at 90% 80%, oklch(0.22 0.14 70 / 0.15), transparent 50%),
+    oklch(0.08 0.02 15);
 }
 
 .rose-bento-card {

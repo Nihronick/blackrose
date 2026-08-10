@@ -1,16 +1,51 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { apiGetAdminUsers, apiToggleUserStatus, apiUpdateUserRole, type AdminUserItem } from '@/lib/api'
-import { Shield, ShieldAlert, ShieldCheck, User, Users, Search, RefreshCw, Lock, Unlock } from '@/lib/icons'
+import {
+  type AdminUserItem,
+  apiGetAdminUsers,
+  apiToggleUserStatus,
+  apiUpdateUserRole,
+} from '@/lib/api'
+import {
+  Lock,
+  RefreshCw,
+  Search,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Unlock,
+  User,
+  Users,
+} from '@/lib/icons'
 import { type FC, useEffect, useState } from 'react'
 
 const ROLES = [
-  { key: 'project_admin', label: 'Владелец (Project Admin)', color: 'text-amber-400 bg-amber-500/20 border-amber-500/30' },
-  { key: 'admin', label: 'Администратор (Admin)', color: 'text-violet-400 bg-violet-500/20 border-violet-500/30' },
-  { key: 'editor', label: 'Редактор (Editor)', color: 'text-blue-400 bg-blue-500/20 border-blue-500/30' },
-  { key: 'moderator', label: 'Модератор (Moderator)', color: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' },
-  { key: 'member', label: 'Участник (Member)', color: 'text-muted-foreground bg-muted border-white/10' },
+  {
+    key: 'project_admin',
+    label: 'Владелец (Project Admin)',
+    color: 'text-amber-400 bg-amber-500/20 border-amber-500/30',
+  },
+  {
+    key: 'admin',
+    label: 'Администратор (Admin)',
+    color: 'text-violet-400 bg-violet-500/20 border-violet-500/30',
+  },
+  {
+    key: 'editor',
+    label: 'Редактор (Editor)',
+    color: 'text-blue-400 bg-blue-500/20 border-blue-500/30',
+  },
+  {
+    key: 'moderator',
+    label: 'Модератор (Moderator)',
+    color: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30',
+  },
+  {
+    key: 'member',
+    label: 'Участник (Member)',
+    color: 'text-muted-foreground bg-muted border-white/10',
+  },
 ]
 
 export const UsersTab: FC = () => {
@@ -44,9 +79,7 @@ export const UsersTab: FC = () => {
     setUpdatingId(userId)
     try {
       await apiUpdateUserRole(userId, newRole)
-      setUsers((prev) =>
-        prev.map((u) => (u.user_id === userId ? { ...u, role: newRole } : u))
-      )
+      setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, role: newRole } : u)))
     } catch (e: any) {
       alert('Ошибка при изменении роли: ' + (e.message || e))
     } finally {
@@ -161,9 +194,13 @@ export const UsersTab: FC = () => {
                       </div>
 
                       <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-3">
-                        <span>ID: <code className="font-mono text-foreground">{u.user_id}</code></span>
+                        <span>
+                          ID: <code className="font-mono text-foreground">{u.user_id}</code>
+                        </span>
                         {u.created_at && (
-                          <span>Регистрация: {new Date(u.created_at).toLocaleDateString('ru-RU')}</span>
+                          <span>
+                            Регистрация: {new Date(u.created_at).toLocaleDateString('ru-RU')}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -197,7 +234,11 @@ export const UsersTab: FC = () => {
                       onClick={() => handleToggleStatus(u.user_id, u.is_active)}
                       title={u.is_active ? 'Заблокировать доступ' : 'Разблокировать доступ'}
                     >
-                      {u.is_active ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
+                      {u.is_active ? (
+                        <Lock className="size-3.5" />
+                      ) : (
+                        <Unlock className="size-3.5" />
+                      )}
                       {u.is_active ? 'Заблокировать' : 'Разблокировать'}
                     </Button>
                   </div>
