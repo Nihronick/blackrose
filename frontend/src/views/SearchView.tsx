@@ -32,13 +32,17 @@ export const SearchView: FC = () => {
   const { push, pop } = useAppNavigation()
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const deferredQuery = useDeferredValue(debouncedQuery)
+  const [isPending, startTransition] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Debounce logic
+  // Debounce logic with transition
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedQuery(query)
-    }, 400)
+      startTransition(() => {
+        setDebouncedQuery(query)
+      })
+    }, 250)
     return () => clearTimeout(timer)
   }, [query])
 
@@ -50,14 +54,14 @@ export const SearchView: FC = () => {
   }, [])
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['search', debouncedQuery],
+    queryKey: ['search', deferredQuery],
     queryFn: () =>
-      apiFetch(`/search?q=${encodeURIComponent(debouncedQuery)}`) as Promise<{ results: Guide[] }>,
-    enabled: debouncedQuery.trim().length >= 2,
+      apiFetch(`/search?q=${encodeURIComponent(deferredQuery)}`) as Promise<{ results: Guide[] }>,
+    enabled: deferredQuery.trim().length >= 2,
   })
 
   const results = data?.results || []
-  const hasSearched = debouncedQuery.trim().length >= 2
+  const hasSearched = deferredQuery.trim().length >= 2
   const showEmpty = hasSearched && !isLoading && !isFetching && results.length === 0
 
   return (

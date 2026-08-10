@@ -34,6 +34,30 @@ export const BuildPlannerView: FC = () => {
     return fromUrl ? fromUrl.split(',') : ['rave', 'rage', 'golem', 'blitz_gold']
   })
   const [copied, setCopied] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  const handleRankChange = (rank: number) => {
+    startTransition(() => {
+      setSelectedRank(rank)
+    })
+  }
+
+  const handleSkillToggle = (skillId: string) => {
+    haptic.light()
+    startTransition(() => {
+      setSelectedSkills((prev) => {
+        if (prev.includes(skillId)) {
+          return prev.filter((s) => s !== skillId)
+        } else {
+          if (prev.length >= 4) {
+            toast.error('Максимум 4 активных навыка в билде!')
+            return prev
+          }
+          return [...prev, skillId]
+        }
+      })
+    })
+  }
 
   // Calculate estimated stats
   const calculatedStats = useMemo(() => {
@@ -146,7 +170,7 @@ export const BuildPlannerView: FC = () => {
                   min="1"
                   max="21"
                   value={selectedRank}
-                  onChange={(e) => setSelectedRank(Number(e.target.value))}
+                  onChange={(e) => handleRankChange(Number(e.target.value))}
                   className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-rose-500"
                 />
                 <div className="flex justify-between text-[10px] font-bold text-muted-foreground font-mono">

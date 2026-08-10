@@ -109,6 +109,8 @@ export const CategoryList: FC<CategoryListProps> = ({
                     <img
                       src={normalizeUrl(item.icon)}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="size-8 sm:size-10 object-contain drop-shadow-md"
                       onError={(e: SyntheticEvent<HTMLImageElement>) => {
                         e.currentTarget.style.display = 'none'

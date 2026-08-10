@@ -35,13 +35,32 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true, // Switched to true for better debugging
+    target: 'es2022',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('react/')) {
+              return 'vendor-react'
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-motion'
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-charts'
+            }
+            if (id.includes('@tanstack')) {
+              return 'vendor-tanstack'
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons'
+            }
+          }
+        },
       },
     },
-    chunkSizeWarningLimit: 1000,
   },
   define: {
     'import.meta.env.VITE_RELEASE': JSON.stringify(process.env.RAILWAY_GIT_COMMIT_SHA ?? 'dev'),

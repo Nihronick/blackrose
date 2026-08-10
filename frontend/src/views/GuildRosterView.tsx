@@ -154,7 +154,7 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
                       <td className="px-6 py-4 font-bold">{member.nickname}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <img src={getRankIcon(member.rank)} alt={getRankName(member.rank)} className="size-6 object-contain drop-shadow-md" />
+                          <img src={getRankIcon(member.rank)} alt={getRankName(member.rank)} loading="lazy" decoding="async" className="size-6 object-contain drop-shadow-md" />
                           <span className="font-black bg-background/50 px-2 py-0.5 rounded-lg border border-border/10 shadow-sm">{member.rank}</span>
                         </div>
                       </td>
