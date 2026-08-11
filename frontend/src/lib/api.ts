@@ -196,6 +196,10 @@ export const apiTags = () => apiFetch<TagsResponse>('/api/tags')
 export const apiMediaList = () => apiFetch<MediaListResponse>('/api/admin/media/list')
 
 export const apiGetCategories = () => apiFetch<CategoriesResponse>('/api/categories')
+export const apiEmergencyLogin = (emergencyKey: string) =>
+  apiPost<{ token: string; ok: boolean }>('/api/auth/emergency-login', {
+    emergency_key: emergencyKey,
+  })
 
 /**
  * Returns a proxied URL for Discord media to bypass CORS/expiration.

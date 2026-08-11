@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "dev_secret_key_change_me"
     INIT_DATA_MAX_AGE: int = 86400 # 24 hours
     ADMIN_USERS: str = "" # Comma separated user IDs
+    ADMIN_EMERGENCY_KEY: str = "BlackRose_ProjectAdmin_Emergency_Key_2026_Secure_Key"
     WEBHOOK_URL: str = ""
     WEBHOOK_SECRET: str = ""
     WEBHOOK_PATH: str = "/bot/webhook"
