@@ -115,9 +115,31 @@ marked.use({
       const normalizedHref = normalizeUrl(href ?? '')
       const label = text || normalizedHref
 
-      // Специальная обработка для [Video: name](url)
-      if (label.includes('Video:')) {
-        return `<div class="premium-video-placeholder my-6" data-video-url="${normalizedHref}" data-video-alt="${label.replace('Video:', '').trim()}">Video: ${label}</div>`
+      // Специальная обработка для [Video: name](url) и прямых ссылок на видео
+      if (
+        label.includes('Video:') ||
+        /\.(mp4|webm|mov|avi)($|\?)/i.test(normalizedHref) ||
+        normalizedHref.includes('youtube.com') ||
+        normalizedHref.includes('youtu.be')
+      ) {
+        const isYoutube = normalizedHref.includes('youtube.com') || normalizedHref.includes('youtu.be')
+        const embedUrl = isYoutube
+          ? normalizedHref.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+          : normalizedHref
+
+        if (isYoutube) {
+          return (
+            '<div class="my-6 rounded-2xl overflow-hidden border border-rose-500/20 bg-black/90 aspect-video shadow-2xl">' +
+            `<iframe src="${embedUrl}" title="Video" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>` +
+            '</div>'
+          )
+        }
+
+        return (
+          '<div class="my-6 rounded-2xl overflow-hidden border border-rose-500/20 bg-black/90 aspect-video shadow-2xl">' +
+          `<video src="${normalizedHref}" controls preload="metadata" class="w-full h-full object-cover"></video>` +
+          '</div>'
+        )
       }
 
       const isExternal = normalizedHref.includes('://') || normalizedHref.startsWith('//')
@@ -145,15 +167,19 @@ marked.use({
             : ''
       const src = normalizeUrl(href ?? '')
       const alt = text ?? ''
-      const parsedVideo = parseVideo(src)
-      if (parsedVideo?.type === 'video') {
-        return `<div class="premium-video-placeholder my-6" data-video-url="${src}" data-video-alt="${alt}">video</div>`
+      const isVid = /\.(mp4|webm|mov|avi)($|\?)/i.test(src)
+      if (isVid) {
+        return (
+          '<div class="my-6 rounded-2xl overflow-hidden border border-rose-500/20 bg-black/90 aspect-video shadow-2xl">' +
+          `<video src="${src}" controls preload="metadata" class="w-full h-full object-cover"></video>` +
+          '</div>'
+        )
       }
       return (
-        '<div class="my-6">' +
-        `<img src="${src}" alt="${alt}" class="guide-img rounded-2xl border border-border/30 shadow-xl" loading="lazy" referrerpolicy="no-referrer">` +
-        (alt
-          ? `<p class="text-[11px] text-muted-foreground mt-2 text-center italic">${alt}</p>`
+        '<div class="my-6 flex flex-col items-center justify-center">' +
+        `<img src="${src}" alt="${alt}" class="guide-img rounded-2xl border border-rose-500/20 shadow-xl max-h-[550px] w-auto object-contain cursor-pointer hover:scale-[1.01] transition-transform duration-300" loading="lazy" referrerpolicy="no-referrer">` +
+        (alt && alt !== 'Скриншот'
+          ? `<p class="text-[11px] text-rose-300/80 mt-2 text-center italic">${alt}</p>`
           : '') +
         '</div>'
       )

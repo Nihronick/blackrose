@@ -511,6 +511,43 @@ def fetch_all_messages(channel_id: str, limit: int = 200) -> list[dict]:
     return all_msgs
 
 
+def format_message_with_inline_media(m: dict) -> str:
+    """Встроить прикрепленные фото и видео прямо в текст сообщения."""
+    content = m.get("content", "").strip()
+    media_lines = []
+
+    # 1. Attachments
+    for att in m.get("attachments", []):
+        url = att.get("url", "")
+        if not url:
+            continue
+        fname = att.get("filename", "").lower()
+        if any(fname.endswith(ext) for ext in ('.mp4', '.webm', '.mov', '.mkv')):
+            media_lines.append(f"\n\n[Video: Видеоинструкция]({url})\n\n")
+        elif any(fname.endswith(ext) for ext in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg')):
+            media_lines.append(f"\n\n![Скриншот]({url})\n\n")
+
+    # 2. Embeds
+    for emb in m.get("embeds", []):
+        if emb.get("video"):
+            v_url = emb["video"].get("url")
+            if v_url:
+                media_lines.append(f"\n\n[Video: Видеоинструкция]({v_url})\n\n")
+        elif emb.get("image"):
+            i_url = emb["image"].get("url")
+            if i_url:
+                media_lines.append(f"\n\n![Скриншот]({i_url})\n\n")
+
+    media_str = "".join(media_lines)
+    if content and media_str:
+        return f"{content}\n{media_str}"
+    elif content:
+        return content
+    elif media_str:
+        return media_str.strip()
+    return ""
+
+
 def extract_media_from_messages(msgs: list[dict]) -> tuple[list[str], list[str]]:
     """Извлечь все фото и видео из списка сообщений."""
     photos = []
@@ -717,8 +754,9 @@ def main():
                         total_skipped += 1
                         continue
 
-                    # Объединить все сообщения
-                    combined = "\n\n".join(m.get("content", "") for m in msgs if m.get("content"))
+                    # Объединить все сообщения со встроенными в текст фото и видео
+                    msg_blocks = [format_message_with_inline_media(m) for m in msgs]
+                    combined = "\n\n".join(b for b in msg_blocks if b.strip())
                     if not combined.strip() or len(combined.strip()) < 20:
                         total_skipped += 1
                         continue
@@ -752,13 +790,13 @@ def main():
             else:
                 print(f"\n    [TEXT] {ch_name}")
                 msgs = fetch_all_messages(ch_id, limit=100)
-                guide_msgs = [m for m in msgs if len(m.get("content", "")) >= 80]
+                guide_msgs = [m for m in msgs if len(m.get("content", "")) >= 80 or len(m.get("attachments", [])) > 0]
                 print(f"    Найдено {len(guide_msgs)} сообщений-гайдов (из {len(msgs)} всего)")
 
                 for mi, msg in enumerate(guide_msgs):
                     mid = msg["id"]
-                    content = msg.get("content", "")
-                    clean = sanitize_discord_markdown(content)
+                    msg_text = format_message_with_inline_media(msg)
+                    clean = sanitize_discord_markdown(msg_text)
                     translated = translate_text(clean)
 
                     # Заголовок — первая строка
