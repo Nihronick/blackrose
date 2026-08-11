@@ -10,6 +10,8 @@ import { GuildProfileModal } from '@/components/GuildProfileModal'
 import { Button } from '@/components/ui/button'
 import { apiGuildRoster, apiMyGuildProfile } from '@/lib/api'
 import { getRankIcon, getRankName } from '@/lib/rankIcons'
+import { haptic } from '@/lib/haptic'
+import { toast } from 'sonner'
 
 interface GuildRosterViewProps {
   guildId: number
@@ -149,6 +151,26 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
                 Подать заявку
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-10 px-4 text-xs border-rose-500/20 hover:border-rose-500/40 bg-card/60"
+              onClick={() => {
+                haptic.medium()
+                if (!roster.length) return
+                const lines = [
+                  `*** 🛡️ Гильдия: ${guild?.name || 'BlackRose'} ***`,
+                  `📊 Всего бойцов: ${stats?.member_count || roster.length} | Сумма рангов: ${stats?.total_ranks || 0} | Средний ранг: ${(stats?.average_rank || 0).toFixed(1)}`,
+                  '```text',
+                  ...roster.map((m, i) => `${i + 1}. [Ранг ${m.rank}] ${m.nickname} (Этап: ${m.stage || '-'}) — ${m.guild_role === 'guild_master' ? 'Мастер' : m.guild_role === 'guild_vice_master' ? 'Вице' : 'Участник'}`),
+                  '```'
+                ]
+                navigator.clipboard.writeText(lines.join('\n'))
+                toast.success('Ростер скопирован в формате Discord!')
+              }}
+            >
+              📋 Скопировать ростер Discord
+            </Button>
           </div>
         </div>
       </div>

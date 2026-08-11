@@ -110,7 +110,7 @@ export const BuildPlannerView: FC = () => {
     params.set('spirit', selectedSpirit)
     params.set('skills', selectedSkills.join(','))
 
-    const fullUrl = `${window.location.origin}${window.location.pathname}#/build?${params.toString()}`
+    const fullUrl = `${window.location.origin}/build-planner?${params.toString()}`
     navigator.clipboard.writeText(fullUrl)
     setCopied(true)
     toast.success('Ссылка на калькулятор билда скопирована!')

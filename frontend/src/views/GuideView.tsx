@@ -146,6 +146,33 @@ export const GuideView: FC<GuideViewProps> = ({
                 setCyberlink(data)
               }}
             />
+
+            {/* Interactive Emoji Reactions */}
+            <div className="mt-8 pt-6 border-t border-rose-500/15 flex flex-wrap items-center justify-between gap-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-heading">
+                Оцените гайд:
+              </span>
+              <div className="flex items-center gap-2">
+                {[
+                  { emoji: '🔥', key: 'fire', label: 'Огонь' },
+                  { emoji: '👍', key: 'like', label: 'Полезно' },
+                  { emoji: '💡', key: 'idea', label: 'Познавательно' },
+                  { emoji: '🐉', key: 'dragon', label: 'Слеер' },
+                ].map((r) => (
+                  <button
+                    key={r.key}
+                    onClick={() => {
+                      haptic.light()
+                      toast.success(`Реакция ${r.emoji} принята!`)
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-card border border-rose-500/20 hover:border-rose-500/50 hover:bg-rose-500/10 text-xs font-bold transition-all active:scale-95 shadow-sm"
+                  >
+                    <span>{r.emoji}</span>
+                    <span className="text-rose-300/90">{r.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </motion.div>
 
           {/* Media Gallery (Photos & Videos) */}
