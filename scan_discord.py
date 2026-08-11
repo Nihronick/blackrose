@@ -66,6 +66,8 @@ CATEGORY_NAME_MAP = {
     "promotion-and-suit-recommendation": "Рекомендации Костюмов",
     "event-help": "Помощь по Ивентам",
     "slayerpedia-index": "Индекс Охотникпедии",
+    "resources": "Ресурсы и Таблицы",
+    "faq": "Часто Задаваемые Вопросы",
     "beginners": "Для новичков",
     "beginner": "Для новичков",
     "beginners guide": "Гайды для новичков",
@@ -483,6 +485,16 @@ def fetch_all_forum_threads(channel_id: str) -> list[dict]:
         if not before_ts:
             break
 
+    # 3. Deep historical thread search via Guild Search API (находит ВСЕ треды, включая старые)
+    time.sleep(0.5)
+    search_path = f"/guilds/{GUILD_ID}/messages/search?channel_id={channel_id}"
+    status, search_data = discord_get(search_path)
+    if status == 200 and isinstance(search_data, dict):
+        for th in search_data.get("threads", []):
+            if th["id"] not in seen_ids:
+                threads.append(th)
+                seen_ids.add(th["id"])
+
     return threads
 
 
@@ -667,20 +679,21 @@ def main():
         cat_name_clean = unicodedata.normalize('NFKD', cat_name).lower().strip()
         cat_id = cat["id"]
 
-        # РАБОТАЕМ ТОЛЬКО С SLAYERPEDIA! Всё остальное проходит мимо.
-        if "slayerpedia" not in cat_name_clean:
-            print(f"  [SKIP] {cat_name} (пропускаем, работаем только с Slayerpedia)")
+        # Сканируем категории: Slayerpedia, Resources, Start here
+        allowed_cats = {"slayerpedia", "resources", "start here"}
+        if not any(ac in cat_name_clean for ac in allowed_cats):
+            print(f"  [SKIP] {cat_name} (пропускаем)")
             continue
 
-        # Дочерние каналы из Slayerpedia (forum channels & text channels)
+        # Дочерние каналы (forum channels & text channels)
         child_channels = [
             c for c in channels
             if c.get("parent_id") == cat_id
             and c.get("type") in GUIDE_CHANNEL_TYPES
-            and c.get("name", "").lower() not in {"slayerpedia-feedback", "slayerpedia-change-log", "disclaimer"}
+            and c.get("name", "").lower() not in {"slayerpedia-feedback", "slayerpedia-change-log", "disclaimer", "rules", "invite-link", "welcome-slayers"}
         ]
 
-        print(f"  🎯 НАЙДЕНА КАТЕГОРИЯ SLAYERPEDIA! Содержит {len(child_channels)} каналов-разделов.")
+        print(f"  🎯 НАЙДЕНА КАТЕГОРИЯ «{cat_name}»! Содержит {len(child_channels)} каналов-разделов.")
 
         # Каждый канал внутри Slayerpedia становится отдельной Категорией на сайте
         for ch in child_channels:
