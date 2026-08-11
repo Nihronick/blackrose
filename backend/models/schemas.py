@@ -160,8 +160,8 @@ class GuildMemberAdminIn(BaseModel):
     @field_validator("rank")
     @classmethod
     def validate_rank(cls, v):
-        if v is not None and (v < 1 or v > 21):
-            raise ValueError("Ранг должен быть от 1 до 21")
+        if v is not None and (v < 1 or v > 26):
+            raise ValueError("Ранг должен быть от 1 до 26")
         return v
 
 

@@ -248,11 +248,11 @@ class GuildService:
                 
                 # Rank name helper
                 rank_names = {
-                    1: 'Stone', 2: 'Bronze', 3: 'Iron', 4: 'Silver', 5: 'Eisenhart',
-                    6: 'Eldenwood', 7: 'Adamant', 8: 'Orichalcum', 9: 'Blue Abyss',
-                    10: 'Warfrost', 11: 'Diadust', 12: 'Black Mythril', 13: 'Dark Nox',
-                    14: 'Demon Metal', 15: 'Ancient Canine', 16: 'Gigarock', 17: 'Cyclos',
-                    18: 'Dragonos', 19: 'Ragnablood', 20: 'Ether', 21: 'Infinaut'
+                    1: 'Stone', 2: 'Bronze', 3: 'Iron', 4: 'Silver', 5: 'Gold',
+                    6: 'Mithril', 7: 'Orichalcum', 8: 'Arcanite', 9: 'Adamant', 10: 'Ether',
+                    11: 'Black Mythril', 12: 'Demon Metal', 13: 'Dragonos', 14: 'Ragnablood', 15: 'Warfrost',
+                    16: 'Dark Nox', 17: 'Blue Abyss', 18: 'Infinaut', 19: 'Cyclos', 20: 'Ancient Canine',
+                    21: 'Gigarock', 22: 'Eisenhart', 23: 'Diadust', 24: 'Eldenwood', 25: 'Blitz Gold', 26: 'Auroite'
                 }
                 rank_name = rank_names.get(rank_num, f"Rank {rank_num}")
 
