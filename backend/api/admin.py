@@ -380,3 +380,16 @@ async def admin_export_backup(user=Depends(require_admin)):
             "guilds": guilds,
         }
 
+
+@router.delete("/nuke-all")
+async def admin_nuke_all(user=Depends(require_admin)):
+    """Delete ALL categories (cascades to guides), synced guides, and sync channels."""
+    from services.discord_sync.service import discord_sync_service
+    cats_deleted = await category_service.delete_all()
+    synced_cleared = await discord_sync_service.clear_synced_guides(delete_guides=False)
+    await cache_service.invalidate_all()
+    return {
+        "ok": True,
+        "categories_deleted": cats_deleted,
+        "synced_cleared": synced_cleared,
+    }

@@ -424,6 +424,18 @@ class CategoryService:
             return True
 
     @classmethod
+    async def delete_all(cls) -> int:
+        """Delete ALL categories (cascades to guides via FK ondelete=CASCADE)."""
+        async with get_sessionmaker()() as session:
+            result = await session.execute(select(Category))
+            cats = result.scalars().all()
+            count = len(cats)
+            for c in cats:
+                await session.delete(c)
+            await session.commit()
+            return count
+
+    @classmethod
     async def reorder(cls, order: list[dict]):
         if not order:
             return
