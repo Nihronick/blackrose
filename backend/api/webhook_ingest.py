@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, status
 from core.config import settings
 from services.guides.service import guide_service
 from services.cache.redis_cache import cache_service
+from services.media.service import media_cache_service
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/webhook", tags=["webhook"])
@@ -26,7 +27,6 @@ async def verify_ingest_token(x_ingest_token: str = Header(..., alias="X-Ingest-
         )
     return x_ingest_token
 
-from services.media.service import media_cache_service
 
 @router.post("/ingest", dependencies=[Depends(verify_ingest_token)])
 async def webhook_ingest_guide(payload: IngestGuidePayload):

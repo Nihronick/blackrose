@@ -7,6 +7,7 @@ from core.auth import (
     jwt_encode,
     jwt_refresh_encode,
     verify_password,
+    hash_password,
 )
 from core.config import settings
 from core.logging import get_logger

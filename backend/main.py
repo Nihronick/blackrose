@@ -89,6 +89,7 @@ app.include_router(webhook_ingest.router, prefix="/api")
 app.include_router(guilds_router, prefix="/api")
 app.include_router(discord_sync_router, prefix="/api")
 app.include_router(users_admin_router, prefix="/api")
+app.include_router(media_router, prefix="/api")
 
 # Static files for frontend (Production)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
