@@ -242,7 +242,8 @@ def backend_request(path: str, data: dict | None, token: str, method: str = "PUT
     body = json.dumps(data).encode("utf-8") if data else None
     req = urllib.request.Request(url, data=body, method=method)
     req.add_header("Content-Type", "application/json")
-    req.add_header("Authorization", f"Bearer {token}")
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
     try:
         with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
             return json.loads(resp.read().decode("utf-8"))
@@ -253,8 +254,35 @@ def backend_request(path: str, data: dict | None, token: str, method: str = "PUT
         return {"error": str(e)}
 
 
+def ingest_guide(guide_key: str, cat_key: str, cat_title: str, title: str, text: str, photos: list, videos: list, sort_order: int) -> dict:
+    """Безопасный импорт гайда через эндпоинт webhook ingest."""
+    url = f"{BACKEND_URL}/api/webhook/ingest"
+    body = json.dumps({
+        "guide_key": guide_key,
+        "category_key": cat_key,
+        "category_title": cat_title,
+        "title": title,
+        "text": text,
+        "photo": photos[:15],
+        "video": videos[:10],
+        "document": [],
+        "sort_order": sort_order
+    }).encode("utf-8")
+    req = urllib.request.Request(url, data=body, method="POST")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("X-Ingest-Token", "dev_ingest_token")
+    try:
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body_str = e.read().decode("utf-8", errors="ignore")
+        return {"error": f"HTTP {e.code}: {body_str[:200]}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def backend_login() -> str:
-    """Логин в админку, возвращает JWT-токен."""
+    """Логин в админку, возвращает JWT-токен (или пустую строку при сбое)."""
     url = f"{BACKEND_URL}/api/auth/admin-login"
     body = json.dumps({"username": ADMIN_USER, "password": ADMIN_PASS}).encode("utf-8")
     req = urllib.request.Request(url, data=body, method="POST")
@@ -263,13 +291,13 @@ def backend_login() -> str:
         with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             token = data.get("token")
-            if not token:
-                print(f"  Логин ответил без токена: {data}")
-                sys.exit(1)
-            return token
+            return token or ""
     except urllib.error.HTTPError as e:
-        print(f"  Ошибка логина (HTTP {e.code}): {e.read().decode('utf-8', errors='ignore')[:200]}")
-        sys.exit(1)
+        print(f"  Внимание: Ошибка логина (HTTP {e.code}): {e.read().decode('utf-8', errors='ignore')[:100]}")
+        return ""
+    except Exception as e:
+        print(f"  Внимание: Ошибка логина: {e}")
+        return ""
 
 
 def sanitize_discord_markdown(text: str) -> str:
@@ -697,15 +725,16 @@ def main():
                     photos, videos = extract_media_from_messages(msgs)
                     guide_key = f"discord_{tid}"
 
-                    result = backend_request(f"/api/admin/guide/{guide_key}", {
-                        "category_key": cat_key,
-                        "title": tname,
-                        "text": translated,
-                        "photo": photos[:15],
-                        "video": videos[:10],
-                        "document": [],
-                        "sort_order": ti,
-                    }, jwt, method="PUT")
+                    result = ingest_guide(
+                        guide_key=guide_key,
+                        cat_key=cat_key,
+                        cat_title=cat_name,
+                        title=tname,
+                        text=translated,
+                        photos=photos,
+                        videos=videos,
+                        sort_order=ti
+                    )
 
                     if "error" in result:
                         total_errors += 1
@@ -735,15 +764,16 @@ def main():
                     photos, videos = extract_media_from_messages([msg])
                     guide_key = f"discord_{mid}"
 
-                    result = backend_request(f"/api/admin/guide/{guide_key}", {
-                        "category_key": cat_key,
-                        "title": title,
-                        "text": translated,
-                        "photo": photos[:15],
-                        "video": videos[:10],
-                        "document": [],
-                        "sort_order": mi,
-                    }, jwt, method="PUT")
+                    result = ingest_guide(
+                        guide_key=guide_key,
+                        cat_key=cat_key,
+                        cat_title=cat_name,
+                        title=title,
+                        text=translated,
+                        photos=photos,
+                        videos=videos,
+                        sort_order=mi
+                    )
 
                     if "error" in result:
                         total_errors += 1

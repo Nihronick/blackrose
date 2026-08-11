@@ -9,6 +9,7 @@ router = APIRouter(prefix="/webhook", tags=["webhook"])
 class IngestGuidePayload(BaseModel):
     guide_key: str
     category_key: str
+    category_title: str | None = None
     title: str
     icon_url: str | None = None
     text: str = ""
@@ -32,6 +33,7 @@ async def webhook_ingest_guide(payload: IngestGuidePayload):
         key=payload.guide_key,
         data={
             "category_key": payload.category_key,
+            "category_title": payload.category_title,
             "title": payload.title,
             "icon_url": payload.icon_url,
             "text": payload.text,

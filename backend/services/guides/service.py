@@ -143,6 +143,16 @@ class GuideService:
                 except Exception as err:
                     logger.warning(f"Failed to create old_snapshot for history: {err}")
 
+            cat_key = data.get("category_key")
+            if cat_key:
+                cat_res = await session.execute(select(Category).where(Category.key == cat_key))
+                if not cat_res.scalar_one_or_none():
+                    cat_title = data.pop("category_title", cat_key.capitalize())
+                    session.add(Category(key=cat_key, title=cat_title, icon_url="", sort_order=99))
+                    await session.flush()
+                else:
+                    data.pop("category_title", None)
+
             stmt = insert(Guide).values(key=key, **data)
             stmt = stmt.on_conflict_do_update(
                 index_elements=[Guide.key],
