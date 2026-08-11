@@ -45,7 +45,11 @@ ADMIN_PASS = "Skasd123d"
 
 # Перевод названий категорий Discord → русский
 CATEGORY_NAME_MAP = {
-    # Точные совпадения (lowercase)
+    "shop": "Магазин",
+    "companion": "Компаньоны",
+    "companions": "Компаньоны",
+    "spirits": "Духи",
+    "spirit": "Духи",
     "skills": "Навыки",
     "familiars": "Фамильяры",
     "beginners": "Для новичков",
@@ -126,10 +130,12 @@ SKIP_CHANNELS = {
     "skill-chat", "personal-roles", "promotion-roles", "botsetup",
 }
 
+# Типы каналов которые содержат гайды
+GUIDE_CHANNEL_TYPES = {0, 5, 15}  # TEXT, ANNOUNCE, FORUM
+
 
 def slugify(text: str) -> str:
     """Генерация безопасного ASCII ключа."""
-    # Приводим к unicodedata NFKD формату для нормализации математических/жирных символов
     import unicodedata
     s = unicodedata.normalize('NFKD', str(text)).lower().strip()
     
@@ -150,6 +156,39 @@ def slugify(text: str) -> str:
             result += '_'
     result = re.sub(r'_+', '_', result).strip('_')
     return result[:55] or "general"
+
+
+DISCORD_API = "https://discord.com/api/v10"
+_ssl_ctx = ssl.create_default_context()
+
+HEADERS_DISCORD = {
+    "Authorization": "",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+# ── Игровой глоссарий для перевода ──
+GAMING_GLOSSARY = {
+    "Rift": "Рифт", "Golem": "Голем", "Slayer": "Охотник",
+    "Demon Metal": "Демон-Металл", "Sealed Shrine": "Запечатанное Святилище",
+    "Ancient Canine": "Древний Пёс", "Blue Abyss": "Синяя Бездна",
+    "Latent Power": "Латентная Сила", "Skill Stone": "Камень Навыка",
+    "Companion": "Компаньон", "Familiar": "Фамильяр",
+    "Promotion": "Продвижение", "Awakening": "Пробуждение",
+    "Stage": "Этап", "Orichalcum": "Орихалк",
+    "Dark Realm": "Тёмное Царство", "Soul Crystal": "Кристалл Души",
+    "Enhancement": "Усиление", "Transcendence": "Трансценденция",
+    "Artifact": "Артефакт", "Rune": "Руна",
+    "Constellation": "Созвездие", "Talent": "Талант",
+    "Ascension": "Вознесение", "Breakthrough": "Прорыв",
+    "Refine": "Улучшение", "Forge": "Ковка",
+    "Mount": "Маунт", "Pet": "Питомец",
+    "Dungeon": "Подземелье", "Raid": "Рейд",
+    "Boss": "Босс", "Arena": "Арена",
+    "Guild": "Гильдия", "Alliance": "Альянс",
+    "Territory": "Территория", "Siege": "Осада",
+}
 
 
 def discord_get(path: str) -> tuple[int, any]:
@@ -523,7 +562,7 @@ def main():
     )
     print(f"  Найдено {len(categories_raw)} категорий Discord")
 
-    # Построение дерева: Category → guide channels
+    # Построение дерева: Работаем СТРОГО с категорией Slayerpedia
     tree = []
     import unicodedata
     for cat in categories_raw:
@@ -531,38 +570,36 @@ def main():
         cat_name_clean = unicodedata.normalize('NFKD', cat_name).lower().strip()
         cat_id = cat["id"]
 
-        # Пропуск служебных категорий
-        if cat_name_clean in SKIP_CATEGORIES or any(sk in cat_name_clean for sk in ["mod", "staff", "ticket", "archive"]):
-            print(f"  [SKIP] {cat_name} (служебная)")
+        # РАБОТАЕМ ТОЛЬКО С SLAYERPEDIA! Всё остальное проходит мимо.
+        if "slayerpedia" not in cat_name_clean:
+            print(f"  [SKIP] {cat_name} (пропускаем, работаем только с Slayerpedia)")
             continue
 
-        # Найти дочерние каналы с гайдами
+        # Дочерние каналы из Slayerpedia (forum channels & text channels)
         child_channels = [
             c for c in channels
             if c.get("parent_id") == cat_id
             and c.get("type") in GUIDE_CHANNEL_TYPES
-            and c.get("name", "").lower() not in SKIP_CHANNELS
         ]
 
-        if not child_channels:
-            print(f"  [SKIP] {cat_name} (нет каналов с гайдами)")
-            continue
+        print(f"  🎯 НАЙДЕНА КАТЕГОРИЯ SLAYERPEDIA! Содержит {len(child_channels)} каналов-разделов.")
 
-        ru_name = translate_category_name(cat_name)
-        cat_key = slugify(cat_name)
+        # Каждый канал внутри Slayerpedia становится отдельной Категорией на сайте
+        for ch in child_channels:
+            ch_name = ch["name"].strip()
+            # Очистка и перевод названия канала (напр. "equipment" -> "Экипировка", "skills" -> "Навыки")
+            clean_ch_name = re.sub(r'^[^\w\s]+', '', ch_name).strip()
+            ru_cat_name = translate_category_name(clean_ch_name or ch_name)
+            cat_key = slugify(clean_ch_name or ch_name)
 
-        tree.append({
-            "discord_id": cat_id,
-            "name_en": cat_name,
-            "name_ru": ru_name,
-            "key": cat_key,
-            "channels": child_channels,
-        })
-        ch_types = ", ".join(
-            f"{c['name']}({'F' if c['type']==15 else 'T'})"
-            for c in child_channels[:5]
-        )
-        print(f"  [{cat_name}] -> \"{ru_name}\" ({len(child_channels)} каналов: {ch_types})")
+            tree.append({
+                "discord_id": ch["id"],
+                "name_en": ch_name,
+                "name_ru": ru_cat_name,
+                "key": cat_key,
+                "channels": [ch],
+            })
+            print(f"    ├─ Раздел: «{ch_name}» -> Категория сайта: «{ru_cat_name}» (/{cat_key})")
 
     if not tree:
         print("\n  Нет категорий с гайдами для импорта!")
