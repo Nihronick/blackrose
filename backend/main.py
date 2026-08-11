@@ -18,6 +18,7 @@ from api import admin, public, webhook_ingest
 from api.guilds import router as guilds_router
 from api.discord_sync import router as discord_sync_router
 from api.users_admin import router as users_admin_router
+from api.media import router as media_router
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from core.rate_limit import limiter

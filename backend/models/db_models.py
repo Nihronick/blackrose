@@ -259,3 +259,19 @@ class SystemSetting(Base):
     )
 
 
+class MediaCache(Base):
+    __tablename__ = "media_cache"
+    id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    canonical_url: Mapped[str] = mapped_column(Text, unique=True, index=True, nullable=False)
+    file_hash: Mapped[str] = mapped_column(Text, unique=True, index=True, nullable=False)
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
+    mime_type: Mapped[str] = mapped_column(Text, nullable=False)
+    media_type: Mapped[str] = mapped_column(Text, nullable=False)  # 'emoji', 'photo', 'video'
+    local_path: Mapped[str] = mapped_column(Text, nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
+    data_base64: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+
+

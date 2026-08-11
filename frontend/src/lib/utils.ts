@@ -38,6 +38,13 @@ export function parseVideo(url: string | null) {
 export function normalizeUrl(url: string | null | undefined): string {
   if (!url || typeof url !== 'string') return url || ''
 
+  // Backend permanent media URLs (/api/media/...)
+  if (url.startsWith('/api/media/') || url.startsWith('api/media/')) {
+    const apiBase = (import.meta.env.VITE_API_URL || 'https://nihronick-blackrose-backend.hf.space').replace(/\/$/, '')
+    const path = url.startsWith('/') ? url : `/${url}`
+    return `${apiBase}${path}`
+  }
+
   // Old guide media links may still point to jsDelivr gh-pages snapshot.
   // Prefer local public assets to avoid CDN blocks (403/ORB) and keep paths deploy-stable.
   const legacyCdnPrefix = 'https://cdn.jsdelivr.net/gh/Nihronick/blackrose@gh-pages/assets/'
