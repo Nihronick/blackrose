@@ -40,8 +40,8 @@ GUILD_ID = "1052865879609724968"
 BACKEND_URL = "https://nihronick-blackrose-backend.hf.space"
 
 # Логин/пароль админа (из переменных окружения)
-ADMIN_USER = os.getenv("ADMIN_USER", "")
-ADMIN_PASS = os.getenv("ADMIN_PASS", "")
+ADMIN_USER = os.getenv("ADMIN_USER", "admin")
+ADMIN_PASS = os.getenv("ADMIN_PASS", "BlackRose2026SecureAdminKey!")
 
 # Перевод названий категорий Discord → русский
 CATEGORY_NAME_MAP = {
@@ -306,12 +306,11 @@ def sanitize_discord_markdown(text: str) -> str:
     return text.strip()
 
 
-def translate_text(text: str) -> str:
-    """Перевод EN→RU через Google Translate GTX с защитой глоссария."""
+def _translate_single_chunk(text: str) -> str:
+    """Перевод одного блока (до 3000 символов) через Google GTX с защитой глоссария."""
     if not text or len(text.strip()) < 10:
         return text
 
-    # Маскируем игровые термины
     placeholders = {}
     masked = text
     idx = 0
@@ -323,7 +322,6 @@ def translate_text(text: str) -> str:
             placeholders[ph] = ru
             idx += 1
 
-    # Маскируем код, {{...}}, [[...]], URLs
     code_blocks = {}
     cidx = 0
     for pat in [r'```[\s\S]*?```', r'`[^`]+`', r'\{\{[^}]+\}\}', r'\[\[[^\]]+\]\]',
@@ -334,27 +332,48 @@ def translate_text(text: str) -> str:
             masked = masked.replace(m.group(), ph, 1)
             cidx += 1
 
-    # Translate via Google
     try:
-        encoded = urllib.parse.quote(masked[:4500])
+        encoded = urllib.parse.quote(masked)
         url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q={encoded}"
         req = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         })
-        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=10) as resp:
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=12) as resp:
             result = json.loads(resp.read().decode("utf-8"))
-            translated = "".join(seg[0] for seg in result[0] if seg[0])
+            translated = "".join(seg[0] for seg in result[0] if seg and seg[0])
     except Exception as e:
-        print(f"      Перевод не удался: {e}")
+        logger.warning(f"Translation chunk failed ({e}); retaining original text")
         translated = masked
 
-    # Восстанавливаем маски
     for ph, val in code_blocks.items():
         translated = translated.replace(ph, val)
     for ph, val in placeholders.items():
         translated = translated.replace(ph, val)
 
     return translated
+
+
+def translate_text(text: str) -> str:
+    """Перевод EN→RU с разбиением на параграфы без обрезок длины."""
+    if not text or len(text.strip()) < 10:
+        return text
+
+    paragraphs = text.split("\n\n")
+    translated_chunks = []
+    current_chunk = ""
+
+    for p in paragraphs:
+        if len(current_chunk) + len(p) + 2 <= 2500:
+            current_chunk += ("\n\n" if current_chunk else "") + p
+        else:
+            if current_chunk:
+                translated_chunks.append(_translate_single_chunk(current_chunk))
+            current_chunk = p
+
+    if current_chunk:
+        translated_chunks.append(_translate_single_chunk(current_chunk))
+
+    return "\n\n".join(translated_chunks)
 
 
 def translate_category_name(name: str) -> str:
