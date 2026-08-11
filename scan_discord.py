@@ -101,59 +101,55 @@ CATEGORY_NAME_MAP = {
     "bot commands": "Команды ботов",
 }
 
-# Категории Discord которые нужно ПРОПУСТИТЬ (служебные)
+# Категории Discord которые нужно ВКЛЮЧИТЬ (гайды и ресурсы)
+GUIDE_CATEGORIES_WHITELIST = {
+    "slayerpedia", "resources", "start here", "beginners", "beginner",
+    "guides", "skills", "familiars", "slayer playbook", "stage",
+    "character", "promotions", "suit recommendation", "builds", "tips",
+}
+
+# Категории Discord которые нужно ПРОПУСТИТЬ (служебные и болталки)
 SKIP_CATEGORIES = {
     "moderation", "mod", "staff", "admin", "administration",
     "voice channels", "voice", "vc", "bot", "bots", "bot commands",
-    "logs", "server logs", "welcome", "rules", "info",
-    "tickets", "support", "archive", "archived",
+    "logs", "server logs", "tickets", "support", "archive", "archived",
+    "slayer general", "slayer off topic", "slayer bot", "support tickets",
+    "event-archive", "all about you",
 }
 
-# Каналы Discord которые нужно ПРОПУСТИТЬ
+# Каналы Discord которые нужно ПРОПУСТИТЬ (флуд)
 SKIP_CHANNELS = {
     "rules", "welcome", "announcements", "general", "off-topic",
     "bot-commands", "bot-spam", "media", "memes", "introductions",
-    "suggestions", "feedback", "report", "apply",
+    "suggestions", "feedback", "report", "apply", "art", "muted-only",
+    "cookie-jar", "food-and-animals", "flex", "true-salt", "cake-help-chat",
+    "skill-chat", "personal-roles", "promotion-roles", "botsetup",
 }
 
-# Типы каналов которые содержат гайды
-GUIDE_CHANNEL_TYPES = {0, 5, 15}  # TEXT, ANNOUNCE, FORUM
 
-# ═══════════════════════════════════════════════════════════════
-# 🔧  ЛОГИКА
-# ═══════════════════════════════════════════════════════════════
-
-DISCORD_API = "https://discord.com/api/v10"
-_ssl_ctx = ssl.create_default_context()
-
-HEADERS_DISCORD = {
-    "Authorization": "",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Accept-Language": "en-US,en;q=0.9",
-}
-
-# ── Игровой глоссарий для перевода ──
-GAMING_GLOSSARY = {
-    "Rift": "Рифт", "Golem": "Голем", "Slayer": "Охотник",
-    "Demon Metal": "Демон-Металл", "Sealed Shrine": "Запечатанное Святилище",
-    "Ancient Canine": "Древний Пёс", "Blue Abyss": "Синяя Бездна",
-    "Latent Power": "Латентная Сила", "Skill Stone": "Камень Навыка",
-    "Companion": "Компаньон", "Familiar": "Фамильяр",
-    "Promotion": "Продвижение", "Awakening": "Пробуждение",
-    "Stage": "Этап", "Orichalcum": "Орихалк",
-    "Dark Realm": "Тёмное Царство", "Soul Crystal": "Кристалл Души",
-    "Enhancement": "Усиление", "Transcendence": "Трансценденция",
-    "Artifact": "Артефакт", "Rune": "Руна",
-    "Constellation": "Созвездие", "Talent": "Талант",
-    "Ascension": "Вознесение", "Breakthrough": "Прорыв",
-    "Refine": "Улучшение", "Forge": "Ковка",
-    "Mount": "Маунт", "Pet": "Питомец",
-    "Dungeon": "Подземелье", "Raid": "Рейд",
-    "Boss": "Босс", "Arena": "Арена",
-    "Guild": "Гильдия", "Alliance": "Альянс",
-    "Territory": "Территория", "Siege": "Осада",
-}
+def slugify(text: str) -> str:
+    """Генерация безопасного ASCII ключа."""
+    # Приводим к unicodedata NFKD формату для нормализации математических/жирных символов
+    import unicodedata
+    s = unicodedata.normalize('NFKD', str(text)).lower().strip()
+    
+    translit = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+        'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    }
+    result = ""
+    for ch in s:
+        if ch in translit:
+            result += translit[ch]
+        elif ch.isalnum() or ch in '-_':
+            result += ch
+        elif ch.isspace():
+            result += '_'
+    result = re.sub(r'_+', '_', result).strip('_')
+    return result[:55] or "general"
 
 
 def discord_get(path: str) -> tuple[int, any]:
@@ -529,12 +525,14 @@ def main():
 
     # Построение дерева: Category → guide channels
     tree = []
+    import unicodedata
     for cat in categories_raw:
         cat_name = cat["name"].strip()
+        cat_name_clean = unicodedata.normalize('NFKD', cat_name).lower().strip()
         cat_id = cat["id"]
 
         # Пропуск служебных категорий
-        if cat_name.lower() in SKIP_CATEGORIES:
+        if cat_name_clean in SKIP_CATEGORIES or any(sk in cat_name_clean for sk in ["mod", "staff", "ticket", "archive"]):
             print(f"  [SKIP] {cat_name} (служебная)")
             continue
 
