@@ -670,14 +670,18 @@ def main():
     # ── 2. Создание категорий на сайте ──
     print(f"\n[2/4] Создание {len(tree)} категорий на сайте...")
     for idx, cat in enumerate(tree):
-        result = backend_request(f"/api/admin/category/{cat['key']}", {
-            "title": cat["name_ru"],
-            "icon_url": "",
+        result = backend_request("/api/webhook/ingest", {
+            "guide_key": f"cat_init_{cat['key']}",
+            "category_key": cat["key"],
+            "category_title": cat["name_ru"],
+            "title": f"Инициализация {cat['name_ru']}",
+            "text": "Категория инициализирована",
             "sort_order": idx,
-        }, jwt, method="PUT")
+        }, method="POST")
         if "error" in result:
             print(f"  Ошибка: {cat['name_ru']}: {result['error'][:100]}")
         else:
+            print(f"  [{idx+1}/{len(tree)}] {cat['name_ru']} -> /{cat['key']}")
             print(f"  [{idx+1}/{len(tree)}] {cat['name_ru']} -> /{cat['key']}")
 
     # ── 3. Импорт всех гайдов ──
