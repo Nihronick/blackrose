@@ -185,7 +185,18 @@ class StealthDiscordWorker:
                         msgs.sort(key=lambda x: x.get("id", ""))
                         starter_msg = msgs[0]
                         combined_content = "\n\n".join(m.get("content", "") for m in msgs if m.get("content"))
+                        all_attachments = []
+                        for m in msgs:
+                            all_attachments.extend(m.get("attachments", []))
+                            for emb in m.get("embeds", []):
+                                if isinstance(emb, dict):
+                                    if emb.get("image") and emb["image"].get("url"):
+                                        all_attachments.append({"url": emb["image"]["url"]})
+                                    if emb.get("thumbnail") and emb["thumbnail"].get("url"):
+                                        all_attachments.append({"url": emb["thumbnail"]["url"]})
+
                         starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                        starter_msg["attachments"] = all_attachments
                         res = await discord_sync_service.process_discord_message(
                             starter_msg, parent_channel_id=parent_id or channel_id, custom_title=thread_name
                         )

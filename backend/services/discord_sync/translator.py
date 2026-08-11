@@ -92,6 +92,18 @@ def sanitize_discord_markdown(text: str) -> tuple[str, list[str], list[str]]:
     # Replace channel mentions
     text = re.sub(r'<#\d+>', '', text)
 
+    # Convert Discord internal links [Label](https://discord.com/channels/guild/target_id) -> [[discord_target_id|Label]]
+    text = re.sub(
+        r'\[(.*?)\]\(https?://(?:ptb\.|canary\.)?discord\.com/channels/\d+/(\d+)(?:/\d+)?\)',
+        r'[[discord_\2|\1]]',
+        text
+    )
+    text = re.sub(
+        r'https?://(?:ptb\.|canary\.)?discord\.com/channels/\d+/(\d+)(?:/\d+)?',
+        r'[[discord_\1]]',
+        text
+    )
+
     # Replace Discord custom animated/static emojis <:name:id> or <a:name:id>
     def replace_custom_emoji(match: re.Match) -> str:
         is_anim, name, emoji_id = match.groups()
