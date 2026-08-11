@@ -164,7 +164,13 @@ marked.use({
 // ── Иконки {{ICON_NAME}} ──────────────────────────────────────
 
 function replaceIcons(text: string, iconResolver: (name: string) => string) {
-  return text.replace(/\{\{([^{}]+)\}\}/g, (_, rawName) => {
+  // Clean up any untranslated placeholders like __CODE21__ or КОД29 or XZYBLOCK29XZY
+  let cleanText = text
+    .replace(/__(?:CODE|КОД)\d+__/gi, '')
+    .replace(/XZYBLOCK\d+XZY/gi, '')
+    .replace(/КОД\d+/gi, '')
+
+  return cleanText.replace(/\{\{([^{}]+)\}\}/g, (_, rawName) => {
     const name = String(rawName || '').trim()
     if (!name) return ''
 
@@ -176,7 +182,7 @@ function replaceIcons(text: string, iconResolver: (name: string) => string) {
     const cleanName = name.replace(/^icon:/i, '').trim()
     const url = iconResolver(cleanName) || iconResolver(name)
     if (!url) {
-      return `<span class="px-1.5 py-0.5 rounded-md bg-muted/50 text-[10px] font-bold text-muted-foreground border border-border/50 inline-flex items-center gap-1 leading-none mx-0.5 select-none" data-icon-name="${name}" style="vertical-align:middle;cursor:help;">⚠️ ${name}</span>`
+      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[11px] font-semibold mx-0.5 select-none" data-icon-name="${cleanName}" style="vertical-align:middle;">✨ ${cleanName}</span>`
     }
     return `<img src="${url}" alt="${cleanName}" title="${cleanName}" data-icon-name="${cleanName}" class="inline-icon" width="20" height="20" style="vertical-align:middle;margin:0 4px;cursor:pointer;">`
   })

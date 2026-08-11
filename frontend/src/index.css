@@ -393,3 +393,76 @@ textarea:-webkit-autofill:active {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Guide Content Typography & Spoilers ── */
+.guide-content-wrapper h1 {
+  @apply text-2xl sm:text-3xl font-black text-rose-300 uppercase tracking-tight mt-8 mb-4 border-b border-rose-500/20 pb-2 font-heading;
+}
+
+.guide-content-wrapper h2 {
+  @apply text-xl sm:text-2xl font-black text-foreground uppercase tracking-tight mt-8 mb-3 border-l-4 border-rose-500 pl-3 py-0.5 bg-rose-500/5 rounded-r-xl font-heading;
+}
+
+.guide-content-wrapper h3 {
+  @apply text-base sm:text-lg font-bold text-rose-200 uppercase tracking-wide mt-6 mb-2 font-heading;
+}
+
+.guide-content-wrapper h4 {
+  @apply text-sm sm:text-base font-semibold text-amber-300 uppercase tracking-wider mt-4 mb-2;
+}
+
+.guide-content-wrapper p {
+  @apply text-sm sm:text-base leading-relaxed text-foreground/90 my-3 font-normal;
+}
+
+.guide-content-wrapper strong,
+.guide-content-wrapper b {
+  @apply font-bold text-rose-300;
+}
+
+.guide-content-wrapper ul {
+  @apply my-4 space-y-2 list-none pl-0;
+}
+
+.guide-content-wrapper li {
+  @apply relative pl-5 text-sm sm:text-base text-foreground/90 leading-relaxed;
+}
+
+.guide-content-wrapper li::before {
+  content: "♦";
+  @apply absolute left-0 top-0 text-rose-500 text-xs font-black select-none;
+}
+
+.guide-content-wrapper hr {
+  @apply my-8 border-0 h-px bg-gradient-to-r from-transparent via-rose-500/40 to-transparent;
+}
+
+/* Premium Spoiler Accordions (<details>) */
+.guide-content-wrapper details {
+  @apply my-5 overflow-hidden rounded-2xl border border-rose-500/30 bg-card/80 backdrop-blur-xl shadow-lg transition-all duration-300;
+}
+
+.guide-content-wrapper details[open] {
+  @apply border-rose-500/60 ring-1 ring-rose-500/20 shadow-rose-950/40;
+}
+
+.guide-content-wrapper summary {
+  @apply flex items-center gap-2 px-5 py-3 text-sm font-bold uppercase tracking-wider text-rose-300 cursor-pointer bg-rose-950/30 hover:bg-rose-900/40 transition-colors select-none list-none;
+}
+
+.guide-content-wrapper summary::-webkit-details-marker {
+  display: none;
+}
+
+.guide-content-wrapper summary::before {
+  content: "▶";
+  @apply inline-block text-[10px] text-rose-400 transition-transform duration-200;
+}
+
+.guide-content-wrapper details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.guide-content-wrapper details > *:not(summary) {
+  @apply p-4 pt-2 text-sm text-foreground/90 leading-relaxed border-t border-rose-500/10 bg-card/40;
+}

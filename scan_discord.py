@@ -355,7 +355,7 @@ def _translate_single_chunk(text: str) -> str:
     for pat in [r'```[\s\S]*?```', r'`[^`]+`', r'\{\{[^}]+\}\}', r'\[\[[^\]]+\]\]',
                 r'https?://\S+', r'<details>[\s\S]*?</details>']:
         for m in re.finditer(pat, masked):
-            ph = f"__CODE{cidx}__"
+            ph = f"XZYBLOCK{cidx}XZY"
             code_blocks[ph] = m.group()
             masked = masked.replace(m.group(), ph, 1)
             cidx += 1
@@ -374,9 +374,9 @@ def _translate_single_chunk(text: str) -> str:
         translated = masked
 
     for ph, val in code_blocks.items():
-        translated = translated.replace(ph, val)
+        translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
     for ph, val in placeholders.items():
-        translated = translated.replace(ph, val)
+        translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
 
     return translated
 
