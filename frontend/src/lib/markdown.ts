@@ -237,6 +237,9 @@ function normalizeDiscordMarkdown(text: string, iconResolver: (name: string) => 
 const PURIFY_CONFIG = {
   ALLOWED_TAGS: [
     'div',
+    'p',
+    'details',
+    'summary',
     'strong',
     'em',
     's',
