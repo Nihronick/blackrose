@@ -307,8 +307,8 @@ def sanitize_discord_markdown(text: str) -> str:
     # Упоминания
     text = re.sub(r'<@&?\d+>', '', text)
     text = re.sub(r'<#\d+>', '', text)
-    # Кастом-эмодзи → {{icon:name}}
-    text = re.sub(r'<a?:(\w+):\d+>', r'{{icon:\1}}', text)
+    # Кастом-эмодзи Discord -> прямая ссылка на CDN Discord!
+    text = re.sub(r'<a?:(\w+):(\d+)>', r'{{https://cdn.discordapp.com/emojis/\2.webp?size=48&quality=lossless}}', text)
     # Спойлеры → <details>
     text = re.sub(r'\|\|(.+?)\|\|', r'<details><summary>Спойлер</summary>\1</details>', text, flags=re.DOTALL)
     # Внутренние Discord-ссылки → [[discord_id|label]]
