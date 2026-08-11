@@ -17,7 +17,7 @@ def mock_lifespan():
 
 def test_sanitize_discord_markdown():
     raw = "Check this <@123456> build in <#987654>! <:blitz_gold:1001> ||Secret tip inside||"
-    cleaned = sanitize_discord_markdown(raw)
+    cleaned, photos, videos = sanitize_discord_markdown(raw)
     
     assert "<@123456>" not in cleaned
     assert "<#987654>" not in cleaned

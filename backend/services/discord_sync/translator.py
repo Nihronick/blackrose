@@ -4,39 +4,126 @@ from core.logging import get_logger
 
 logger = get_logger("blackrose.services.discord_sync.translator")
 
-def sanitize_discord_markdown(text: str) -> str:
+# Comprehensive BlackRose / Gaming Glossary Map
+GAMING_GLOSSARY: dict[str, str] = {
+    "Rift": "Рифт",
+    "Golems": "Големы",
+    "Golem": "Голем",
+    "Awakening": "Пробуждение",
+    "Sealed Shrine": "Запечатанное Святилище",
+    "Latent Power": "Скрытая Сила",
+    "Latent": "Латентка",
+    "Skill Stone": "Камень Навыка",
+    "Skill Stones": "Камни Навыков",
+    "Companion": "Компаньон",
+    "Companions": "Компаньоны",
+    "Promotion": "Промоушен",
+    "Promotions": "Промоушены",
+    "Stage": "Стадия",
+    "Stages": "Стадии",
+    "Rage": "Ярость",
+    "Rave": "Рейв",
+    "Slayer": "Слейер",
+    "Slayers": "Слейеры",
+    "Demon Metal": "Демон-Металл",
+    "Ancient Canine": "Древний Клык",
+    "Dark Nox": "Дарк Нокс",
+    "Black Mythril": "Черный Мифрил",
+    "Warfrost": "Варфрост",
+    "Blue Abyss": "Голубая Бездна",
+    "Orichalcum": "Орихалк",
+    "Eldenwood": "Элденвуд",
+    "Eisenhart": "Эйзенхарт",
+    "Gigarock": "Гигарок",
+    "Dragonos": "Драгонос",
+    "Ragnablood": "Рагнаблод",
+    "Infinaut": "Инфинавт",
+    "Meloning": "Мелонинг",
+    "Soul": "Душа",
+    "Souls": "Души",
+}
+
+
+def sanitize_discord_markdown(text: str) -> tuple[str, list[str], list[str]]:
     """
     Cleans raw Discord formatting:
     - User/Channel/Role mentions: <@123>, <#123>, <@&123>
     - Spoilers: ||spoiler|| -> <details>
-    - Custom emojis: <:name:id> -> {{icon:name}}
+    - Custom emojis: <:name:id> -> {{https://cdn.discordapp.com/emojis/id.png}}
+    - Extracts photo & video URLs
+    Returns tuple: (cleaned_text, photo_urls, video_urls)
     """
     if not text:
-        return ""
+        return "", [], []
+
+    photos: list[str] = []
+    videos: list[str] = []
+
+    # 1. Extract YouTube and Video URLs
+    yt_matches = re.findall(
+        r'(https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]+)',
+        text
+    )
+    for yt_url in yt_matches:
+        if yt_url not in videos:
+            videos.append(yt_url)
+
+    direct_videos = re.findall(
+        r'(https?://[^\s]+\.(?:mp4|webm|mov|mkv))',
+        text,
+        flags=re.IGNORECASE
+    )
+    for v_url in direct_videos:
+        if v_url not in videos:
+            videos.append(v_url)
+
+    # 2. Extract Direct Image Links in text
+    img_matches = re.findall(
+        r'(https?://[^\s]+\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s]*)?)',
+        text,
+        flags=re.IGNORECASE
+    )
+    for img_url in img_matches:
+        if not img_url.startswith("https://cdn.discordapp.com/emojis/") and img_url not in photos:
+            photos.append(img_url)
 
     # Replace user & role mentions
     text = re.sub(r'<@&?\d+>', '', text)
     # Replace channel mentions
     text = re.sub(r'<#\d+>', '', text)
-    
-    # Replace custom emojis <:emoji_name:123456789>
-    text = re.sub(r'<a?:([a-zA-Z0-9_]+):\d+>', r'{{icon:\1}}', text)
+
+    # Replace Discord custom animated/static emojis <:name:id> or <a:name:id>
+    def replace_custom_emoji(match: re.Match) -> str:
+        is_anim, name, emoji_id = match.groups()
+        return f"{{{{icon:{name}}}}}"
+
+    text = re.sub(r'<(a)?:([a-zA-Z0-9_]+):(\d+)>', replace_custom_emoji, text)
+
+    # Convert video links in text to clean embeds
+    for v_url in videos:
+        if "youtube.com" in v_url or "youtu.be" in v_url:
+            text = text.replace(v_url, f"\n\n[Video: YouTube]({v_url})\n\n")
 
     # Replace Discord spoilers ||text||
-    text = re.sub(r'\|\|(.*?)\|\|', r'<details class="my-2 p-2 bg-muted/30 rounded-xl"><summary className="cursor-pointer font-bold text-xs">Спойлер</summary><div className="pt-2">\1</div></details>', text, flags=re.DOTALL)
+    text = re.sub(
+        r'\|\|(.*?)\|\|',
+        r'<details class="my-2 p-2 bg-muted/30 rounded-xl"><summary className="cursor-pointer font-bold text-xs">Спойлер</summary><div className="pt-2">\1</div></details>',
+        text,
+        flags=re.DOTALL
+    )
 
-    return text.strip()
+    return text.strip(), photos, videos
 
 
 async def translate_en_to_ru(text: str) -> str:
     """
-    Translates English guide markdown to Russian using free translation API with fallback.
-    Preserves Markdown links, code blocks, and {{icon:...}} syntax.
+    Translates English guide markdown to Russian using translation API with gaming terminology protection.
+    Preserves Markdown links, code blocks, and {{...}} syntax.
     """
     if not text or len(text.strip()) == 0:
         return text
 
-    # Extract & protect code blocks and {{icon:...}} tags from translation
+    # Extract & protect code blocks, URLs, and {{...}} tags from translation
     placeholders: dict[str, str] = {}
     counter = 0
 
@@ -51,8 +138,16 @@ async def translate_en_to_ru(text: str) -> str:
     masked_text = re.sub(r'```[\s\S]*?```', mask_match, text)
     # Mask inline code `...`
     masked_text = re.sub(r'`[^`]+`', mask_match, masked_text)
-    # Mask icon placeholders {{icon:...}}
-    masked_text = re.sub(r'\{\{icon:[^}]+\}\}', mask_match, masked_text)
+    # Mask icon / image placeholders {{...}}
+    masked_text = re.sub(r'\{\{[^}]+\}\}', mask_match, masked_text)
+    # Mask markdown URLs [label](url) -> protect url part
+    masked_text = re.sub(r'\]\((https?://[^\s)]+)\)', lambda m: f"]({mask_match(m)})", masked_text)
+
+    # Protect Gaming Glossary Terms before sending to translation
+    for term, ru_term in GAMING_GLOSSARY.items():
+        # Mask specific exact gaming terms
+        pattern = re.compile(rf'\b{re.escape(term)}\b')
+        masked_text = pattern.sub(lambda m: mask_match(m), masked_text)
 
     try:
         url = "https://translate.googleapis.com/translate_a/single"
@@ -82,7 +177,11 @@ async def translate_en_to_ru(text: str) -> str:
 
     # Restore masked placeholders
     for key, val in placeholders.items():
-        translated_text = translated_text.replace(key, val)
+        # If val was a gaming glossary term, substitute its authentic Russian term!
+        if val in GAMING_GLOSSARY:
+            translated_text = translated_text.replace(key, GAMING_GLOSSARY[val])
+        else:
+            translated_text = translated_text.replace(key, val)
 
     return translated_text
 

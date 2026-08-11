@@ -150,7 +150,7 @@ class DiscordSyncService:
                     return {"skipped": True, "reason": "content unchanged (hash match)"}
 
                 # 3. Clean Discord Markdown & handle media
-                clean_text = sanitize_discord_markdown(raw_content)
+                clean_text, extracted_photos, extracted_videos = sanitize_discord_markdown(raw_content)
 
                 # Download Discord attachments to local storage so URLs never expire
                 local_photos: list[str] = []
@@ -163,6 +163,8 @@ class DiscordSyncService:
                                 local_photos.append(saved_path)
                         except Exception as err:
                             logger.warning(f"Failed to import attachment {url}: {err}")
+
+                all_photos = list(dict.fromkeys(local_photos + extracted_photos))
 
                 # 4. Optional Translation (EN -> RU) & TL;DR block
                 final_text = clean_text
@@ -189,7 +191,8 @@ class DiscordSyncService:
                         category_key=category_key,
                         title=title,
                         text=final_text,
-                        photo=local_photos,
+                        photo=all_photos,
+                        video=extracted_videos,
                         views=0,
                     )
                     session.add(guide)
@@ -197,8 +200,10 @@ class DiscordSyncService:
                     guide.title = title
                     guide.text = final_text
                     guide.category_key = category_key
-                    if local_photos:
-                        guide.photo = local_photos
+                    if all_photos:
+                        guide.photo = all_photos
+                    if extracted_videos:
+                        guide.video = extracted_videos
 
                 # 7. Upsert into DiscordSyncedGuide tracker
                 if not existing_synced:
