@@ -39,9 +39,9 @@ GUILD_ID = "1052865879609724968"
 # Бэкенд BlackRose
 BACKEND_URL = "https://nihronick-blackrose-backend.hf.space"
 
-# Логин/пароль админа
-ADMIN_USER = "nihronn"
-ADMIN_PASS = "Skasd123d"
+# Логин/пароль админа (из переменных окружения)
+ADMIN_USER = os.getenv("ADMIN_USER", "")
+ADMIN_PASS = os.getenv("ADMIN_PASS", "")
 
 # Перевод названий категорий Discord → русский
 CATEGORY_NAME_MAP = {
