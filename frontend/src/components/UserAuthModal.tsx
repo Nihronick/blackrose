@@ -2,8 +2,8 @@ import { apiEmergencyLogin } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { useAppNavigation } from '@/lib/navigation'
 import { motion } from 'framer-motion'
-import { KeyRound, Shield, Sparkles, User, X } from 'lucide-react'
-import { type FC, useState } from 'react'
+import { CheckCircle2, KeyRound, Shield, Sparkles, User, X } from 'lucide-react'
+import { type FC, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -19,6 +19,28 @@ export const UserAuthModal: FC<UserAuthModalProps> = ({ onClose, onSuccess }) =>
   const [nickname, setNickname] = useState('')
   const [emergencyKey, setEmergencyKey] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const tgUser =
+    typeof window !== 'undefined'
+      ? (
+          window as unknown as {
+            Telegram?: {
+              WebApp?: {
+                initDataUnsafe?: { user?: { first_name?: string; username?: string; id?: number } }
+              }
+            }
+          }
+        ).Telegram?.WebApp?.initDataUnsafe?.user
+      : undefined
+
+  useEffect(() => {
+    const saved = localStorage.getItem('slayer_nickname')
+    if (saved) {
+      setNickname(saved)
+    } else if (tgUser) {
+      setNickname(tgUser.username || tgUser.first_name || '')
+    }
+  }, [tgUser])
 
   const handleSaveProfile = () => {
     const trimmed = nickname.trim()
@@ -91,10 +113,16 @@ export const UserAuthModal: FC<UserAuthModalProps> = ({ onClose, onSuccess }) =>
                 Профиль Игрока BlackRose
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Введите ваш никнейм в игре для подачи заявок в гильдии и сохранения локальных
-                настроек
+                Введите ваш никнейм в игре для подачи заявок в гильдии и сохранения настроек
               </p>
             </div>
+
+            {tgUser && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center gap-2 mb-4 text-xs font-bold text-emerald-400">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+                <span>Авторизован через Telegram: @{tgUser.username || tgUser.first_name}</span>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
@@ -186,7 +214,7 @@ export const UserAuthModal: FC<UserAuthModalProps> = ({ onClose, onSuccess }) =>
                   haptic.light()
                   setTab('user')
                 }}
-                className="w-full py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors text-center"
+                className="w-full py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors text-center font-bold"
               >
                 « Назад к профилю игрока
               </button>
