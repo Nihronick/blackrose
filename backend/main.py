@@ -41,7 +41,6 @@ async def lifespan(app: FastAPI):
     # Seeding
     await seed_initial_admin()
 
-    # Auto-start Discord Stealth Worker if saved token exists
     try:
         from services.discord_sync.service import discord_sync_service
         from services.discord_sync.worker import stealth_discord_worker
@@ -50,12 +49,24 @@ async def lifespan(app: FastAPI):
             logger.info("Auto-starting Discord Stealth Worker with saved token...")
             await stealth_discord_worker.start(saved_token)
     except Exception as err:
-        logger.warning(f"Failed to auto-start Discord worker on startup: {err}")
+        logger.warning(f"Failed to auto-start Discord worker: {err}")
+
+    # Auto-start Telegram Bot Runner for /start & inline WebApp
+    try:
+        from services.telegram_bot.bot_runner import telegram_bot_runner
+        await telegram_bot_runner.start()
+    except Exception as err:
+        logger.warning(f"Failed to start Telegram Bot Runner: {err}")
 
     yield
 
     # Shutdown
     logger.info("Shutting down system...")
+    try:
+        from services.telegram_bot.bot_runner import telegram_bot_runner
+        await telegram_bot_runner.stop()
+    except Exception:
+        pass
     await cache_service.close()
     await close_pool()
     await http_client.close()
