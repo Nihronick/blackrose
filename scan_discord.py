@@ -370,7 +370,7 @@ def _translate_single_chunk(text: str) -> str:
             result = json.loads(resp.read().decode("utf-8"))
             translated = "".join(seg[0] for seg in result[0] if seg and seg[0])
     except Exception as e:
-        logger.warning(f"Translation chunk failed ({e}); retaining original text")
+        print(f"      [WARN] Перевод фрагмента пропущен ({e}), сохраняем оригинал")
         translated = masked
 
     for ph, val in code_blocks.items():
