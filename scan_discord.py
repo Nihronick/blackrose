@@ -46,12 +46,26 @@ ADMIN_PASS = "Skasd123d"
 # Перевод названий категорий Discord → русский
 CATEGORY_NAME_MAP = {
     "shop": "Магазин",
-    "companion": "Компаньоны",
-    "companions": "Компаньоны",
-    "spirits": "Духи",
-    "spirit": "Духи",
+    "equipment": "Экипировка",
+    "character": "Персонаж",
     "skills": "Навыки",
+    "companion": "Компаньоны и Фамильяры",
+    "companions": "Компаньоны и Фамильяры",
     "familiars": "Фамильяры",
+    "spirit": "Духи",
+    "spirits": "Духи",
+    "adventure": "Приключения",
+    "stage": "Этапы",
+    "beginner-guide": "Гайд для начинающих",
+    "early-game-promotions": "Продвижение (Early Game)",
+    "mid-game-promotions": "Продвижение (Mid Game)",
+    "late-game-promotions": "Продвижение (Late Game)",
+    "story-lore": "Сюжет и Лор",
+    "slayer-playbook": "Книга Охотника",
+    "bannibal-experiment-builds": "Экспериментальные Билды",
+    "promotion-and-suit-recommendation": "Рекомендации Костюмов",
+    "event-help": "Помощь по Ивентам",
+    "slayerpedia-index": "Индекс Охотникпедии",
     "beginners": "Для новичков",
     "beginner": "Для новичков",
     "beginners guide": "Гайды для новичков",
@@ -580,6 +594,7 @@ def main():
             c for c in channels
             if c.get("parent_id") == cat_id
             and c.get("type") in GUIDE_CHANNEL_TYPES
+            and c.get("name", "").lower() not in {"slayerpedia-feedback", "slayerpedia-change-log", "disclaimer"}
         ]
 
         print(f"  🎯 НАЙДЕНА КАТЕГОРИЯ SLAYERPEDIA! Содержит {len(child_channels)} каналов-разделов.")
