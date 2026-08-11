@@ -312,17 +312,16 @@ def sanitize_discord_markdown(text: str) -> str:
     # Спойлеры → <details>
     text = re.sub(r'\|\|(.+?)\|\|', r'<details><summary>Спойлер</summary>\1</details>', text, flags=re.DOTALL)
     # Внутренние Discord-ссылки → [[discord_id|label]]
-    def _convert_discord_link(m):
-        url = m.group(1)
-        label = m.group(2) if m.group(2) else "Ссылка"
+    def _convert_markdown_discord_link(m):
+        label = m.group(1).strip() or "Ссылка на гайд"
+        url = m.group(2)
         parts = url.rstrip("/").split("/")
-        if len(parts) >= 2:
-            ch_id = parts[-1] if len(parts) >= 1 else parts[-2]
-            return f"[[discord_{ch_id}|{label}]]"
-        return label
+        ch_id = parts[-1] if len(parts) >= 1 else parts[-2]
+        return f"[[discord_{ch_id}|{label}]]"
+
     text = re.sub(
         r'\[([^\]]*)\]\((https?://(?:discord\.com|discordapp\.com)/channels/[^)]+)\)',
-        lambda m: _convert_discord_link(type('M', (), {'group': lambda s, i: [None, m.group(2), m.group(1)][i]})()),
+        _convert_markdown_discord_link,
         text
     )
     # Простые Discord channel links без markdown

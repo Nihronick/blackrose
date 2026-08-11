@@ -466,3 +466,16 @@ textarea:-webkit-autofill:active {
 .guide-content-wrapper details > *:not(summary) {
   @apply p-4 pt-2 text-sm text-foreground/90 leading-relaxed border-t border-rose-500/10 bg-card/40;
 }
+
+/* Custom Markdown Table Styling */
+.guide-content-wrapper table {
+  @apply w-full my-6 border-collapse rounded-2xl overflow-hidden border border-rose-500/20 shadow-xl bg-card/60;
+}
+
+.guide-content-wrapper th {
+  @apply bg-rose-950/60 text-rose-300 font-bold uppercase text-xs tracking-wider px-4 py-3 text-left border-b border-rose-500/30;
+}
+
+.guide-content-wrapper td {
+  @apply px-4 py-3 text-sm text-foreground/90 border-b border-rose-500/10 hover:bg-rose-500/5 transition-colors;
+}

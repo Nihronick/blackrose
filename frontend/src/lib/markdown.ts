@@ -260,7 +260,7 @@ function normalizeDiscordMarkdown(text: string, iconResolver: (name: string) => 
     .replace(/<a?:([A-Za-z0-9_]+):(\d{17,19})>/g, (_m, name, id) => {
       const byName = iconResolver(name) ? name : ''
       if (byName) return `{{${byName}}}`
-      return `{{icon_${id}}}`
+      return `{{https://cdn.discordapp.com/emojis/${id}.webp?size=48&quality=lossless}}`
     })
     .replace(/(^|[^\w]):([A-Za-z][A-Za-z0-9_]*):(?!\/\/)/g, '$1{{$2}}')
 }
@@ -280,6 +280,7 @@ const PURIFY_CONFIG = {
     'code',
     'h2',
     'h3',
+    'h4',
     'blockquote',
     'li',
     'ol',
@@ -287,6 +288,13 @@ const PURIFY_CONFIG = {
     'a',
     'img',
     'video',
+    'iframe',
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'th',
+    'td',
     'br',
     'hr',
     'span',
@@ -308,6 +316,9 @@ const PURIFY_CONFIG = {
     'controls',
     'preload',
     'referrerpolicy',
+    'allow',
+    'allowfullscreen',
+    'frameborder',
     'viewBox',
     'fill',
     'stroke',
