@@ -17,12 +17,12 @@ if (HB_API_KEY) {
     apiKey: HB_API_KEY,
     environment: import.meta.env.PROD ? 'production' : 'development',
     reportData: import.meta.env.PROD,
-  })
-  window.addEventListener('error', (e) => {
-    if (e.error) Honeybadger.notify(e.error)
-  })
-  window.addEventListener('unhandledrejection', (e) => {
-    Honeybadger.notify(e.reason instanceof Error ? e.reason : new Error(String(e.reason)))
+    ignoreErrors: [
+      'ERR_INSUFFICIENT_RESOURCES',
+      'Failed to fetch dynamically imported module',
+      'ResizeObserver loop limit exceeded',
+      'NetworkError when attempting to fetch resource',
+    ],
   })
 }
 

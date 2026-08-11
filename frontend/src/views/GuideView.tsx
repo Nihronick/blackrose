@@ -64,8 +64,11 @@ export const GuideView: FC<GuideViewProps> = ({
     await refetch()
   })
 
+  const recordedKeyRef = useRef<string | null>(null)
+
   useEffect(() => {
-    if (guide) {
+    if (guide && recordedKeyRef.current !== guideKey) {
+      recordedKeyRef.current = guideKey
       onGuideLoaded?.(guide)
       recordView(guideKey)
       document.title = `${guide.title} | BlackRose`
