@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Edit2, Shield, Target, Trophy, UserPlus, Users } from 'lucide-react'
+import { Edit2, Settings, Shield, Target, Trophy, UserPlus, Users } from 'lucide-react'
 import type { FC } from 'react'
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
 
 import { GuildJoinModal } from '@/components/GuildJoinModal'
 import { GuildProfileModal } from '@/components/GuildProfileModal'
+import { GuildSettingsModal } from '@/components/GuildSettingsModal'
 import { Button } from '@/components/ui/button'
 import { apiGuildRoster, apiMyGuildProfile } from '@/lib/api'
 import { getRankIcon, getRankName } from '@/lib/rankIcons'
@@ -20,6 +20,7 @@ interface GuildRosterViewProps {
 export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [joinModalOpen, setJoinModalOpen] = useState(false)
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['guild-roster', guildId],
@@ -39,6 +40,7 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
 
   const isMyGuild = myProfile?.guild_id === guildId
   const canJoin = !myProfile
+  const canManage = isMyGuild && (myProfile?.guild_role === 'guild_master' || myProfile?.guild_role === 'guild_vice_master')
 
   // Row color logic
   const getRowClass = (status: string) => {
@@ -130,6 +132,17 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
           </div>
 
           <div className="flex items-center gap-3">
+            {canManage && guild && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-10 px-4 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                onClick={() => setSettingsModalOpen(true)}
+              >
+                <Settings className="size-4 mr-2" />
+                Изменить Логотип
+              </Button>
+            )}
             {isMyGuild && (
               <Button
                 size="sm"
@@ -162,7 +175,7 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
                   `*** 🛡️ Гильдия: ${guild?.name || 'BlackRose'} ***`,
                   `📊 Всего бойцов: ${stats?.member_count || roster.length} | Сумма рангов: ${stats?.total_ranks || 0} | Средний ранг: ${(stats?.average_rank || 0).toFixed(1)}`,
                   '```text',
-                  ...roster.map((m, i) => `${i + 1}. [Ранг ${m.rank}] ${m.nickname} (Этап: ${m.stage || '-'}) — ${m.guild_role === 'guild_master' ? 'Мастер' : m.guild_role === 'guild_vice_master' ? 'Вице' : 'Участник'}`),
+                  ...roster.map((m, i) => `${i + 1}. [${getRankName(m.rank)} #${m.rank}] ${m.nickname} (Этап: ${m.stage || '-'}) — ${m.guild_role === 'guild_master' ? 'Мастер' : m.guild_role === 'guild_vice_master' ? 'Вице' : 'Участник'}`),
                   '```'
                 ]
                 navigator.clipboard.writeText(lines.join('\n'))
@@ -228,7 +241,7 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
                   <tr>
                     <th className="px-6 py-4 rounded-tl-[24px]">#</th>
                     <th className="px-6 py-4">Участник</th>
-                    <th className="px-6 py-4">Ранг</th>
+                    <th className="px-6 py-4">Промоушн / Ранг</th>
                     <th className="px-6 py-4">Стадия</th>
                     <th className="px-6 py-4">Роль</th>
                     <th className="px-6 py-4 rounded-tr-[24px]">Статус</th>
@@ -251,8 +264,11 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
                             decoding="async"
                             className="size-6 object-contain drop-shadow-md"
                           />
-                          <span className="font-black bg-background/50 px-2 py-0.5 rounded-lg border border-border/10 shadow-sm">
-                            {member.rank}
+                          <span className="font-bold text-foreground">
+                            {getRankName(member.rank)}
+                          </span>
+                          <span className="text-[11px] font-black bg-background/60 px-1.5 py-0.5 rounded text-muted-foreground border border-border/10">
+                            #{member.rank}
                           </span>
                         </div>
                       </td>
@@ -274,6 +290,10 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
 
       {joinModalOpen && guild && (
         <GuildJoinModal guild={guild} onClose={() => setJoinModalOpen(false)} />
+      )}
+
+      {settingsModalOpen && guild && (
+        <GuildSettingsModal guild={guild} onClose={() => setSettingsModalOpen(false)} />
       )}
     </div>
   )

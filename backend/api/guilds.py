@@ -119,6 +119,16 @@ async def remove_status(status_id: int, user=Depends(require_user)):
     await guild_service.remove_custom_status(status_id)
     return {"ok": True}
 
+@router.put("/guilds/{guild_id}/settings")
+async def update_guild_settings(guild_id: int, body: GuildIn, user=Depends(require_user)):
+    can = await guild_service.can_manage_guild(user["id"], guild_id)
+    if not can:
+        raise HTTPException(status_code=403, detail="Только Мастер или Вице-мастер гильдии может изменять настройки и логотип")
+    ok = await guild_service.update_guild(guild_id, body)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Гильдия не найдена")
+    return {"ok": True}
+
 # Admin-only endpoints
 @router.post("/admin/guilds")
 async def create_guild(body: GuildIn, user=Depends(require_admin)):

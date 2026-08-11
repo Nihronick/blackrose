@@ -49,6 +49,27 @@ class GuildService:
             )
             members = res.scalars().all()
             
+            # Auto-seed sample roster if guild has 0 members
+            if not members and g.id == 1:
+                sample_members = [
+                    GuildMember(guild_id=1, user_id=1001, nickname="Bannibal", rank=21, stage=1750, guild_role="guild_master", status="active", approved=True),
+                    GuildMember(guild_id=1, user_id=1002, nickname="Ellie", rank=20, stage=1620, guild_role="guild_vice_master", status="active", approved=True),
+                    GuildMember(guild_id=1, user_id=1003, nickname="Zeke", rank=19, stage=1580, guild_role="guild_member", status="active", approved=True),
+                    GuildMember(guild_id=1, user_id=1004, nickname="Kael", rank=18, stage=1500, guild_role="guild_member", status="active", approved=True),
+                    GuildMember(guild_id=1, user_id=1005, nickname="Aria", rank=17, stage=1420, guild_role="guild_member", status="active", approved=True),
+                    GuildMember(guild_id=1, user_id=1006, nickname="Dante", rank=16, stage=1350, guild_role="guild_member", status="active", approved=True),
+                    GuildMember(guild_id=1, user_id=1007, nickname="Vesper", rank=15, stage=1290, guild_role="guild_member", status="trial", approved=True),
+                ]
+                session.add_all(sample_members)
+                await session.commit()
+                
+                res = await session.execute(
+                    select(GuildMember)
+                    .where(GuildMember.guild_id == guild_id)
+                    .order_by(GuildMember.rank.desc())
+                )
+                members = res.scalars().all()
+
             total_ranks = sum(m.rank for m in members)
             member_count = len(members)
             average_rank = total_ranks / member_count if member_count > 0 else 0
@@ -56,7 +77,9 @@ class GuildService:
             return {
                 "guild": {
                     "id": g.id,
-                    "name": g.name
+                    "name": g.name,
+                    "icon_url": g.icon_url,
+                    "description": g.description
                 },
                 "stats": {
                     "total_ranks": total_ranks,
