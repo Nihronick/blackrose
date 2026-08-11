@@ -387,7 +387,10 @@ const LOWER_ICONS = Object.fromEntries(
 
 export const getGameIconUrl = (name: string): string | null => {
   if (!name) return null
-  const cleanName = name.replace(/^icon[|_:]/i, '').trim()
+  const cleanName = name
+    .replace(/^icon[|_:]/i, '')
+    .replace(/^(leg_|log_|fam_|class_|skill_|item_)/i, '')
+    .trim()
 
   const direct =
     GAME_ICONS[name] ||
@@ -396,6 +399,22 @@ export const getGameIconUrl = (name: string): string | null => {
     LOWER_ICONS[cleanName.toLowerCase()]
 
   if (direct) return direct
+
+  // Custom Discord Emojis Aliases
+  const ALIASES: Record<string, string> = {
+    goldendraco: 'dragonos',
+    blitzgold: 'orr6',
+    blitzgoldnmy: 'orr12',
+    crave: 'rave',
+    wb: 'warrior_burn',
+    sala: 'sala',
+    loar: 'loar',
+    radon: 'radon',
+  }
+  const aliasTarget = ALIASES[cleanName.toLowerCase()]
+  if (aliasTarget && LOWER_ICONS[aliasTarget]) {
+    return LOWER_ICONS[aliasTarget]
+  }
 
   // Fuzzy normalized search
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')

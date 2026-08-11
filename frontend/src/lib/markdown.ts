@@ -173,11 +173,12 @@ function replaceIcons(text: string, iconResolver: (name: string) => string) {
       return `<img src="${normalized}" alt="icon" title="icon" class="inline-icon" width="20" height="20" style="vertical-align:middle;margin:0 4px;cursor:pointer;">`
     }
 
-    const url = iconResolver(name)
+    const cleanName = name.replace(/^icon:/i, '').trim()
+    const url = iconResolver(cleanName) || iconResolver(name)
     if (!url) {
       return `<span class="px-1.5 py-0.5 rounded-md bg-muted/50 text-[10px] font-bold text-muted-foreground border border-border/50 inline-flex items-center gap-1 leading-none mx-0.5 select-none" data-icon-name="${name}" style="vertical-align:middle;cursor:help;">⚠️ ${name}</span>`
     }
-    return `<img src="${url}" alt="${name}" title="${name}" data-icon-name="${name}" class="inline-icon" width="20" height="20" style="vertical-align:middle;margin:0 4px;cursor:pointer;">`
+    return `<img src="${url}" alt="${cleanName}" title="${cleanName}" data-icon-name="${cleanName}" class="inline-icon" width="20" height="20" style="vertical-align:middle;margin:0 4px;cursor:pointer;">`
   })
 }
 
