@@ -77,10 +77,10 @@ describe('formatGuideText - Markdown formatting', () => {
     expect(result).toContain('class="inline-icon"')
   })
 
-  it('shows warning for unknown icons', () => {
+  it('shows warning badge for unknown icons', () => {
     const iconResolver = () => ''
     const result = formatGuideText('{{unknown}}', { iconResolver })
-    expect(result).toContain('⚠️')
+    expect(result).toContain('data-icon-name="unknown"')
     expect(result).toContain('unknown')
   })
 
@@ -151,11 +151,10 @@ describe('formatGuideText - Markdown formatting', () => {
     expect(result).toContain('/assets/image.png')
   })
 
-  it('handles video inline syntax [Video: description](url)', () => {
+  it('handles video inline syntax [Video: Demo](url)', () => {
     const result = formatGuideText('[Video: Demo](https://example.com/video.mp4)')
-    // The actual output sanitizes the div wrapper differently
-    expect(result).toContain('Demo')
     expect(result).toContain('video')
+    expect(result).toContain('https://example.com/video.mp4')
   })
 
   it('handles complex nested formatting', () => {
@@ -184,7 +183,7 @@ describe('formatGuideText - Markdown formatting', () => {
 
   it('provides default empty string for missing icon resolver', () => {
     const result = formatGuideText('{{icon}}')
-    expect(result).toContain('⚠️')
+    expect(result).toContain('data-icon-name="icon"')
   })
 
   it('includes cyberlink SVG arrow', () => {

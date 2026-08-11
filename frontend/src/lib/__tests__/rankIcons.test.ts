@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { getRankIcon, getRankName, MAX_RANK, MIN_RANK, RANK_PROMOTIONS } from '../rankIcons'
 
 describe('rankIcons utility', () => {
-  it('should have 21 rank promotion entries', () => {
-    expect(Object.keys(RANK_PROMOTIONS).length).toBe(21)
+  it('should have 26 rank promotion entries', () => {
+    expect(Object.keys(RANK_PROMOTIONS).length).toBe(26)
     expect(MIN_RANK).toBe(1)
-    expect(MAX_RANK).toBe(21)
+    expect(MAX_RANK).toBe(26)
   })
 
   it('should map rank 1 to Stone', () => {
@@ -13,9 +13,9 @@ describe('rankIcons utility', () => {
     expect(getRankIcon(1)).toContain('Stone.png')
   })
 
-  it('should map rank 21 to Infinaut', () => {
-    expect(getRankName(21)).toBe('Infinaut')
-    expect(getRankIcon(21)).toContain('Infinaut.png')
+  it('should map rank 26 to Auroite', () => {
+    expect(getRankName(26)).toBe('Auroite')
+    expect(getRankIcon(26)).toContain('Ether.png')
   })
 
   it('should fallback to Stone for unknown ranks', () => {
