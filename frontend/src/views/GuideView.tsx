@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { type FC, Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -52,7 +51,11 @@ export const GuideView: FC<GuideViewProps> = ({
   )
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const { data: guide, refetch } = useSuspenseQuery({
+  const {
+    data: guide,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['guide', guideKey],
     queryFn: () => apiFetch<GuideType>(`/api/guide/${guideKey}`),
     staleTime: 120_000,
@@ -74,6 +77,19 @@ export const GuideView: FC<GuideViewProps> = ({
       document.title = `${guide.title} | BlackRose`
     }
   }, [guide, guideKey, onGuideLoaded, recordView])
+
+  if (isLoading || !guide) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden container-padding pt-6 pb-24 space-y-6 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="h-10 w-48 rounded-2xl bg-rose-500/10 border border-rose-500/20" />
+          <div className="h-8 w-24 rounded-xl bg-amber-500/10 border border-amber-500/20" />
+        </div>
+        <div className="h-44 rounded-3xl rose-bento-card border-rose-500/20 bg-card/60" />
+        <div className="h-64 rounded-3xl rose-bento-card border-rose-500/20 bg-card/40" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col bg-background rose-mesh-bg">

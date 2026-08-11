@@ -28,20 +28,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    const msg = error?.message || ''
-    if (
-      msg.includes('dynamically imported module') ||
-      msg.includes('Loading chunk') ||
-      msg.includes('Failed to fetch')
-    ) {
-      const pageHasAlreadyBeenReloaded =
-        sessionStorage.getItem('page_reloaded_for_chunk_error') === 'true'
-      if (!pageHasAlreadyBeenReloaded) {
-        sessionStorage.setItem('page_reloaded_for_chunk_error', 'true')
-        window.location.reload()
-        return
-      }
-    }
     if (import.meta.env.VITE_HONEYBADGER_API_KEY) {
       Honeybadger.notify(error, { context: { react: info.componentStack } })
     }

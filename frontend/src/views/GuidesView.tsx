@@ -7,7 +7,7 @@ import { haptic } from '@/lib/haptic'
 import { BookOpen, ChevronRight, Eye } from '@/lib/icons'
 import type { CategoryGuidesResponse } from '@/lib/types'
 import { normalizeUrl } from '@/lib/utils'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { type FC, type SyntheticEvent, useMemo, useRef, useState } from 'react'
 
@@ -39,7 +39,11 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
   const categoryKey = category?.key
   const [sortBy, setSortBy] = useState<'default' | 'views' | 'title'>('default')
 
-  const { data: categoryData, refetch } = useSuspenseQuery({
+  const {
+    data: categoryData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['category-guides', categoryKey],
     queryFn: () => apiFetch<CategoryGuidesResponse>(`/api/category/${categoryKey}`),
     staleTime: 60_000,
@@ -66,6 +70,22 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
   }
 
   const { pullY, refreshing } = usePullToRefresh(scrollRef, handleRefresh)
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden container-padding pt-6 pb-24 space-y-6 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="h-10 w-48 rounded-2xl bg-rose-500/10 border border-rose-500/20" />
+          <div className="h-8 w-24 rounded-xl bg-amber-500/10 border border-amber-500/20" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="h-44 rounded-3xl rose-bento-card border-rose-500/20 bg-card/60" />
+          <div className="h-44 rounded-3xl rose-bento-card border-rose-500/20 bg-card/60" />
+          <div className="h-44 rounded-3xl rose-bento-card border-rose-500/20 bg-card/60" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="view-scroll flex-1 overflow-y-auto relative z-0" ref={scrollRef}>
