@@ -707,14 +707,16 @@ def main():
     # ── 2. Создание категорий на сайте ──
     print(f"\n[2/4] Создание {len(tree)} категорий на сайте...")
     for idx, cat in enumerate(tree):
-        result = backend_request("/api/webhook/ingest", {
-            "guide_key": f"cat_init_{cat['key']}",
-            "category_key": cat["key"],
-            "category_title": cat["name_ru"],
-            "title": f"Инициализация {cat['name_ru']}",
-            "text": "Категория инициализирована",
-            "sort_order": idx,
-        }, method="POST")
+        result = ingest_guide(
+            guide_key=f"cat_init_{cat['key']}",
+            cat_key=cat["key"],
+            cat_title=cat["name_ru"],
+            title=f"Инициализация {cat['name_ru']}",
+            text="Категория инициализирована",
+            photos=[],
+            videos=[],
+            sort_order=idx
+        )
         if "error" in result:
             print(f"  Ошибка: {cat['name_ru']}: {result['error'][:100]}")
         else:
