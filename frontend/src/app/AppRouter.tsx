@@ -6,35 +6,56 @@ import { useAppStore } from '@/store'
 import { type FC, Suspense, lazy } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
-// Lazy views
-const HomeView = lazy(() => import('@/views/HomeView').then((m) => ({ default: m.HomeView })))
-const CategoriesView = lazy(() =>
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  componentImport: () => Promise<{ default: T } | { [key: string]: T }>
+) {
+  return lazy(async () => {
+    const pageHasAlreadyBeenReloaded = sessionStorage.getItem('page_reloaded_for_chunk_error') === 'true'
+
+    try {
+      const component = await componentImport()
+      sessionStorage.setItem('page_reloaded_for_chunk_error', 'false')
+      return 'default' in component ? component : { default: Object.values(component)[0] as T }
+    } catch (error) {
+      if (!pageHasAlreadyBeenReloaded) {
+        sessionStorage.setItem('page_reloaded_for_chunk_error', 'true')
+        window.location.reload()
+        return new Promise(() => {})
+      }
+      throw error
+    }
+  })
+}
+
+// Lazy views with chunk retry protection
+const HomeView = lazyWithRetry(() => import('@/views/HomeView').then((m) => ({ default: m.HomeView })))
+const CategoriesView = lazyWithRetry(() =>
   import('@/views/CategoriesView').then((m) => ({ default: m.CategoriesView }))
 )
-const FavoritesView = lazy(() =>
+const FavoritesView = lazyWithRetry(() =>
   import('@/views/FavoritesView').then((m) => ({ default: m.FavoritesView }))
 )
-const GuideView = lazy(() => import('@/views/GuideView').then((m) => ({ default: m.GuideView })))
-const GuidesView = lazy(() => import('@/views/GuidesView').then((m) => ({ default: m.GuidesView })))
-const GuildsView = lazy(() => import('@/views/GuildsView').then((m) => ({ default: m.GuildsView })))
-const GuildRosterView = lazy(() =>
+const GuideView = lazyWithRetry(() => import('@/views/GuideView').then((m) => ({ default: m.GuideView })))
+const GuidesView = lazyWithRetry(() => import('@/views/GuidesView').then((m) => ({ default: m.GuidesView })))
+const GuildsView = lazyWithRetry(() => import('@/views/GuildsView').then((m) => ({ default: m.GuildsView })))
+const GuildRosterView = lazyWithRetry(() =>
   import('@/views/GuildRosterView').then((m) => ({ default: m.GuildRosterView }))
 )
-const HistoryView = lazy(() =>
+const HistoryView = lazyWithRetry(() =>
   import('@/views/HistoryView').then((m) => ({ default: m.HistoryView }))
 )
-const TagResultsView = lazy(() =>
+const TagResultsView = lazyWithRetry(() =>
   import('@/views/TagResultsView').then((m) => ({ default: m.TagResultsView }))
 )
-const AdminView = lazy(() => import('@/views/AdminView').then((m) => ({ default: m.AdminView })))
-const RoadmapView = lazy(() =>
+const AdminView = lazyWithRetry(() => import('@/views/AdminView').then((m) => ({ default: m.AdminView })))
+const RoadmapView = lazyWithRetry(() =>
   import('@/views/RoadmapView').then((m) => ({ default: m.RoadmapView }))
 )
-const ProfileView = lazy(() =>
+const ProfileView = lazyWithRetry(() =>
   import('@/views/ProfileView').then((m) => ({ default: m.ProfileView }))
 )
-const SearchView = lazy(() => import('@/views/SearchView').then((m) => ({ default: m.SearchView })))
-const BuildPlannerView = lazy(() =>
+const SearchView = lazyWithRetry(() => import('@/views/SearchView').then((m) => ({ default: m.SearchView })))
+const BuildPlannerView = lazyWithRetry(() =>
   import('@/views/BuildPlannerView').then((m) => ({ default: m.BuildPlannerView }))
 )
 
