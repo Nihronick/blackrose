@@ -17,6 +17,9 @@ import { Toaster, toast } from 'sonner'
 const AdminLoginModal = lazy(() =>
   import('@/components/AdminLoginModal').then((m) => ({ default: m.AdminLoginModal }))
 )
+const UserAuthModal = lazy(() =>
+  import('@/components/UserAuthModal').then((m) => ({ default: m.UserAuthModal }))
+)
 const QuickNav = lazy(() => import('@/components/QuickNav').then((m) => ({ default: m.QuickNav })))
 const OnboardingView = lazy(() =>
   import('@/views/OnboardingView').then((m) => ({ default: m.OnboardingView }))
@@ -337,11 +340,9 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
         {sheet.item?.type === 'login' && (
           <Suspense fallback={null}>
-            <AdminLoginModal
+            <UserAuthModal
               onSuccess={() => {
-                setIsAdmin(true)
                 sheet.dismiss()
-                push({ type: 'admin' })
               }}
               onClose={sheet.dismiss}
             />

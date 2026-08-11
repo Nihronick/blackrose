@@ -218,15 +218,39 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
               Сумма рангов
             </div>
           </div>
-          <div className="glass-card rounded-2xl p-4 md:p-5 relative overflow-hidden group">
-            <div className="absolute top-2 right-2 p-2 bg-blue-500/10 rounded-xl">
-              <Target className="size-4 md:size-5 text-blue-500" />
+          <div className="glass-card rounded-2xl p-4 md:p-5 relative overflow-hidden group border-rose-500/20 bg-gradient-to-br from-rose-500/5 to-transparent">
+            {stats && stats.average_rank > 0 && (
+              <div className="absolute top-2 right-2 p-1 bg-rose-500/10 rounded-xl flex items-center gap-1.5 border border-rose-500/20">
+                <img
+                  src={getRankIcon(Math.max(1, Math.min(26, Math.round(stats.average_rank))))}
+                  alt={getRankName(Math.max(1, Math.min(26, Math.round(stats.average_rank))))}
+                  className="size-5 object-contain"
+                />
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-2 md:mt-3">
+              {stats && stats.average_rank > 0 ? (
+                <img
+                  src={getRankIcon(Math.max(1, Math.min(26, Math.round(stats.average_rank))))}
+                  alt={getRankName(Math.max(1, Math.min(26, Math.round(stats.average_rank))))}
+                  className="size-7 md:size-8 object-contain drop-shadow-md"
+                />
+              ) : (
+                <Target className="size-6 text-blue-500" />
+              )}
+              <div>
+                <div className="text-lg md:text-xl font-black text-rose-400 leading-tight truncate">
+                  {stats && stats.average_rank > 0
+                    ? getRankName(Math.max(1, Math.min(26, Math.round(stats.average_rank))))
+                    : '-'}
+                </div>
+                <div className="text-xs font-bold text-rose-300/80">
+                  #{(stats?.average_rank || 0).toFixed(1)}
+                </div>
+              </div>
             </div>
-            <div className="text-2xl md:text-3xl font-black mt-2 md:mt-4 text-blue-500">
-              {(stats?.average_rank || 0).toFixed(1)}
-            </div>
-            <div className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-muted-foreground mt-1">
-              Средний ранг
+            <div className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-muted-foreground mt-2">
+              Средний ранг гильдии
             </div>
           </div>
         </div>
