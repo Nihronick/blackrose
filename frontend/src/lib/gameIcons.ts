@@ -131,6 +131,9 @@ export const GAME_ICONS: Record<string, string> = {
   powerimpact: _url('skills/PowerImpact.png'),
   powerstrike: _url('skills/PowerStrike.png'),
   redlighting: _url('skills/RedLighting.png'),
+  redlightning: _url('skills/RedLighting.png'),
+  skillbook: _url('class_etc/afk.png'),
+  guide: _url('class_etc/adventure.png'),
   speedsword: _url('skills/SpeedSword.png'),
   strongcurrent: _url('skills/StrongCurrent.png'),
   supersonic: _url('skills/Supersonic.png'),
@@ -383,13 +386,24 @@ const LOWER_ICONS = Object.fromEntries(
 )
 
 export const getGameIconUrl = (name: string): string | null => {
-  // Пытаемся найти по имени или по icon_ID (поддержка icon_ и icon:)
-  const cleanName = name.replace(/^icon[|_:]/, '')
-  return (
+  if (!name) return null
+  const cleanName = name.replace(/^icon[|_:]/i, '').trim()
+
+  const direct =
     GAME_ICONS[name] ||
     LOWER_ICONS[name.toLowerCase()] ||
     GAME_ICONS[cleanName] ||
-    LOWER_ICONS[cleanName.toLowerCase()] ||
-    null
-  )
+    LOWER_ICONS[cleanName.toLowerCase()]
+
+  if (direct) return direct
+
+  // Fuzzy normalized search
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const target = norm(cleanName)
+
+  for (const [k, v] of Object.entries(LOWER_ICONS)) {
+    if (norm(k) === target) return v
+  }
+
+  return null
 }

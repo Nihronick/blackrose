@@ -8,7 +8,7 @@ import { useRecordView } from '@/hooks/queries'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { apiFetch } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { Eye } from '@/lib/icons'
+import { Eye, Film, ImageIcon, Maximize } from '@/lib/icons'
 import type { Guide as GuideType } from '@/lib/types'
 
 import { Breadcrumbs } from '@/components/Breadcrumbs'
@@ -147,6 +147,77 @@ export const GuideView: FC<GuideViewProps> = ({
               }}
             />
           </motion.div>
+
+          {/* Media Gallery (Photos & Videos) */}
+          {((guide.photo && guide.photo.length > 0) || (guide.video && guide.video.length > 0)) && (
+            <div className="mt-8 space-y-6">
+              {/* Photo Gallery */}
+              {guide.photo && guide.photo.length > 0 && (
+                <div className="rose-bento-card rounded-3xl p-5 sm:p-6 border-rose-500/20 shadow-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ImageIcon className="size-4 text-rose-400" />
+                    <h3 className="text-sm font-black uppercase tracking-wider text-foreground font-heading">
+                      Галерея скриншотов ({guide.photo.length})
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {guide.photo.map((imgUrl, idx) => (
+                      <div
+                        key={idx}
+                        className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card/50 aspect-video cursor-pointer hover:border-primary/50 transition-all shadow-md"
+                        onClick={() => setLightbox(imgUrl)}
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`Скриншот ${idx + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Maximize className="size-6 text-white drop-shadow" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Video Gallery */}
+              {guide.video && guide.video.length > 0 && (
+                <div className="rose-bento-card rounded-3xl p-5 sm:p-6 border-rose-500/20 shadow-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Film className="size-4 text-amber-400" />
+                    <h3 className="text-sm font-black uppercase tracking-wider text-foreground font-heading">
+                      Видеоинструкции ({guide.video.length})
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {guide.video.map((vUrl, idx) => {
+                      const isYoutube = vUrl.includes('youtube.com') || vUrl.includes('youtu.be')
+                      const embedUrl = isYoutube
+                        ? vUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+                        : vUrl
+                      return (
+                        <div key={idx} className="rounded-2xl overflow-hidden border border-border/40 bg-black/80 aspect-video shadow-md">
+                          {isYoutube ? (
+                            <iframe
+                              src={embedUrl}
+                              title={`Видео ${idx + 1}`}
+                              className="w-full h-full border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <video src={vUrl} controls className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Comments Section */}
           <div className="mt-12">
