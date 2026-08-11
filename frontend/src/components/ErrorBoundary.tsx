@@ -34,7 +34,8 @@ export class ErrorBoundary extends Component<Props, State> {
       msg.includes('Loading chunk') ||
       msg.includes('Failed to fetch')
     ) {
-      const pageHasAlreadyBeenReloaded = sessionStorage.getItem('page_reloaded_for_chunk_error') === 'true'
+      const pageHasAlreadyBeenReloaded =
+        sessionStorage.getItem('page_reloaded_for_chunk_error') === 'true'
       if (!pageHasAlreadyBeenReloaded) {
         sessionStorage.setItem('page_reloaded_for_chunk_error', 'true')
         window.location.reload()

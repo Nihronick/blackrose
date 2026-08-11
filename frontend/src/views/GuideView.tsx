@@ -222,10 +222,15 @@ export const GuideView: FC<GuideViewProps> = ({
                     {guide.video.map((vUrl, idx) => {
                       const isYoutube = vUrl.includes('youtube.com') || vUrl.includes('youtu.be')
                       const embedUrl = isYoutube
-                        ? vUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+                        ? vUrl
+                            .replace('watch?v=', 'embed/')
+                            .replace('youtu.be/', 'youtube.com/embed/')
                         : vUrl
                       return (
-                        <div key={idx} className="rounded-2xl overflow-hidden border border-border/40 bg-black/80 aspect-video shadow-md">
+                        <div
+                          key={idx}
+                          className="rounded-2xl overflow-hidden border border-border/40 bg-black/80 aspect-video shadow-md"
+                        >
                           {isYoutube ? (
                             <iframe
                               src={embedUrl}

@@ -9,8 +9,8 @@ import { GuildProfileModal } from '@/components/GuildProfileModal'
 import { GuildSettingsModal } from '@/components/GuildSettingsModal'
 import { Button } from '@/components/ui/button'
 import { apiGuildRoster, apiMyGuildProfile } from '@/lib/api'
-import { getRankIcon, getRankName } from '@/lib/rankIcons'
 import { haptic } from '@/lib/haptic'
+import { getRankIcon, getRankName } from '@/lib/rankIcons'
 import { toast } from 'sonner'
 
 interface GuildRosterViewProps {
@@ -40,7 +40,9 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
 
   const isMyGuild = myProfile?.guild_id === guildId
   const canJoin = !myProfile
-  const canManage = isMyGuild && (myProfile?.guild_role === 'guild_master' || myProfile?.guild_role === 'guild_vice_master')
+  const canManage =
+    isMyGuild &&
+    (myProfile?.guild_role === 'guild_master' || myProfile?.guild_role === 'guild_vice_master')
 
   // Row color logic
   const getRowClass = (status: string) => {
@@ -175,8 +177,11 @@ export const GuildRosterView: FC<GuildRosterViewProps> = ({ guildId }) => {
                   `*** 🛡️ Гильдия: ${guild?.name || 'BlackRose'} ***`,
                   `📊 Всего бойцов: ${stats?.member_count || roster.length} | Сумма рангов: ${stats?.total_ranks || 0} | Средний ранг: ${(stats?.average_rank || 0).toFixed(1)}`,
                   '```text',
-                  ...roster.map((m, i) => `${i + 1}. [${getRankName(m.rank)} #${m.rank}] ${m.nickname} (Этап: ${m.stage || '-'}) — ${m.guild_role === 'guild_master' ? 'Мастер' : m.guild_role === 'guild_vice_master' ? 'Вице' : 'Участник'}`),
-                  '```'
+                  ...roster.map(
+                    (m, i) =>
+                      `${i + 1}. [${getRankName(m.rank)} #${m.rank}] ${m.nickname} (Этап: ${m.stage || '-'}) — ${m.guild_role === 'guild_master' ? 'Мастер' : m.guild_role === 'guild_vice_master' ? 'Вице' : 'Участник'}`
+                  ),
+                  '```',
                 ]
                 navigator.clipboard.writeText(lines.join('\n'))
                 toast.success('Ростер скопирован в формате Discord!')

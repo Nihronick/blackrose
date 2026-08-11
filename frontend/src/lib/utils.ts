@@ -40,7 +40,9 @@ export function normalizeUrl(url: string | null | undefined): string {
 
   // Backend permanent media URLs (/api/media/...)
   if (url.startsWith('/api/media/') || url.startsWith('api/media/')) {
-    const apiBase = (import.meta.env.VITE_API_URL || 'https://nihronick-blackrose-backend.hf.space').replace(/\/$/, '')
+    const apiBase = (
+      import.meta.env.VITE_API_URL || 'https://nihronick-blackrose-backend.hf.space'
+    ).replace(/\/$/, '')
     const path = url.startsWith('/') ? url : `/${url}`
     return `${apiBase}${path}`
   }

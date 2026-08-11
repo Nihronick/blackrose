@@ -122,7 +122,8 @@ marked.use({
         normalizedHref.includes('youtube.com') ||
         normalizedHref.includes('youtu.be')
       ) {
-        const isYoutube = normalizedHref.includes('youtube.com') || normalizedHref.includes('youtu.be')
+        const isYoutube =
+          normalizedHref.includes('youtube.com') || normalizedHref.includes('youtu.be')
         const embedUrl = isYoutube
           ? normalizedHref.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
           : normalizedHref
@@ -191,7 +192,7 @@ marked.use({
 
 function replaceIcons(text: string, iconResolver: (name: string) => string) {
   // Clean up any untranslated placeholders like __CODE21__ or КОД29 or XZYBLOCK29XZY
-  let cleanText = text
+  const cleanText = text
     .replace(/__(?:CODE|КОД)\d+__/gi, '')
     .replace(/XZYBLOCK\d+XZY/gi, '')
     .replace(/КОД\d+/gi, '')

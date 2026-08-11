@@ -241,8 +241,10 @@ export const apiAdminCreateGuild = (data: {
 export const apiAdminUpdateGuild = (id: number, data: Record<string, unknown>) =>
   apiPut<unknown>(`/api/admin/guilds/${id}`, data)
 export const apiAdminDeleteGuild = (id: number) => apiDelete<unknown>(`/api/admin/guilds/${id}`)
-export const apiUpdateGuildSettings = (id: number, data: { name?: string; icon_url?: string; description?: string }) =>
-  apiPut<{ ok: boolean }>(`/api/guilds/${id}/settings`, data)
+export const apiUpdateGuildSettings = (
+  id: number,
+  data: { name?: string; icon_url?: string; description?: string }
+) => apiPut<{ ok: boolean }>(`/api/guilds/${id}/settings`, data)
 
 // --- Discord Sync API ---
 export const apiGetDiscordSyncStatus = () =>

@@ -75,6 +75,7 @@ def test_webhook_ingest_success(
         key="test-guide",
         data={
             "category_key": "test-category",
+            "category_title": None,
             "title": "Test Title",
             "icon_url": None,
             "text": "Hello World",

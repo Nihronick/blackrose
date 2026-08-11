@@ -16,7 +16,7 @@ export function useGuideLogic(guide: Guide | undefined) {
         if (!name) return ''
 
         // 1. Direct match in guide.icons
-        if (guide?.icons && guide.icons[name]) return normalizeUrl(guide.icons[name])
+        if (guide?.icons?.[name]) return normalizeUrl(guide.icons[name])
 
         // 2. Fuzzy match in guide.icons
         if (guide?.icons) {
