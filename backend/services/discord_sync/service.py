@@ -152,10 +152,12 @@ class DiscordSyncService:
                 # 3. Clean Discord Markdown & handle media
                 clean_text, extracted_photos, extracted_videos = sanitize_discord_markdown(raw_content)
 
-                # Download Discord attachments to local storage so URLs never expire
+                # Download Discord attachments and extracted photos to persistent storage so URLs never expire
                 local_photos: list[str] = []
-                for att in attachments:
-                    url = att.get("url") if isinstance(att, dict) else str(att)
+                attachments_urls = [att.get("url") if isinstance(att, dict) else str(att) for att in attachments if att]
+                raw_photos = list(dict.fromkeys(attachments_urls + extracted_photos))
+
+                for url in raw_photos:
                     if url:
                         try:
                             saved_path = await MediaService.import_from_url(url, folder=f"discord/{target_channel_id}")
@@ -163,14 +165,19 @@ class DiscordSyncService:
                                 local_photos.append(saved_path)
                         except Exception as err:
                             logger.warning(f"Failed to import attachment {url}: {err}")
-
-                all_photos = list(dict.fromkeys(local_photos + extracted_photos))
+                            local_photos.append(url)
 
                 # 4. Optional Translation (EN -> RU) & TL;DR block
                 final_text = clean_text
                 if auto_translate:
                     final_text = await translate_en_to_ru(clean_text)
                     final_text = generate_tldr_block(final_text)
+
+                # Resolve all inline Discord images, emojis, and attachment URLs inside final_text to persistent storage
+                try:
+                    final_text = await MediaService.resolve_inline_media(final_text, folder=f"discord/{target_channel_id}")
+                except Exception as res_err:
+                    logger.warning(f"Error resolving inline media: {res_err}")
 
                 # 5. Extract Title
                 first_line = clean_text.split("\n")[0].strip("# ").strip()
@@ -191,7 +198,7 @@ class DiscordSyncService:
                         category_key=category_key,
                         title=title,
                         text=final_text,
-                        photo=all_photos,
+                        photo=local_photos,
                         video=extracted_videos,
                         views=0,
                     )
@@ -200,8 +207,8 @@ class DiscordSyncService:
                     guide.title = title
                     guide.text = final_text
                     guide.category_key = category_key
-                    if all_photos:
-                        guide.photo = all_photos
+                    if local_photos:
+                        guide.photo = local_photos
                     if extracted_videos:
                         guide.video = extracted_videos
 
