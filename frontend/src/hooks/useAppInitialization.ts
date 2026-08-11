@@ -33,17 +33,15 @@ export const useAppInitialization = () => {
         )
       }
 
-      // Silent backend check for token validity
-      apiFetch<{ is_admin?: boolean }>('/api/auth/web-check')
+      // Silent backend check for Telegram / Token admin status
+      apiFetch<{ is_admin?: boolean; authorized?: boolean }>('/api/auth')
         .then((data) => {
           if (isCancelled) return
-          if (data?.is_admin === true) setIsAdmin(true)
-        })
-        .catch((e) => {
-          if (e.message?.includes('Сессия истекла') || e.message === 'ACCESS_DENIED') {
-            clearStoredToken()
+          if (data?.is_admin === true) {
+            setIsAdmin(true)
           }
         })
+        .catch(() => {})
     }
 
     const openDeepLink = async () => {
