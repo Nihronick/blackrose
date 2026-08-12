@@ -77,9 +77,6 @@ async def auth(request: Request):
         "is_guest": False,
     }
 
-class EmergencyLoginIn(PydanticBaseModel if 'PydanticBaseModel' in globals() else object):
-    pass
-
 @router.post("/auth/emergency-login")
 async def emergency_login(request: Request):
     import hmac

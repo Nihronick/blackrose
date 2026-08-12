@@ -1,4 +1,3 @@
-from core.config import settings
 from core.logging import get_logger
 from core.db import get_sessionmaker
 from models.db_models import Member
