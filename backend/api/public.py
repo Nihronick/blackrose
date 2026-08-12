@@ -116,9 +116,11 @@ async def telegram_webhook(request: Request):
 @router.get("/ping-bot")
 async def ping_bot():
     token = settings.BOT_TOKEN or ""
+    masked = (token[:10] + "..." + token[-4:]) if len(token) > 15 else "empty"
     return {
         "bot_token_set": len(token) > 20,
         "token_length": len(token),
+        "masked_token": masked,
         "frontend_url": settings.FRONTEND_URL
     }
 
