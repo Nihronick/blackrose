@@ -1,9 +1,9 @@
 import { type FC, type ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
 export type AppEnvironment = {
-  isTMA: false
-  isInTelegram: false
-  platform: 'web'
+  isTMA: boolean
+  isInTelegram: boolean
+  platform: string
   version: string
   colorScheme: 'light' | 'dark'
 }
@@ -11,17 +11,35 @@ export type AppEnvironment = {
 const AppEnvContext = createContext<AppEnvironment | null>(null)
 
 export const detectEnvironment = (): AppEnvironment => {
+  const tg =
+    typeof window !== 'undefined'
+      ? (
+          window as unknown as {
+            Telegram?: {
+              WebApp?: {
+                initData?: string
+                platform?: string
+                version?: string
+                colorScheme?: 'light' | 'dark'
+              }
+            }
+          }
+        ).Telegram?.WebApp
+      : undefined
+  const hasInitData = Boolean(tg?.initData && tg.initData.length > 0)
+  const isTMA = Boolean(tg && (hasInitData || (tg.platform && tg.platform !== 'unknown')))
+
   const prefersDark =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-color-scheme: dark)').matches
 
   return {
-    isTMA: false,
-    isInTelegram: false,
-    platform: 'web',
-    version: '1.0',
-    colorScheme: prefersDark ? 'dark' : 'light',
+    isTMA: isTMA,
+    isInTelegram: isTMA,
+    platform: tg?.platform || 'web',
+    version: tg?.version || '8.0',
+    colorScheme: tg?.colorScheme || (prefersDark ? 'dark' : 'light'),
   }
 }
 
