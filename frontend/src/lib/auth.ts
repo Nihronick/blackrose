@@ -84,14 +84,37 @@ export function getStoredUser(): O.Option<User> {
 }
 
 export function getTelegramInitData(): string {
-  if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
-    return window.Telegram.WebApp.initData
+  if (typeof window !== 'undefined') {
+    const tgData = window.Telegram?.WebApp?.initData
+    if (tgData && tgData.length > 0) {
+      return tgData
+    }
+    // Fallback: Extract tgWebAppData directly from URL hash or query string
+    try {
+      const hash = window.location.hash.substring(1)
+      const search = window.location.search.substring(1)
+      const hashParams = new URLSearchParams(hash)
+      const searchParams = new URLSearchParams(search)
+      const rawParam = hashParams.get('tgWebAppData') || searchParams.get('tgWebAppData')
+      if (rawParam) {
+        return decodeURIComponent(rawParam)
+      }
+    } catch {}
   }
   return ''
 }
 
 export function hasTelegramWebApp(): boolean {
-  return typeof window !== 'undefined' && !!window.Telegram?.WebApp
+  if (typeof window === 'undefined') return false
+  const w = window as unknown as Record<string, unknown>
+  const loc = window.location
+  return Boolean(
+    (w.Telegram as { WebApp?: unknown })?.WebApp ||
+      w.TelegramWebviewProxy ||
+      w.TelegramGameProxy ||
+      loc.hash.includes('tgWebAppData') ||
+      loc.search.includes('tgWebAppData')
+  )
 }
 
 export function isTelegram(): boolean {

@@ -11,23 +11,35 @@ export type AppEnvironment = {
 const AppEnvContext = createContext<AppEnvironment | null>(null)
 
 export const detectEnvironment = (): AppEnvironment => {
-  const tg =
-    typeof window !== 'undefined'
-      ? (
-          window as unknown as {
-            Telegram?: {
-              WebApp?: {
-                initData?: string
-                platform?: string
-                version?: string
-                colorScheme?: 'light' | 'dark'
-              }
-            }
+  const w = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>) : {}
+  const tg = (
+    w.Telegram as
+      | {
+          WebApp?: {
+            initData?: string
+            platform?: string
+            version?: string
+            colorScheme?: 'light' | 'dark'
           }
-        ).Telegram?.WebApp
-      : undefined
-  const hasInitData = Boolean(tg?.initData && tg.initData.length > 0)
-  const isTMA = Boolean(tg && (hasInitData || (tg.platform && tg.platform !== 'unknown')))
+        }
+      | undefined
+  )?.WebApp
+
+  const loc = typeof window !== 'undefined' ? window.location : { hash: '', search: '' }
+  const hasInitData = Boolean(
+    (tg?.initData && tg.initData.length > 0) ||
+      loc.hash.includes('tgWebAppData') ||
+      loc.search.includes('tgWebAppData') ||
+      loc.hash.includes('tgWebAppVersion') ||
+      loc.search.includes('tgWebAppVersion')
+  )
+
+  const isTMA = Boolean(
+    tg ||
+      hasInitData ||
+      w.TelegramWebviewProxy ||
+      w.TelegramGameProxy
+  )
 
   const prefersDark =
     typeof window !== 'undefined' &&
@@ -48,11 +60,19 @@ interface AppEnvProviderProps {
 }
 
 export const AppEnvProvider: FC<AppEnvProviderProps> = ({ children }) => {
-  const [env] = useState<AppEnvironment>(detectEnvironment)
+  const [env, setEnv] = useState<AppEnvironment>(detectEnvironment)
 
   useEffect(() => {
+    // Re-evaluate environment after mount to catch async script injection
+    setEnv(detectEnvironment())
+
+    const t1 = setTimeout(() => setEnv(detectEnvironment()), 100)
+    const t2 = setTimeout(() => setEnv(detectEnvironment()), 500)
+
     document.documentElement.classList.add('env-web')
     return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
       document.documentElement.classList.remove('env-web')
     }
   }, [])

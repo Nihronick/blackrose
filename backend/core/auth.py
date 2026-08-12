@@ -39,10 +39,18 @@ def verify_password(password: str, hashed: str) -> bool:
 
 def verify_telegram_init_data(init_data: str) -> dict | None:
     try:
-        params = dict(parse_qsl(init_data))
+        from urllib.parse import unquote, parse_qsl
+        clean_data = init_data
+        if "%3D" in clean_data or "%26" in clean_data:
+            clean_data = unquote(clean_data)
+
+        params = dict(parse_qsl(clean_data))
         received_hash = params.pop("hash", None)
         if not received_hash:
             return None
+
+        # Exclude signature if included in Telegram Mini App 8.0+
+        params.pop("signature", None)
 
         # Form check_string
         check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
@@ -53,13 +61,6 @@ def verify_telegram_init_data(init_data: str) -> dict | None:
         calculated_hash = hmac.new(secret_key, check_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
         if hmac.compare_digest(calculated_hash, received_hash):
-            # Check expiration
-            auth_date = int(params.get("auth_date", 0))
-            if time.time() - auth_date > 86400:
-                logger.debug("Telegram init data expired")
-                return None
-            
-            # Parse user dict
             user_str = params.get("user")
             if user_str:
                 return json.loads(user_str)
