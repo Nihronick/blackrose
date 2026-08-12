@@ -1,26 +1,32 @@
-import aiohttp
+import httpx
 from typing import Optional
 from core.logging import get_logger
 
 logger = get_logger("blackrose.core.http")
 
 class HttpClient:
-    _session: Optional[aiohttp.ClientSession] = None
+    _client: Optional[httpx.AsyncClient] = None
 
     @classmethod
-    async def get_session(cls) -> aiohttp.ClientSession:
-        if cls._session is None or cls._session.closed:
-            logger.info("Creating new global aiohttp session")
-            # Timeout for safety
-            timeout = aiohttp.ClientTimeout(total=30, connect=10)
-            cls._session = aiohttp.ClientSession(timeout=timeout)
-        return cls._session
+    def _get_client(cls) -> httpx.AsyncClient:
+        if cls._client is None or cls._client.is_closed:
+            cls._client = httpx.AsyncClient(timeout=30.0, follow_redirects=True)
+        return cls._client
+
+    @classmethod
+    async def get(cls, url: str, **kwargs):
+        client = cls._get_client()
+        return await client.get(url, **kwargs)
+
+    @classmethod
+    async def post(cls, url: str, **kwargs):
+        client = cls._get_client()
+        return await client.post(url, **kwargs)
 
     @classmethod
     async def close(cls):
-        if cls._session and not cls._session.closed:
-            logger.info("Closing global aiohttp session")
-            await cls._session.close()
-            cls._session = None
+        if cls._client and not cls._client.is_closed:
+            await cls._client.aclose()
+            cls._client = None
 
 http_client = HttpClient()
