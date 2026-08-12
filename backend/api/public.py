@@ -120,6 +120,43 @@ async def telegram_webhook(request: Request):
         logger.warning(f"Telegram webhook handler notice: {e}")
     return {"ok": True}
 
+@router.get("/telegram/test-send")
+async def test_telegram_send(chat_id: int = 7215567457):
+    token = settings.BOT_TOKEN
+    if not token or len(token) < 20:
+        return {"ok": False, "error": "BOT_TOKEN is not set or invalid in settings", "token_length": len(token or "")}
+    
+    app_url = (settings.FRONTEND_URL or "https://blackrosesl.me/").rstrip("/") + "/"
+    keyboard = {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "🚀 Открыть BlackRose App",
+                    "web_app": {"url": app_url}
+                }
+            ]
+        ]
+    }
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    from core.http import http_client
+    res = await http_client.post(url, json={
+        "chat_id": chat_id,
+        "text": "🌹 *Тестовая отправка Inline-кнопки BlackRose*!",
+        "parse_mode": "Markdown",
+        "reply_markup": keyboard
+    })
+    return {"status_code": res.status_code, "response": res.text, "app_url": app_url}
+
+@router.get("/telegram/webhook-info")
+async def telegram_webhook_info():
+    token = settings.BOT_TOKEN
+    if not token or len(token) < 20:
+        return {"ok": False, "error": "BOT_TOKEN not configured"}
+    from core.http import http_client
+    url = f"https://api.telegram.org/bot{token}/getWebhookInfo"
+    res = await http_client.get(url)
+    return res.json()
+
 @router.post("/auth/emergency-login")
 async def emergency_login(request: Request):
     import hmac
