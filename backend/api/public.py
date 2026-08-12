@@ -81,17 +81,17 @@ async def auth(request: Request):
 async def telegram_webhook(request: Request):
     try:
         data = await request.json()
-        msg = data.get("message", {})
+        logger.info(f"Telegram webhook payload received: {data}")
+        msg = data.get("message") or data.get("edited_message") or {}
         chat_id = msg.get("chat", {}).get("id")
-        text = (msg.get("text") or "").strip()
-        if chat_id and text:
+        if chat_id:
             token = settings.BOT_TOKEN
             if token and len(token) > 20:
                 first_name = msg.get("from", {}).get("first_name", "Слеер")
                 reply_text = (
                     f"🌹 *Приветствуем, {first_name}!*\n\n"
                     f"Добро пожаловать в *BlackRose* — главное сообщество и базу знаний по *Slayer Legend*!\n\n"
-                    f"Нажмите кнопку ниже, чтобы открыть веб-приложение:"
+                    f"Нажмите на **Inline-кнопку** ниже, чтобы открыть веб-приложение:"
                 )
                 app_url = (settings.FRONTEND_URL or "https://blackrosesl.me/").rstrip("/") + "/"
                 keyboard = {
@@ -117,7 +117,7 @@ async def telegram_webhook(request: Request):
                     timeout=10.0
                 )
     except Exception as e:
-        logger.debug(f"Telegram webhook handler notice: {e}")
+        logger.warning(f"Telegram webhook handler notice: {e}")
     return {"ok": True}
 
 @router.post("/auth/emergency-login")

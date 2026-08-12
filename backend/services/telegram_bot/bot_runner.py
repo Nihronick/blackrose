@@ -16,9 +16,18 @@ class TelegramBotRunner:
             logger.info("Telegram Bot Token is not configured, bot runner skipped.")
             return
 
+        # Register live webhook for instant responses on Hugging Face Spaces
+        webhook_target = "https://nihronick-blackrose-backend.hf.space/api/telegram/webhook"
+        try:
+            set_webhook_url = f"https://api.telegram.org/bot{token}/setWebhook"
+            res = await http_client.post(set_webhook_url, json={"url": webhook_target, "drop_pending_updates": False}, timeout=10.0)
+            logger.info(f"Telegram setWebhook result: {res.text}")
+        except Exception as e:
+            logger.warning(f"Telegram setWebhook notice: {e}")
+
         self._running = True
         self._task = asyncio.create_task(self._poll_loop(token))
-        logger.info("Telegram Bot Runner started polling.")
+        logger.info("Telegram Bot Runner started.")
 
     async def stop(self):
         self._running = False
