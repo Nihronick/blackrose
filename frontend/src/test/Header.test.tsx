@@ -3,6 +3,10 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { Header } from '../components/Header'
 
+vi.mock('@/hooks/useAppEnv', () => ({
+  useAppEnv: () => ({ isTMA: false }),
+}))
+
 describe('Header Component', () => {
   it('renders progress title correctly', () => {
     render(

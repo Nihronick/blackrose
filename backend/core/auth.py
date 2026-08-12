@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl
 
@@ -60,6 +61,14 @@ def verify_telegram_init_data(init_data: str) -> dict | None:
         calculated_hash = hmac.new(secret_key, check_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
         if hmac.compare_digest(calculated_hash, received_hash):
+            auth_date = params.get("auth_date")
+            if auth_date:
+                try:
+                    if time.time() - int(auth_date) > 86400:
+                        logger.warning("Telegram initData expired")
+                        return None
+                except ValueError:
+                    pass
             user_str = params.get("user")
             if user_str:
                 return json.loads(user_str)
