@@ -124,6 +124,21 @@ async def ping_bot():
         "frontend_url": settings.FRONTEND_URL
     }
 
+@router.get("/telegram/setup-webhook")
+async def setup_telegram_webhook():
+    token = settings.BOT_TOKEN
+    if not token or len(token) < 20:
+        return {"ok": False, "error": "BOT_TOKEN missing"}
+    
+    webhook_url = "https://nihronick-blackrose-backend.hf.space/api/telegram/webhook"
+    from services.telegram_bot.telegram_api import send_telegram_request
+    res = await send_telegram_request(
+        token,
+        "setWebhook",
+        payload={"url": webhook_url, "drop_pending_updates": False}
+    )
+    return {"setup_result": res, "webhook_url": webhook_url}
+
 @router.get("/telegram/test-send")
 async def test_telegram_send(chat_id: int = 7215567457):
     token = settings.BOT_TOKEN
