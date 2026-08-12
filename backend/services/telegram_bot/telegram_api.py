@@ -22,8 +22,9 @@ class IPv4HTTPSConnection(http.client.HTTPSConnection):
                 self.sock.connect(sa)
                 if self._tunnel_host:
                     self._tunnel()
-                if self.context:
-                    self.sock = self.context.wrap_socket(
+                ssl_context = getattr(self, "_context", None) or getattr(self, "context", None)
+                if ssl_context:
+                    self.sock = ssl_context.wrap_socket(
                         self.sock, server_hostname=self.host
                     )
                 return
