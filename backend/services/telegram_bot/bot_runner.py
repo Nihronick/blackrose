@@ -41,7 +41,7 @@ class TelegramBotRunner:
 
         while self._running:
             try:
-                params = {"offset": offset, "timeout": 15}
+                params = {"offset": offset, "timeout": 15, "allowed_updates": '["message"]'}
                 res = await http_client.get(get_updates_url, params=params, timeout=20.0)
                 if res.status_code == 200:
                     data = res.json()
@@ -49,14 +49,13 @@ class TelegramBotRunner:
                         offset = update["update_id"] + 1
                         msg = update.get("message", {})
                         chat_id = msg.get("chat", {}).get("id")
-                        text = (msg.get("text") or "").strip()
 
-                        if chat_id and text:
+                        if chat_id:
                             first_name = msg.get("from", {}).get("first_name", "Слеер")
                             reply_text = (
                                 f"🌹 *Приветствуем, {first_name}!*\n\n"
                                 f"Добро пожаловать в *BlackRose* — главное сообщество и базу знаний по *Slayer Legend*!\n\n"
-                                f"Нажмите кнопку ниже, чтобы открыть веб-приложение:"
+                                f"Нажмите на **Inline-кнопку** ниже, чтобы войти в веб-приложение:"
                             )
                             keyboard = {
                                 "inline_keyboard": [
