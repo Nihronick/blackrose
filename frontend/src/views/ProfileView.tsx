@@ -26,6 +26,27 @@ export const ProfileView: FC = () => {
   const { favorites } = useFavorites()
   const { theme, setTheme, isAdmin, setIsAdmin } = useAppStore()
 
+  const tgUser =
+    typeof window !== 'undefined'
+      ? (
+          window as unknown as {
+            Telegram?: {
+              WebApp?: {
+                initDataUnsafe?: {
+                  user?: {
+                    first_name?: string
+                    last_name?: string
+                    username?: string
+                    id?: number
+                    photo_url?: string
+                  }
+                }
+              }
+            }
+          }
+        ).Telegram?.WebApp?.initDataUnsafe?.user
+      : undefined
+
   const user = pipe(
     getStoredUser(),
     O.getOrElse(() => ({
@@ -76,11 +97,24 @@ export const ProfileView: FC = () => {
             </div>
 
             <h1 className="text-2xl font-black tracking-tight text-foreground font-heading">
-              {user.first_name} {user.last_name}
+              {tgUser?.first_name || user.first_name || 'Слеер'}{' '}
+              {tgUser?.last_name || user.last_name || ''}
             </h1>
-            {user.username && (
-              <p className="text-xs font-medium text-muted-foreground/60 mt-1">@{user.username}</p>
-            )}
+            <div className="flex items-center gap-2 mt-1">
+              {tgUser?.username ? (
+                <span className="text-xs font-medium text-muted-foreground/80">
+                  @{tgUser.username}
+                </span>
+              ) : (
+                <span className="text-xs font-medium text-muted-foreground/80">
+                  ID: {tgUser?.id || user.id || 'Telegram User'}
+                </span>
+              )}
+            </div>
+            <div className="mt-3 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
+              <Shield className="size-3 text-rose-400" />
+              <span>{isAdmin ? 'Project Lead / Admin' : 'Авторизованный Слеер (Telegram)'}</span>
+            </div>
           </div>
         </div>
       </section>
