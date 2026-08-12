@@ -120,6 +120,15 @@ async def telegram_webhook(request: Request):
         logger.warning(f"Telegram webhook handler notice: {e}")
     return {"ok": True}
 
+@router.get("/ping-bot")
+async def ping_bot():
+    token = settings.BOT_TOKEN or ""
+    return {
+        "bot_token_set": len(token) > 20,
+        "token_length": len(token),
+        "frontend_url": settings.FRONTEND_URL
+    }
+
 @router.get("/telegram/test-send")
 async def test_telegram_send(chat_id: int = 7215567457):
     token = settings.BOT_TOKEN
