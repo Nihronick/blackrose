@@ -34,12 +34,7 @@ export const detectEnvironment = (): AppEnvironment => {
       loc.search.includes('tgWebAppVersion')
   )
 
-  const isTMA = Boolean(
-    tg ||
-      hasInitData ||
-      w.TelegramWebviewProxy ||
-      w.TelegramGameProxy
-  )
+  const isTMA = Boolean(tg || hasInitData || w.TelegramWebviewProxy || w.TelegramGameProxy)
 
   const prefersDark =
     typeof window !== 'undefined' &&

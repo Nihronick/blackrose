@@ -23,7 +23,11 @@ export const useAppInitialization = () => {
         ? (
             window as unknown as {
               Telegram?: {
-                WebApp?: { initDataUnsafe?: { user?: { first_name?: string; username?: string; id?: number } } }
+                WebApp?: {
+                  initDataUnsafe?: {
+                    user?: { first_name?: string; username?: string; id?: number }
+                  }
+                }
               }
             }
           ).Telegram?.WebApp?.initDataUnsafe?.user
