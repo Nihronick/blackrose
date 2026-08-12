@@ -81,41 +81,34 @@ async def auth(request: Request):
 async def telegram_webhook(request: Request):
     try:
         data = await request.json()
-        logger.info(f"Telegram webhook payload received: {data}")
+        logger.info(f"Received Telegram webhook update: {data}")
         msg = data.get("message") or data.get("edited_message") or {}
         chat_id = msg.get("chat", {}).get("id")
         if chat_id:
-            token = settings.BOT_TOKEN
-            if token and len(token) > 20:
-                first_name = msg.get("from", {}).get("first_name", "Слеер")
-                reply_text = (
-                    f"🌹 *Приветствуем, {first_name}!*\n\n"
-                    f"Добро пожаловать в *BlackRose* — главное сообщество и базу знаний по *Slayer Legend*!\n\n"
-                    f"Нажмите на **Inline-кнопку** ниже, чтобы открыть веб-приложение:"
-                )
-                app_url = (settings.FRONTEND_URL or "https://blackrosesl.me/").rstrip("/") + "/"
-                keyboard = {
-                    "inline_keyboard": [
-                        [
-                            {
-                                "text": "🚀 Открыть BlackRose App",
-                                "web_app": {"url": app_url}
-                            }
-                        ]
+            first_name = msg.get("from", {}).get("first_name", "Слеер")
+            reply_text = (
+                f"🌹 *Приветствуем, {first_name}!*\n\n"
+                f"Добро пожаловать в *BlackRose* — главное сообщество и базу знаний по *Slayer Legend*!\n\n"
+                f"Нажмите на **Inline-кнопку** ниже, чтобы открыть веб-приложение:"
+            )
+            app_url = (settings.FRONTEND_URL or "https://blackrosesl.me/").rstrip("/") + "/"
+            keyboard = {
+                "inline_keyboard": [
+                    [
+                        {
+                            "text": "🚀 Открыть BlackRose App",
+                            "web_app": {"url": app_url}
+                        }
                     ]
-                }
-                from core.http import http_client
-                send_msg_url = f"https://api.telegram.org/bot{token}/sendMessage"
-                await http_client.post(
-                    send_msg_url,
-                    json={
-                        "chat_id": chat_id,
-                        "text": reply_text,
-                        "parse_mode": "Markdown",
-                        "reply_markup": keyboard
-                    },
-                    timeout=10.0
-                )
+                ]
+            }
+            return {
+                "method": "sendMessage",
+                "chat_id": chat_id,
+                "text": reply_text,
+                "parse_mode": "Markdown",
+                "reply_markup": keyboard
+            }
     except Exception as e:
         logger.warning(f"Telegram webhook handler notice: {e}")
     return {"ok": True}
