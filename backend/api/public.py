@@ -58,11 +58,21 @@ async def auth(request: Request):
             "is_admin": False,
             "is_guest": True,
         }
+    uid = int(user.get("id", 0) or 0)
+    username = str(user.get("username", "")).strip()
+    first_name = str(user.get("first_name", "")).strip()
+    if uid > 0:
+        try:
+            await member_service.ensure_member(uid, username, first_name)
+        except Exception:
+            pass
+
     is_admin = await _is_admin(user)
     return {
         "authorized": True,
-        "user_id": user.get("id", 0),
-        "first_name": user.get("first_name", ""),
+        "user_id": uid,
+        "first_name": first_name,
+        "username": username,
         "is_admin": is_admin,
         "is_guest": False,
     }

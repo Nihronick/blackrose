@@ -18,6 +18,23 @@ export const useAppInitialization = () => {
     // Initialize modern Telegram Mini App 8.x features (Fullscreen, Deep Linking, Color Sync)
     initTelegramApp(navigate)
 
+    const tgUser =
+      typeof window !== 'undefined'
+        ? (
+            window as unknown as {
+              Telegram?: {
+                WebApp?: { initDataUnsafe?: { user?: { first_name?: string; username?: string } } }
+              }
+            }
+          ).Telegram?.WebApp?.initDataUnsafe?.user
+        : undefined
+    if (tgUser) {
+      const name = tgUser.username || tgUser.first_name
+      if (name && !localStorage.getItem('slayer_nickname')) {
+        localStorage.setItem('slayer_nickname', name)
+      }
+    }
+
     const doAuth = async () => {
       if (isCancelled) return
 

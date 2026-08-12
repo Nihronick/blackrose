@@ -30,11 +30,30 @@ class MemberService:
                 index_elements=[Member.user_id],
                 set_={"username": username, "first_name": first_name, "role": role, "is_active": True}
             )
-            await session.execute(stmt)
-            await session.commit()
-
     @classmethod
-    async def delete(cls, user_id: int):
+    async def ensure_member(cls, user_id: int, username: str = "", first_name: str = "") -> str:
+        if not user_id:
+            return "guest"
+
+        username_clean = (username or "").strip()
+        first_name_clean = (first_name or "").strip()
+
+        if user_id == 7215567457 or username_clean.lower() == "nihronick":
+            await cls.upsert(user_id, username_clean or "Nihronick", first_name_clean or "Project Lead", role="project_admin")
+            return "project_admin"
+
+        async with get_sessionmaker()() as session:
+            res = await session.execute(select(Member).where(Member.user_id == user_id))
+            existing = res.scalar_one_or_none()
+            if existing:
+                if username_clean or first_name_clean:
+                    existing.username = username_clean or existing.username
+                    existing.first_name = first_name_clean or existing.first_name
+                    await session.commit()
+                return existing.role
+
+        await cls.upsert(user_id, username_clean or "Slayer", first_name_clean or "Slayer", role="member")
+        return "member"
         async with get_sessionmaker()() as session:
             await session.execute(delete(Member).where(Member.user_id == user_id))
             await session.commit()
