@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api'
-import { clearStoredToken, getMode, getStoredUser } from '@/lib/auth'
+import { clearStoredToken, getMode, getStoredUser, setStoredToken } from '@/lib/auth'
 import { applyLanguageKey } from '@/lib/language'
 import { initTelegramApp } from '@/lib/telegram'
 import { useAppStore } from '@/store'
@@ -23,7 +23,7 @@ export const useAppInitialization = () => {
         ? (
             window as unknown as {
               Telegram?: {
-                WebApp?: { initDataUnsafe?: { user?: { first_name?: string; username?: string } } }
+                WebApp?: { initDataUnsafe?: { user?: { first_name?: string; username?: string; id?: number } } }
               }
             }
           ).Telegram?.WebApp?.initDataUnsafe?.user
@@ -50,12 +50,32 @@ export const useAppInitialization = () => {
         )
       }
 
-      // Silent backend check for Telegram / Token admin status
-      apiFetch<{ is_admin?: boolean; authorized?: boolean }>('/api/auth')
+      // Backend check for Telegram / Token admin status
+      apiFetch<{
+        authorized?: boolean
+        user_id?: number
+        first_name?: string
+        username?: string
+        is_admin?: boolean
+        token?: string
+      }>('/api/auth')
         .then((data) => {
           if (isCancelled) return
-          if (data?.is_admin === true) {
-            setIsAdmin(true)
+          if (data?.authorized && data.user_id) {
+            const userObj = {
+              id: data.user_id,
+              first_name: data.first_name || tgUser?.first_name || 'Слеер',
+              username: data.username || tgUser?.username,
+              is_admin: !!data.is_admin,
+            }
+            if (data.token) {
+              setStoredToken(data.token, userObj)
+            } else {
+              localStorage.setItem('br_user', JSON.stringify(userObj))
+            }
+            if (data.is_admin) {
+              setIsAdmin(true)
+            }
           }
         })
         .catch(() => {})

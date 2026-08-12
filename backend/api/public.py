@@ -68,6 +68,7 @@ async def auth(request: Request):
             pass
 
     is_admin = await _is_admin(user)
+    token = jwt_encode({"id": uid, "username": username, "first_name": first_name, "is_admin": is_admin}, expires_in=86400 * 30)
     return {
         "authorized": True,
         "user_id": uid,
@@ -75,6 +76,7 @@ async def auth(request: Request):
         "username": username,
         "is_admin": is_admin,
         "is_guest": False,
+        "token": token,
     }
 
 @router.post("/telegram/webhook")
