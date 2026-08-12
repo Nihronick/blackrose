@@ -1,6 +1,7 @@
 import json
 import ssl
 import socket
+import http.client
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -9,7 +10,7 @@ from core.logging import get_logger
 
 logger = get_logger("blackrose.telegram_api")
 
-class IPv4HTTPSConnection(urllib.request.HTTPSConnection):
+class IPv4HTTPSConnection(http.client.HTTPSConnection):
     def connect(self):
         err = None
         for res in socket.getaddrinfo(self.host, self.port, socket.AF_INET, socket.SOCK_STREAM):
