@@ -1,7 +1,7 @@
 import asyncio
 from core.config import settings
 from core.logging import get_logger
-from core.http import http_client
+from services.telegram_bot.telegram_api import send_telegram_request
 
 logger = get_logger("blackrose.telegram_bot")
 
@@ -16,14 +16,8 @@ class TelegramBotRunner:
             logger.info("Telegram Bot Token is not configured, bot runner skipped.")
             return
 
-        # Register live webhook for instant responses on Hugging Face Spaces
-        webhook_target = "https://nihronick-blackrose-backend.hf.space/api/telegram/webhook"
-        try:
-            set_webhook_url = f"https://api.telegram.org/bot{token}/setWebhook"
-            res = await http_client.post(set_webhook_url, json={"url": webhook_target, "drop_pending_updates": False}, timeout=10.0)
-            logger.info(f"Telegram setWebhook result: {res.text}")
-        except Exception as e:
-            logger.warning(f"Telegram setWebhook notice: {e}")
+        res = await send_telegram_request(token, "deleteWebhook", payload={"drop_pending_updates": False})
+        logger.info(f"Telegram deleteWebhook result: {res}")
 
         self._running = True
         self._task = asyncio.create_task(self._poll_loop(token))
@@ -36,25 +30,13 @@ class TelegramBotRunner:
 
     async def _poll_loop(self, token: str):
         offset = 0
-        # Clear any existing webhook conflict to allow polling
-        try:
-            delete_url = f"https://api.telegram.org/bot{token}/deleteWebhook"
-            await http_client.post(delete_url, json={"drop_pending_updates": False}, timeout=10.0)
-            logger.info("Telegram Bot Webhook cleared successfully for polling mode.")
-        except Exception as e:
-            logger.warning(f"Telegram deleteWebhook notice: {e}")
-
-        get_updates_url = f"https://api.telegram.org/bot{token}/getUpdates"
-        send_msg_url = f"https://api.telegram.org/bot{token}/sendMessage"
         app_url = (settings.FRONTEND_URL or "https://blackrosesl.me/").rstrip("/") + "/"
 
         while self._running:
             try:
-                params = {"offset": offset, "timeout": 15, "allowed_updates": '["message"]'}
-                res = await http_client.get(get_updates_url, params=params, timeout=20.0)
-                if res.status_code == 200:
-                    data = res.json()
-                    for update in data.get("result", []):
+                res = await send_telegram_request(token, "getUpdates", params={"offset": offset, "timeout": 15}, timeout=20.0)
+                if res.get("ok"):
+                    for update in res.get("result", []):
                         offset = update["update_id"] + 1
                         msg = update.get("message", {})
                         chat_id = msg.get("chat", {}).get("id")
@@ -76,15 +58,15 @@ class TelegramBotRunner:
                                     ]
                                 ]
                             }
-                            await http_client.post(
-                                send_msg_url,
-                                json={
+                            await send_telegram_request(
+                                token,
+                                "sendMessage",
+                                payload={
                                     "chat_id": chat_id,
                                     "text": reply_text,
                                     "parse_mode": "Markdown",
                                     "reply_markup": keyboard
-                                },
-                                timeout=10.0
+                                }
                             )
             except asyncio.CancelledError:
                 break

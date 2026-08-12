@@ -147,15 +147,18 @@ async def test_telegram_send(chat_id: int = 7215567457):
                 ]
             ]
         }
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        from core.http import http_client
-        res = await http_client.post(url, json={
-            "chat_id": chat_id,
-            "text": "🌹 *Тестовая отправка Inline-кнопки BlackRose*!",
-            "parse_mode": "Markdown",
-            "reply_markup": keyboard
-        })
-        return {"status_code": res.status_code, "response": res.text, "app_url": app_url}
+        from services.telegram_bot.telegram_api import send_telegram_request
+        res = await send_telegram_request(
+            token,
+            "sendMessage",
+            payload={
+                "chat_id": chat_id,
+                "text": "🌹 *Тестовая отправка Inline-кнопки BlackRose*!",
+                "parse_mode": "Markdown",
+                "reply_markup": keyboard
+            }
+        )
+        return {"result": res, "app_url": app_url}
     except Exception as err:
         return {"ok": False, "error": str(err), "type": type(err).__name__}
 
