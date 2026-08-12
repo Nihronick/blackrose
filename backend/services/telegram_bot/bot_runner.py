@@ -27,6 +27,14 @@ class TelegramBotRunner:
 
     async def _poll_loop(self, token: str):
         offset = 0
+        # Clear any existing webhook conflict to allow polling
+        try:
+            delete_url = f"https://api.telegram.org/bot{token}/deleteWebhook"
+            await http_client.post(delete_url, json={"drop_pending_updates": False}, timeout=10.0)
+            logger.info("Telegram Bot Webhook cleared successfully for polling mode.")
+        except Exception as e:
+            logger.warning(f"Telegram deleteWebhook notice: {e}")
+
         get_updates_url = f"https://api.telegram.org/bot{token}/getUpdates"
         send_msg_url = f"https://api.telegram.org/bot{token}/sendMessage"
         app_url = (settings.FRONTEND_URL or "https://blackrosesl.me/").rstrip("/") + "/"
