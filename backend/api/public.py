@@ -8,6 +8,7 @@ from core.auth import (
     jwt_refresh_encode,
     verify_password,
     hash_password,
+    verify_telegram_login_widget,
 )
 from core.config import settings
 from core.logging import get_logger
@@ -84,6 +85,54 @@ async def telegram_webhook(request: Request):
     try:
         data = await request.json()
         logger.info(f"Received Telegram webhook update: {data}")
+        
+        # 1. Handle Inline Queries (@BlackRoseBot <search>)
+        inline_query = data.get("inline_query")
+        if inline_query:
+            iq_id = inline_query.get("id")
+            query = inline_query.get("query", "").strip()
+            if query:
+                guides_found = await guide_service.search(query)
+            else:
+                guides_found = await guide_service.get_top_guides(limit=10)
+
+            results = []
+            base_url = (settings.FRONTEND_URL or "https://blackrosesl.me/").rstrip("/")
+            for g in (guides_found or [])[:10]:
+                g_key = g.get("key") or g.get("id")
+                g_title = g.get("title", "Гайд Slayer Legend")
+                g_text = (g.get("text") or "")[:200]
+                guide_url = f"{base_url}/guide/{g_key}"
+
+                results.append({
+                    "type": "article",
+                    "id": str(g_key),
+                    "title": g_title,
+                    "description": g_text[:100],
+                    "input_message_content": {
+                        "message_text": f"🌹 *{g_title}*\n\n{g_text}...\n\n🔗 Читать полностью: {guide_url}",
+                        "parse_mode": "Markdown",
+                    },
+                    "reply_markup": {
+                        "inline_keyboard": [
+                            [
+                                {
+                                    "text": "📖 Открыть гайд в App",
+                                    "web_app": {"url": guide_url}
+                                }
+                            ]
+                        ]
+                    }
+                })
+
+            return {
+                "method": "answerInlineQuery",
+                "inline_query_id": iq_id,
+                "results": results,
+                "cache_time": 60,
+            }
+
+        # 2. Handle Chat Messages
         msg = data.get("message") or data.get("edited_message") or {}
         chat_id = msg.get("chat", {}).get("id")
         if chat_id:
@@ -114,6 +163,58 @@ async def telegram_webhook(request: Request):
     except Exception as e:
         logger.warning(f"Telegram webhook handler notice: {e}")
     return {"ok": True}
+
+
+@router.post("/auth/web-login")
+@router.post("/auth/telegram-inline-login")
+async def telegram_web_login(request: Request):
+    """
+    Authenticates a user via Telegram Login Widget or Telegram Inline Login URL parameters.
+    Verifies HMAC-SHA256 signature using bot_token.
+    """
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Invalid payload")
+
+    verified_user = verify_telegram_login_widget(body)
+    if not verified_user:
+        raise HTTPException(status_code=403, detail="Недействительная подпись Telegram")
+
+    uid = int(verified_user.get("id", 0) or 0)
+    if uid <= 0:
+        raise HTTPException(status_code=403, detail="Неверный идентификатор пользователя")
+
+    username = str(verified_user.get("username", "")).strip()
+    first_name = str(verified_user.get("first_name", "")).strip()
+    photo_url = str(verified_user.get("photo_url", "")).strip()
+
+    try:
+        await member_service.ensure_member(uid, username, first_name)
+    except Exception as e:
+        logger.debug(f"ensure_member notice in web_login: {e}")
+
+    is_admin = await _is_admin(verified_user)
+    token_payload = {
+        "id": uid,
+        "username": username,
+        "first_name": first_name,
+        "photo_url": photo_url,
+        "is_admin": is_admin,
+    }
+
+    access_token = jwt_encode(token_payload, expires_in=86400 * 30, token_type="access")
+    refresh_token = jwt_refresh_encode({"id": uid, "username": username, "is_admin": is_admin})
+
+    return {
+        "ok": True,
+        "token": access_token,
+        "refresh_token": refresh_token,
+        "user_id": uid,
+        "first_name": first_name,
+        "username": username,
+        "photo_url": photo_url,
+        "is_admin": is_admin,
+    }
 
 @router.post("/auth/emergency-login")
 async def emergency_login(request: Request):

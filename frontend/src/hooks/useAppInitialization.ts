@@ -18,6 +18,70 @@ export const useAppInitialization = () => {
     // Initialize modern Telegram Mini App 8.x features (Fullscreen, Deep Linking, Color Sync)
     initTelegramApp(navigate)
 
+    // 0. Intercept Telegram Inline Login URL parameters (?id=...&hash=...&auth_date=...)
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const tgId = urlParams.get('id')
+      const tgHash = urlParams.get('hash')
+      const tgAuthDate = urlParams.get('auth_date')
+
+      if (tgId && tgHash && tgAuthDate) {
+        const payload = {
+          id: Number(tgId),
+          first_name: urlParams.get('first_name') || '',
+          last_name: urlParams.get('last_name') || undefined,
+          username: urlParams.get('username') || undefined,
+          photo_url: urlParams.get('photo_url') || undefined,
+          auth_date: Number(tgAuthDate),
+          hash: tgHash,
+        }
+
+        apiFetch<{
+          ok?: boolean
+          token?: string
+          refresh_token?: string
+          user_id?: number
+          first_name?: string
+          username?: string
+          photo_url?: string
+          is_admin?: boolean
+        }>('/api/auth/web-login', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        })
+          .then((data) => {
+            if (data?.token && data.user_id) {
+              setStoredToken(
+                data.token,
+                {
+                  id: data.user_id,
+                  first_name: data.first_name || 'Слеер',
+                  username: data.username,
+                  photo_url: data.photo_url,
+                  is_admin: !!data.is_admin,
+                },
+                data.refresh_token
+              )
+              if (data.is_admin) setIsAdmin(true)
+
+              // Clean URL parameters from address bar
+              const cleanUrl = new URL(window.location.href)
+              cleanUrl.searchParams.delete('id')
+              cleanUrl.searchParams.delete('first_name')
+              cleanUrl.searchParams.delete('last_name')
+              cleanUrl.searchParams.delete('username')
+              cleanUrl.searchParams.delete('photo_url')
+              cleanUrl.searchParams.delete('auth_date')
+              cleanUrl.searchParams.delete('hash')
+              window.history.replaceState({}, '', cleanUrl.toString())
+            }
+          })
+          .catch((err) => {
+            console.warn('Telegram Inline Login error:', err)
+          })
+      }
+    } catch {}
+
     const tgUser =
       typeof window !== 'undefined'
         ? (
