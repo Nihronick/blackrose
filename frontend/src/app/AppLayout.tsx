@@ -207,21 +207,27 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-10 rounded-2xl border border-primary/30 px-3 text-[11px] font-black uppercase tracking-[0.1em] text-primary"
-                    onClick={() => push({ type: 'admin' })}
+                    className="h-10 rounded-2xl border border-primary/30 px-3 text-[11px] font-black uppercase tracking-[0.1em] text-primary shadow-sm"
+                    onClick={() => {
+                      haptic.light()
+                      push({ type: 'admin' })
+                    }}
                   >
                     Панель
                   </Button>
-                ) : !isTMA ? (
+                ) : (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-10 rounded-2xl border border-border/40 px-3 text-[11px] font-black uppercase tracking-[0.1em] text-foreground/70"
-                    onClick={() => sheet.present({ type: 'login' })}
+                    onClick={() => {
+                      haptic.light()
+                      sheet.present({ type: 'login' })
+                    }}
                   >
                     Вход
                   </Button>
-                ) : null}
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

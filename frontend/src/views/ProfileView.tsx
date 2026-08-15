@@ -2,19 +2,23 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Card, CardContent } from '@/components/ui/card'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useHistory } from '@/hooks/useHistory'
+import { useSheet } from '@/hooks/useSheet'
 import { getStoredUser } from '@/lib/auth'
 import { haptic } from '@/lib/haptic'
 import {
   BookOpen,
   ChevronRight,
+  Lock,
   LogOut,
   Moon,
   Settings,
   Shield,
+  ShieldCheck,
   Star,
   Sun,
   User as UserIcon,
 } from '@/lib/icons'
+import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
@@ -25,6 +29,8 @@ export const ProfileView: FC = () => {
   const { history } = useHistory()
   const { favorites } = useFavorites()
   const { theme, setTheme, isAdmin, setIsAdmin } = useAppStore()
+  const { push } = useAppNavigation()
+  const sheet = useSheet()
 
   const tgUser =
     typeof window !== 'undefined'
@@ -214,29 +220,80 @@ export const ProfileView: FC = () => {
             </div>
           </motion.button>
 
-          {isAdmin && (
+          {/* Admin Access Panel */}
+          {isAdmin ? (
+            <div className="flex flex-col gap-2 mt-2">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  haptic.medium()
+                  push({ type: 'admin' })
+                }}
+                className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-primary/20 via-rose-500/10 to-primary/10 border border-primary/30 hover:border-primary/50 transition-all shadow-lg shadow-primary/10"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="size-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-md">
+                    <ShieldCheck className="size-5" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-sm font-black font-heading text-foreground flex items-center gap-2">
+                      Панель Управления
+                      <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-black uppercase">
+                        Admin
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground font-medium">
+                      Управление гайдами, участниками и синхронизацией
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="size-5 text-primary" />
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  haptic.medium()
+                  setIsAdmin(false)
+                }}
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-background flex items-center justify-center shadow-sm">
+                    <LogOut className="size-4 text-rose-500" />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-xs font-bold font-heading text-rose-500">
+                      Выйти из админки
+                    </h4>
+                  </div>
+                </div>
+                <ChevronRight className="size-4 text-rose-500/40" />
+              </motion.button>
+            </div>
+          ) : (
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => {
                 haptic.medium()
-                setIsAdmin(false)
+                sheet.present({ type: 'login' })
               }}
-              className="flex items-center justify-between p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-colors mt-2"
+              className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/10 hover:bg-muted/30 transition-colors mt-2"
             >
               <div className="flex items-center gap-4">
                 <div className="size-10 rounded-xl bg-background flex items-center justify-center shadow-sm">
-                  <LogOut className="size-5 text-rose-500" />
+                  <Lock className="size-5 text-muted-foreground" />
                 </div>
                 <div className="text-left">
-                  <h4 className="text-sm font-black font-heading text-rose-500">
-                    Выйти из админки
+                  <h4 className="text-sm font-black font-heading text-foreground">
+                    Вход администратора
                   </h4>
-                  <p className="text-[11px] text-rose-500/60 font-medium">
-                    Снять права администратора
+                  <p className="text-[11px] text-muted-foreground/60 font-medium">
+                    Войти по паролю или аварийному ключу
                   </p>
                 </div>
               </div>
-              <ChevronRight className="size-5 text-rose-500/40" />
+              <ChevronRight className="size-5 text-muted-foreground/40" />
             </motion.button>
           )}
         </div>

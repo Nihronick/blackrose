@@ -5,6 +5,8 @@ import { haptic } from '@/lib/haptic'
 import type { FC, FormEvent } from 'react'
 import { useState } from 'react'
 
+import { useAppStore } from '@/store'
+
 interface LocalAdminLoginProps {
   onSuccess: () => void
   onBack?: () => void
@@ -15,30 +17,47 @@ export const LocalAdminLogin: FC<LocalAdminLoginProps> = ({ onSuccess, onBack })
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
   const [loading, setLoading] = useState(false)
+  const { setIsAdmin } = useAppStore()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErr('')
     try {
-      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/auth/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user, password: pass }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || 'Ошибка авторизации')
+      let data: { token: string; user_id?: number; first_name?: string; detail?: string }
+      if (user === 'emergency' || pass.startsWith('BlackRose_') || pass.length > 25) {
+        const res = await fetch(
+          (import.meta.env.VITE_API_URL ?? '') + '/api/auth/emergency-login',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emergency_key: pass || user }),
+          }
+        )
+        data = await res.json()
+        if (!res.ok) throw new Error(data.detail || 'Ошибка аварийной авторизации')
+      } else {
+        const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass }),
+        })
+        data = await res.json()
+        if (!res.ok) throw new Error(data.detail || 'Ошибка авторизации')
+      }
 
       localStorage.setItem('br_jwt', data.token)
       localStorage.setItem(
         'br_user',
         JSON.stringify({
-          id: data.user_id,
-          first_name: data.first_name,
+          id: data.user_id || 7215567457,
+          first_name: data.first_name || 'Project Lead',
           is_admin: true,
           is_local_admin: true,
         })
       )
+      setIsAdmin(true)
+      haptic.success?.()
       onSuccess()
     } catch (ex) {
       const err = ex instanceof Error ? ex : new Error(String(ex))
