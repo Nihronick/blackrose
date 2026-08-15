@@ -21,7 +21,7 @@ def test_sanitize_discord_markdown():
     
     assert "<@123456>" not in cleaned
     assert "<#987654>" not in cleaned
-    assert "{{icon:blitz_gold}}" in cleaned
+    assert "cdn.discordapp.com/emojis/1001.webp" in cleaned
     assert "<details" in cleaned
     assert "Secret tip inside" in cleaned
 

@@ -16,12 +16,20 @@ def deploy():
     deploy_dir.mkdir(parents=True, exist_ok=True)
     
     # Copy backend directory contents to .deploy/
+    ignored_patterns = {".pytest_cache", ".ruff_cache", "__pycache__", "venv", ".env", ".git"}
     backend_dir = Path("backend")
     for item in backend_dir.iterdir():
+        if item.name in ignored_patterns:
+            continue
+        dest = deploy_dir / item.name
         if item.is_dir():
-            shutil.copytree(item, deploy_dir / item.name)
+            shutil.copytree(
+                item, 
+                dest, 
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache", ".ruff_cache", "venv")
+            )
         else:
-            shutil.copy2(item, deploy_dir / item.name)
+            shutil.copy2(item, dest)
             
     # Copy Dockerfile.hf -> .deploy/Dockerfile
     dockerfile_hf = backend_dir / "Dockerfile.hf"
