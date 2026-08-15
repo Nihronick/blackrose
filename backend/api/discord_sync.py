@@ -212,41 +212,46 @@ async def sanitize_all_existing(user=Depends(require_admin)):
 @router.post("/discover-server-channels")
 async def discover_server_channels(user=Depends(require_admin)):
     """Discovers all channels, forums, and threads on accessible Discord servers."""
-    active_token = stealth_discord_worker.user_token or await discord_sync_service.get_setting("discord_user_token")
-    if not active_token:
-        raise HTTPException(status_code=400, detail="Токен Discord не привязан")
+    try:
+        active_token = stealth_discord_worker.user_token or await discord_sync_service.get_setting("discord_user_token")
+        if not active_token:
+            raise HTTPException(status_code=400, detail="Токен Discord не привязан")
 
-    headers = stealth_discord_worker._build_headers()
-    session = await stealth_discord_worker._get_session()
-    
-    # 1. Fetch guilds
-    status, guilds = await stealth_discord_worker._get_json(session, "https://discord.com/api/v10/users/@me/guilds", headers)
-    if status != 200 or not isinstance(guilds, list):
-        return {"ok": False, "error": f"Failed to fetch guilds (HTTP {status}): {guilds}"}
+        stealth_discord_worker.set_token(active_token)
+        headers = stealth_discord_worker._build_headers()
+        session = await stealth_discord_worker._get_session()
+        
+        # 1. Fetch guilds
+        status, guilds = await stealth_discord_worker._get_json(session, "https://discord.com/api/v10/users/@me/guilds", headers)
+        if status != 200 or not isinstance(guilds, list):
+            return {"ok": False, "error": f"Failed to fetch guilds (HTTP {status}): {guilds}"}
 
-    discovered = []
-    for g in guilds:
-        gid = g.get("id")
-        gname = g.get("name")
-        c_status, channels = await stealth_discord_worker._get_json(session, f"https://discord.com/api/v10/guilds/{gid}/channels", headers)
-        if c_status == 200 and isinstance(channels, list):
-            for c in channels:
-                discovered.append({
-                    "guild_id": gid,
-                    "guild_name": gname,
-                    "channel_id": c.get("id"),
-                    "name": c.get("name"),
-                    "type": c.get("type"),
-                    "parent_id": c.get("parent_id"),
-                    "position": c.get("position"),
-                })
+        discovered = []
+        for g in guilds:
+            gid = g.get("id")
+            gname = g.get("name")
+            c_status, channels = await stealth_discord_worker._get_json(session, f"https://discord.com/api/v10/guilds/{gid}/channels", headers)
+            if c_status == 200 and isinstance(channels, list):
+                for c in channels:
+                    discovered.append({
+                        "guild_id": gid,
+                        "guild_name": gname,
+                        "channel_id": c.get("id"),
+                        "name": c.get("name"),
+                        "type": c.get("type"),
+                        "parent_id": c.get("parent_id"),
+                        "position": c.get("position"),
+                    })
 
-    return {
-        "ok": True,
-        "guilds_count": len(guilds),
-        "channels_count": len(discovered),
-        "channels": discovered,
-    }
+        return {
+            "ok": True,
+            "guilds_count": len(guilds),
+            "channels_count": len(discovered),
+            "channels": discovered,
+        }
+    except Exception as e:
+        logger.error(f"Error discovering channels: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Discovery error: {str(e)}")
 
 
 
