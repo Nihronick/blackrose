@@ -360,7 +360,7 @@ class DiscordSyncService:
                 clean_t = title
                 if clean_t.startswith("![") or "{{" in clean_t or clean_t.startswith("http") or len(clean_t) > 100:
                     lines = [
-                        ln.strip() for ln in (g.content or "").split("\n")
+                        ln.strip() for ln in (g.text or "").split("\n")
                         if ln.strip() and not ln.strip().startswith("![") and not ln.strip().startswith("{{") and not ln.strip().startswith("http")
                     ]
                     if lines:
@@ -379,16 +379,16 @@ class DiscordSyncService:
                     g.title = clean_t
                     changed = True
 
-                # Clean content translation artifacts
-                if g.content:
-                    new_content = g.content
-                    new_content = re.sub(r"__ГЛОСС\d+__", "", new_content)
-                    new_content = re.sub(r"\baМаунт\b", "Количество", new_content, flags=re.IGNORECASE)
-                    new_content = re.sub(r"\bСозвездиеs\b", "Созвездия", new_content, flags=re.IGNORECASE)
-                    new_content = re.sub(r"\bПродвижениеs\b", "Продвижения", new_content, flags=re.IGNORECASE)
-                    new_content = re.sub(r"\bЭтапs\b", "Этапы", new_content, flags=re.IGNORECASE)
-                    if new_content != g.content:
-                        g.content = new_content
+                # Clean text translation artifacts
+                if g.text:
+                    new_text = g.text
+                    new_text = re.sub(r"__ГЛОСС\d+__", "", new_text)
+                    new_text = re.sub(r"\baМаунт\b", "Количество", new_text, flags=re.IGNORECASE)
+                    new_text = re.sub(r"\bСозвездиеs\b", "Созвездия", new_text, flags=re.IGNORECASE)
+                    new_text = re.sub(r"\bПродвижениеs\b", "Продвижения", new_text, flags=re.IGNORECASE)
+                    new_text = re.sub(r"\bЭтапs\b", "Этапы", new_text, flags=re.IGNORECASE)
+                    if new_text != g.text:
+                        g.text = new_text
                         changed = True
 
                 if changed:
