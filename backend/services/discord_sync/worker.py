@@ -153,7 +153,7 @@ class StealthDiscordWorker:
                     for th in threads_to_process:
                         thread_id = th.get("id")
                         thread_name = th.get("name", "Форум Гайд")
-                        msgs_url = f"https://discord.com/api/v10/channels/{thread_id}/messages?limit=50"
+                        msgs_url = f"https://discord.com/api/v10/channels/{thread_id}/messages?limit=100"
                         m_status, msgs = await self._get_json(session, msgs_url, headers)
                         if m_status == 200 and isinstance(msgs, list) and msgs:
                             msgs.sort(key=lambda x: x.get("id", ""))
@@ -161,7 +161,15 @@ class StealthDiscordWorker:
                             combined_content = "\n\n".join(
                                 m.get("content", "") for m in msgs if m.get("content")
                             )
+                            all_attachments = []
+                            all_embeds = []
+                            for m in msgs:
+                                all_attachments.extend(m.get("attachments", []))
+                                all_embeds.extend(m.get("embeds", []))
+
                             starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                            starter_msg["attachments"] = all_attachments
+                            starter_msg["embeds"] = all_embeds
                             res = await discord_sync_service.process_discord_message(
                                 starter_msg, parent_channel_id=channel_id, custom_title=thread_name
                             )
@@ -178,24 +186,21 @@ class StealthDiscordWorker:
                 elif ch_type in (11, 12):
                     thread_name = ch_data.get("name", "Гайд")
                     parent_id = ch_data.get("parent_id")
-                    msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit=50"
+                    msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit=100"
                     m_status, msgs = await self._get_json(session, msgs_url, headers)
                     if m_status == 200 and isinstance(msgs, list) and msgs:
                         msgs.sort(key=lambda x: x.get("id", ""))
                         starter_msg = msgs[0]
                         combined_content = "\n\n".join(m.get("content", "") for m in msgs if m.get("content"))
                         all_attachments = []
+                        all_embeds = []
                         for m in msgs:
                             all_attachments.extend(m.get("attachments", []))
-                            for emb in m.get("embeds", []):
-                                if isinstance(emb, dict):
-                                    if emb.get("image") and emb["image"].get("url"):
-                                        all_attachments.append({"url": emb["image"]["url"]})
-                                    if emb.get("thumbnail") and emb["thumbnail"].get("url"):
-                                        all_attachments.append({"url": emb["thumbnail"]["url"]})
+                            all_embeds.extend(m.get("embeds", []))
 
                         starter_msg["content"] = combined_content or starter_msg.get("content", "")
                         starter_msg["attachments"] = all_attachments
+                        starter_msg["embeds"] = all_embeds
                         res = await discord_sync_service.process_discord_message(
                             starter_msg, parent_channel_id=parent_id or channel_id, custom_title=thread_name
                         )
@@ -216,7 +221,7 @@ class StealthDiscordWorker:
                         return {"ok": False, "error": f"Ошибка получения сообщений (HTTP {m_status}): {err_str}"}
 
                     for msg in reversed(messages):
-                        if isinstance(msg, dict) and msg.get("content"):
+                        if isinstance(msg, dict):
                             res = await discord_sync_service.process_discord_message(msg)
                             if not res.get("skipped"):
                                 processed_count += 1

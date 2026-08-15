@@ -73,7 +73,7 @@ def sanitize_discord_markdown(text: str) -> tuple[str, list[str], list[str]]:
             videos.append(yt_url)
 
     direct_videos = re.findall(
-        r'(https?://[^\s]+\.(?:mp4|webm|mov|mkv))',
+        r'(https?://[^\s\)\>]+\.(?:mp4|webm|mov|mkv|gifv))',
         text,
         flags=re.IGNORECASE
     )
@@ -81,14 +81,32 @@ def sanitize_discord_markdown(text: str) -> tuple[str, list[str], list[str]]:
         if v_url not in videos:
             videos.append(v_url)
 
-    # 2. Extract Direct Image Links in text
+    # 2. Extract Direct Image Links in text (CDN, Imgur, Tenor, attachments)
     img_matches = re.findall(
-        r'(https?://[^\s]+\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s]*)?)',
+        r'(https?://(?:cdn|media|images-ext-\d+)\.discordapp\.(?:com|net)/attachments/[^\s\)\>]+)',
         text,
         flags=re.IGNORECASE
     )
     for img_url in img_matches:
+        if img_url not in photos:
+            photos.append(img_url)
+
+    general_imgs = re.findall(
+        r'(https?://[^\s\)\>]+\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s\)\>]*)?)',
+        text,
+        flags=re.IGNORECASE
+    )
+    for img_url in general_imgs:
         if not img_url.startswith("https://cdn.discordapp.com/emojis/") and img_url not in photos:
+            photos.append(img_url)
+
+    tenor_imgs = re.findall(
+        r'(https?://media\.tenor\.com/[^\s\)\>]+)',
+        text,
+        flags=re.IGNORECASE
+    )
+    for img_url in tenor_imgs:
+        if img_url not in photos:
             photos.append(img_url)
 
     # Replace user & role mentions

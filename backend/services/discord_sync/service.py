@@ -153,11 +153,46 @@ class DiscordSyncService:
         message_id = str(message_data.get("id", ""))
         raw_content = message_data.get("content", "")
         attachments = message_data.get("attachments", [])
+        embeds = message_data.get("embeds", [])
         author_info = message_data.get("author", {})
         author_tag = f"{author_info.get('username', 'author')}#{author_info.get('discriminator', '0000')}" if author_info else "Discord Author"
 
-        if not target_channel_id or not message_id or not raw_content.strip():
-            return {"skipped": True, "reason": "empty content or missing channel/message id"}
+        # Collect URLs from attachments
+        attachments_urls: list[str] = []
+        for att in attachments:
+            if isinstance(att, dict):
+                url = att.get("url") or att.get("proxy_url")
+                if url:
+                    attachments_urls.append(url)
+            elif isinstance(att, str) and att:
+                attachments_urls.append(att)
+
+        # Collect URLs from embeds
+        embed_photos: list[str] = []
+        embed_videos: list[str] = []
+        for emb in embeds:
+            if isinstance(emb, dict):
+                if emb.get("image") and emb["image"].get("url"):
+                    embed_photos.append(emb["image"]["url"])
+                if emb.get("thumbnail") and emb["thumbnail"].get("url"):
+                    embed_photos.append(emb["thumbnail"]["url"])
+                if emb.get("video") and emb["video"].get("url"):
+                    embed_videos.append(emb["video"]["url"])
+                if emb.get("url"):
+                    e_url = emb["url"]
+                    if any(e_url.lower().endswith(ext) for ext in (".png", ".jpg", ".jpeg", ".gif", ".webp")):
+                        embed_photos.append(e_url)
+                    elif any(e_url.lower().endswith(ext) for ext in (".mp4", ".webm", ".mov", ".mkv", ".gifv")) or "youtube.com" in e_url or "youtu.be" in e_url:
+                        embed_videos.append(e_url)
+
+        if not raw_content.strip():
+            if attachments_urls or embed_photos or embed_videos:
+                raw_content = f"Материалы гайда: {custom_title or 'Гайд'}"
+            else:
+                return {"skipped": True, "reason": "empty content and no media attachments"}
+
+        if not target_channel_id or not message_id:
+            return {"skipped": True, "reason": "missing channel or message id"}
 
         try:
             async with get_sessionmaker()() as session:
@@ -200,8 +235,8 @@ class DiscordSyncService:
 
                 # Download Discord attachments and extracted photos to persistent storage so URLs never expire
                 local_photos: list[str] = []
-                attachments_urls = [att.get("url") if isinstance(att, dict) else str(att) for att in attachments if att]
-                raw_photos = list(dict.fromkeys(attachments_urls + extracted_photos))
+                raw_photos = list(dict.fromkeys(attachments_urls + extracted_photos + embed_photos))
+                all_videos = list(dict.fromkeys(extracted_videos + embed_videos))
 
                 for url in raw_photos:
                     if url:
@@ -270,7 +305,7 @@ class DiscordSyncService:
                         title=title,
                         text=final_text,
                         photo=local_photos,
-                        video=extracted_videos,
+                        video=all_videos,
                         views=0,
                     )
                     session.add(guide)
@@ -280,8 +315,8 @@ class DiscordSyncService:
                     guide.category_key = category_key
                     if local_photos:
                         guide.photo = local_photos
-                    if extracted_videos:
-                        guide.video = extracted_videos
+                    if all_videos:
+                        guide.video = all_videos
 
                 # 7. Upsert into DiscordSyncedGuide tracker
                 if not existing_synced:
