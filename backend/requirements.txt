@@ -20,4 +20,4 @@ pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
 pyjwt==2.10.1
 inngest==0.4.0
-agent-sandbox>=1.11.0
+agent-sandbox>=0.0.30
