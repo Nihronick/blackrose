@@ -43,7 +43,14 @@ class StealthDiscordWorker:
         if self.task:
             self.task.cancel()
             self.task = None
-        logger.info("Stealth Discord Gateway worker stopped")
+    def _build_headers(self) -> dict:
+        clean_token = (self.user_token or "").strip().strip("\"'")
+        return {
+            "Authorization": clean_token,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
 
     @staticmethod
     def _sync_fetch_json(url: str, token: str) -> tuple[int, dict | list | str]:
