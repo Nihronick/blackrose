@@ -349,32 +349,36 @@ class GuideService:
     async def get_analytics(cls, days: int = 30) -> list[dict]:
         safe_days = max(1, min(int(days or 30), 365))
         since = datetime.now(timezone.utc) - timedelta(days=safe_days)
-        async with get_sessionmaker()() as session:
-            try:
-                stmt = (
-                    select(
-                        func.date_trunc("day", ViewLog.viewed_at).label("day"),
-                        func.count(ViewLog.id).label("count"),
+        try:
+            async with get_sessionmaker()() as session:
+                try:
+                    stmt = (
+                        select(
+                            func.date_trunc("day", ViewLog.viewed_at).label("day"),
+                            func.count(ViewLog.id).label("count"),
+                        )
+                        .where(ViewLog.viewed_at >= since)
+                        .group_by(func.date_trunc("day", ViewLog.viewed_at))
+                        .order_by(func.date_trunc("day", ViewLog.viewed_at).asc())
                     )
-                    .where(ViewLog.viewed_at >= since)
-                    .group_by(func.date_trunc("day", ViewLog.viewed_at))
-                    .order_by(func.date_trunc("day", ViewLog.viewed_at).asc())
-                )
-                result = await session.execute(stmt)
-                return [
-                    {"day": day.isoformat() if hasattr(day, "isoformat") else str(day), "count": int(count or 0)}
-                    for day, count in result.all()
-                ]
-            except Exception as err:
-                logger.warning(f"date_trunc analytics fallback triggered: {err}")
-                stmt = select(ViewLog.viewed_at).where(ViewLog.viewed_at >= since)
-                res = await session.execute(stmt)
-                counts: dict[str, int] = {}
-                for viewed_at in res.scalars():
-                    if viewed_at:
-                        day_str = viewed_at.strftime("%Y-%m-%d")
-                        counts[day_str] = counts.get(day_str, 0) + 1
-                return [{"day": d, "count": c} for d, c in sorted(counts.items())]
+                    result = await session.execute(stmt)
+                    return [
+                        {"day": day.isoformat() if hasattr(day, "isoformat") else str(day), "count": int(count or 0)}
+                        for day, count in result.all()
+                    ]
+                except Exception as err:
+                    logger.warning(f"date_trunc analytics fallback triggered: {err}")
+                    stmt = select(ViewLog.viewed_at).where(ViewLog.viewed_at >= since)
+                    res = await session.execute(stmt)
+                    counts: dict[str, int] = {}
+                    for viewed_at in res.scalars():
+                        if viewed_at:
+                            day_str = viewed_at.strftime("%Y-%m-%d")
+                            counts[day_str] = counts.get(day_str, 0) + 1
+                    return [{"day": d, "count": c} for d, c in sorted(counts.items())]
+        except Exception as e:
+            logger.error(f"get_analytics unexpected failure: {e}")
+            return []
 
     @classmethod
     async def reorder(cls, order: list[dict]):
