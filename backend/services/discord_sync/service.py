@@ -428,6 +428,10 @@ class DiscordSyncService:
                     updated += 1
 
             await session.commit()
+
+        from services.cache.redis_cache import cache_service
+        await cache_service.invalidate_all()
+
         return {"updated_guides": updated, "deleted_placeholders": deleted_placeholders}
 
 
