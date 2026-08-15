@@ -332,5 +332,70 @@ class DiscordSyncService:
             await session.commit()
             return count
 
+    async def sanitize_all_existing_guides(self) -> dict:
+        """
+        Cleans titles, removes cat_init_* placeholders, and purges translation artifacts from all guides in DB.
+        """
+        import re
+        from models.guide import Guide
+        updated = 0
+        deleted_placeholders = 0
+        async with get_sessionmaker()() as session:
+            # 1. Delete cat_init_* placeholders
+            res_ph = await session.execute(
+                select(Guide).where(Guide.key.like("cat_init_%"))
+            )
+            placeholders = res_ph.scalars().all()
+            for ph in placeholders:
+                await session.delete(ph)
+                deleted_placeholders += 1
+
+            # 2. Iterate all remaining guides
+            res = await session.execute(select(Guide))
+            guides = res.scalars().all()
+            for g in guides:
+                changed = False
+                title = g.title or ""
+                # Clean title
+                clean_t = title
+                if clean_t.startswith("![") or "{{" in clean_t or clean_t.startswith("http") or len(clean_t) > 100:
+                    lines = [
+                        ln.strip() for ln in (g.content or "").split("\n")
+                        if ln.strip() and not ln.strip().startswith("![") and not ln.strip().startswith("{{") and not ln.strip().startswith("http")
+                    ]
+                    if lines:
+                        clean_t = re.sub(r"^#+\s*", "", lines[0])
+                    else:
+                        clean_t = f"Гайд: {g.category_key.capitalize()}"
+
+                clean_t = re.sub(r"!\[.*?\]\(.*?\)", "", clean_t)
+                clean_t = re.sub(r"\{\{.*?\}\}", "", clean_t)
+                clean_t = re.sub(r"https?://\S+", "", clean_t)
+                clean_t = re.sub(r"^#+\s*", "", clean_t).strip()
+                if not clean_t:
+                    clean_t = f"Гайд: {g.category_key.capitalize()}"
+
+                if clean_t != g.title:
+                    g.title = clean_t
+                    changed = True
+
+                # Clean content translation artifacts
+                if g.content:
+                    new_content = g.content
+                    new_content = re.sub(r"__ГЛОСС\d+__", "", new_content)
+                    new_content = re.sub(r"\baМаунт\b", "Количество", new_content, flags=re.IGNORECASE)
+                    new_content = re.sub(r"\bСозвездиеs\b", "Созвездия", new_content, flags=re.IGNORECASE)
+                    new_content = re.sub(r"\bПродвижениеs\b", "Продвижения", new_content, flags=re.IGNORECASE)
+                    new_content = re.sub(r"\bЭтапs\b", "Этапы", new_content, flags=re.IGNORECASE)
+                    if new_content != g.content:
+                        g.content = new_content
+                        changed = True
+
+                if changed:
+                    updated += 1
+
+            await session.commit()
+        return {"updated_guides": updated, "deleted_placeholders": deleted_placeholders}
+
 
 discord_sync_service = DiscordSyncService()

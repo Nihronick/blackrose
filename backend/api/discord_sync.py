@@ -194,3 +194,14 @@ async def import_discord_link(body: DiscordLinkImportIn, user=Depends(require_ad
         "message": f"Гайд по ссылке успешно импортирован! ({res.get('message')})"
     }
 
+
+@router.post("/sanitize-all-existing")
+async def sanitize_all_existing(user=Depends(require_admin)):
+    result = await discord_sync_service.sanitize_all_existing_guides()
+    return {
+        "ok": True,
+        "message": f"Очистка завершена: обновлено {result.get('updated_guides')} гайдов, удалено {result.get('deleted_placeholders')} заглушек.",
+        "data": result,
+    }
+
+
