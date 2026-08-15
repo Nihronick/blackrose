@@ -1,3 +1,4 @@
+import aiohttp
 from fastapi import APIRouter, Depends, HTTPException
 from core.auth import require_admin
 from core.logging import get_logger
