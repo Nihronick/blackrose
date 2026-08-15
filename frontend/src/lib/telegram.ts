@@ -1,11 +1,17 @@
+import WebApp from '@twa-dev/sdk'
 import type { TelegramWebApp } from '../globals'
 
 /**
  * Safely returns the Telegram WebApp instance if available
  */
 export function getTelegramWebApp(): TelegramWebApp | null {
-  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-    return window.Telegram.WebApp
+  if (typeof window !== 'undefined') {
+    if (window.Telegram?.WebApp) {
+      return window.Telegram.WebApp
+    }
+    if (WebApp) {
+      return WebApp as unknown as TelegramWebApp
+    }
   }
   return null
 }

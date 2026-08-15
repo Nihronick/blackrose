@@ -1,3 +1,4 @@
+import WebApp from '@twa-dev/sdk'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
 
@@ -17,7 +18,7 @@ export interface User {
 export type AuthMode = 'telegram' | 'web' | 'guest'
 
 export function getMode(): AuthMode {
-  if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
+  if (typeof window !== 'undefined' && getTelegramInitData()) {
     return 'telegram'
   }
   return getStoredToken() ? 'web' : 'guest'
@@ -97,7 +98,9 @@ export function sanitizeHeaderValue(val: string): string {
 
 export function getTelegramInitData(): string {
   if (typeof window !== 'undefined') {
-    const tgData = window.Telegram?.WebApp?.initData
+    const tgData =
+      window.Telegram?.WebApp?.initData ||
+      (typeof WebApp !== 'undefined' && WebApp?.initData ? WebApp.initData : '')
     if (tgData && tgData.length > 0) {
       return tgData
     }
@@ -122,6 +125,7 @@ export function hasTelegramWebApp(): boolean {
   const loc = window.location
   return Boolean(
     (w.Telegram as { WebApp?: unknown })?.WebApp ||
+      (typeof WebApp !== 'undefined' && Boolean(WebApp?.initData)) ||
       w.TelegramWebviewProxy ||
       w.TelegramGameProxy ||
       loc.hash.includes('tgWebAppData') ||
