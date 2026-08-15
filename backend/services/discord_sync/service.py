@@ -358,21 +358,33 @@ class DiscordSyncService:
             for key, title, text, category_key in rows:
                 changed = False
                 clean_t = title or ""
-                if clean_t.startswith("![") or "{{" in clean_t or clean_t.startswith("http") or len(clean_t) > 100:
+                # If title starts with markdown image, emoji, link, or is too long/corrupted
+                if (
+                    clean_t.startswith("![")
+                    or clean_t.startswith("!Скриншот")
+                    or "{{" in clean_t
+                    or clean_t.startswith("http")
+                    or len(clean_t) > 80
+                ):
                     lines = [
                         ln.strip() for ln in (text or "").split("\n")
-                        if ln.strip() and not ln.strip().startswith("![") and not ln.strip().startswith("{{") and not ln.strip().startswith("http")
+                        if ln.strip()
+                        and not ln.strip().startswith("![")
+                        and not ln.strip().startswith("!Скриншот")
+                        and not ln.strip().startswith("{{")
+                        and not ln.strip().startswith("http")
                     ]
                     if lines:
                         clean_t = re.sub(r"^#+\s*", "", lines[0])
                     else:
                         clean_t = f"Гайд: {category_key.capitalize() if category_key else 'Гайд'}"
 
-                clean_t = re.sub(r"!\[.*?\]\(.*?\)", "", clean_t)
-                clean_t = re.sub(r"\{\{.*?\}\}", "", clean_t)
+                clean_t = re.sub(r"!\[.*?(\]|\(|$).*", "", clean_t)
+                clean_t = re.sub(r"!Скриншот.*", "", clean_t)
+                clean_t = re.sub(r"\{\{.*?(\}\}|$)", "", clean_t)
                 clean_t = re.sub(r"https?://\S+", "", clean_t)
                 clean_t = re.sub(r"^#+\s*", "", clean_t).strip()
-                if not clean_t:
+                if not clean_t or len(clean_t) < 2:
                     clean_t = f"Гайд: {category_key.capitalize() if category_key else 'Гайд'}"
 
                 if clean_t != (title or ""):
