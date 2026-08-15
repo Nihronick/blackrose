@@ -262,25 +262,30 @@ async def search(q: str = "", user=Depends(require_public_user)):
     return {"results": results}
 
 @router.get("/top")
-async def top_guides(user=Depends(require_public_user)):
+@cached(expire=120)
+async def top_guides(request: Request, user=Depends(require_public_user)):
     results = await guide_service.get_top_guides(limit=10)
     return {"results": results}
 
 @router.get("/tag/{tag}")
-async def guides_by_tag(tag: str, user=Depends(require_public_user)):
+@cached(expire=300)
+async def guides_by_tag(tag: str, request: Request, user=Depends(require_public_user)):
     return {"results": await guide_service.get_by_tag(tag)}
 
 @router.get("/tags")
-async def tags(user=Depends(require_public_user)):
+@cached(expire=300)
+async def tags(request: Request, user=Depends(require_public_user)):
     return {"tags": await guide_service.get_tags()}
 
 @router.get("/recent/guides")
-async def recent_guides(user=Depends(require_public_user)):
+@cached(expire=120)
+async def recent_guides(request: Request, user=Depends(require_public_user)):
     results = await guide_service.get_recent_guides(limit=10)
     return {"results": results}
 
 @router.get("/recent/comments")
-async def recent_comments(user=Depends(require_public_user)):
+@cached(expire=60)
+async def recent_comments(request: Request, user=Depends(require_public_user)):
     comments = await guide_service.get_recent_comments(limit=10)
     return {"comments": comments}
 
