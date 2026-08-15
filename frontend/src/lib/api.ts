@@ -100,6 +100,13 @@ async function apiRaw<T>(
   let res: Response
   try {
     res = await fetch(`${BASE}${endpoint}`, options)
+  } catch (err) {
+    // Transparent retry for transient network glitches or HF Space wakeups
+    if (!hasRetried && method === 'GET') {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      return apiRaw<T>(endpoint, method, body, isFormData, true)
+    }
+    throw err
   } finally {
     clearTimeout(warmupTimer)
     if (typeof window !== 'undefined') {
