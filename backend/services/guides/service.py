@@ -77,12 +77,14 @@ class GuideService:
                 .limit(20)
             )
             result = await session.execute(stmt)
-            return [cls._to_dict(g) for g in result.scalars()]
+            return [cls._to_dict(g) for g in result.scalars() if not g.key.startswith("cat_init_")]
 
     @classmethod
     async def get_all(cls, category_key: str | None = None) -> list[dict]:
         async with get_sessionmaker()() as session:
-            stmt = select(Guide).options(selectinload(Guide.tags)).order_by(Guide.sort_order)
+            stmt = select(Guide).options(selectinload(Guide.tags)).where(
+                ~Guide.key.like("cat_init_%")
+            ).order_by(Guide.sort_order)
             if category_key:
                 stmt = stmt.where(Guide.category_key == category_key)
             result = await session.execute(stmt)
@@ -91,14 +93,18 @@ class GuideService:
     @classmethod
     async def get_top_guides(cls, limit: int = 10) -> list[dict]:
         async with get_sessionmaker()() as session:
-            stmt = select(Guide).options(selectinload(Guide.tags)).order_by(desc(Guide.views)).limit(limit)
+            stmt = select(Guide).options(selectinload(Guide.tags)).where(
+                ~Guide.key.like("cat_init_%")
+            ).order_by(desc(Guide.views)).limit(limit)
             result = await session.execute(stmt)
             return [cls._to_dict(g) for g in result.scalars()]
 
     @classmethod
     async def get_recent_guides(cls, limit: int = 10) -> list[dict]:
         async with get_sessionmaker()() as session:
-            stmt = select(Guide).options(selectinload(Guide.tags)).order_by(desc(Guide.updated_at)).limit(limit)
+            stmt = select(Guide).options(selectinload(Guide.tags)).where(
+                ~Guide.key.like("cat_init_%")
+            ).order_by(desc(Guide.updated_at)).limit(limit)
             result = await session.execute(stmt)
             return [cls._to_dict(g) for g in result.scalars()]
 

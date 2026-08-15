@@ -54,15 +54,14 @@ class StealthDiscordWorker:
             url,
             headers={
                 "Authorization": clean_token,
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "*/*",
                 "Accept-Language": "en-US,en;q=0.9",
             }
         )
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
         try:
-            with urllib.request.urlopen(req, context=ctx, timeout=25) as resp:
+            with urllib.request.urlopen(req, context=ctx, timeout=30) as resp:
                 raw = resp.read().decode("utf-8")
                 return resp.status, json.loads(raw)
         except urllib.error.HTTPError as e:
@@ -76,7 +75,7 @@ class StealthDiscordWorker:
 
     async def _get_json(self, session: aiohttp.ClientSession, url: str, headers: dict) -> tuple[int, dict | list | str]:
         try:
-            async with session.get(url, headers=headers, ssl=False) as resp:
+            async with session.get(url, headers=headers) as resp:
                 status = resp.status
                 if status == 200:
                     data = await resp.json()
@@ -88,7 +87,7 @@ class StealthDiscordWorker:
                     except Exception:
                         return status, text
         except Exception as e:
-            logger.warning(f"aiohttp request failed ({e}); attempting urllib fallback for {url}")
+            logger.warning(f"aiohttp request failed ({e}); attempting sync fallback for {url}")
             token = headers.get("Authorization", "")
             return await asyncio.to_thread(self._sync_fetch_json, url, token)
 

@@ -15,6 +15,20 @@ services:
       db:
         condition: service_healthy
 
+  # AIO Sandbox — All-in-One Agent Sandbox Environment
+  # Browser (VNC), Shell, File, VSCode Server, Jupyter, MCP — в одном контейнере
+  # Docs: https://sandbox.agent-infra.com/
+  sandbox:
+    image: ghcr.io/agent-infra/sandbox:1.11.0
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - SANDBOX_API_KEY=${SANDBOX_API_KEY:-blackrose-dev-key}
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/workspace
+    restart: unless-stopped
 
   db:
     image: postgres:15-alpine

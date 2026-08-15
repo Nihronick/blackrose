@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     # Frontend/WebApp
     FRONTEND_URL: str = "http://localhost:5173"
     MINIAPP_URL: Optional[str] = None
+
+    # AIO Sandbox (agent environment)
+    SANDBOX_URL: str = "http://sandbox:8080"
+    SANDBOX_API_KEY: str = "blackrose-dev-key"
     @property
     def admin_user_ids(self) -> set[int]:
         if not self.ADMIN_USERS:

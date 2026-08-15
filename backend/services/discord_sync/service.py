@@ -179,9 +179,34 @@ class DiscordSyncService:
                 except Exception as res_err:
                     logger.warning(f"Error resolving inline media: {res_err}")
 
-                # 5. Extract Title
-                first_line = clean_text.split("\n")[0].strip("# ").strip()
-                title = custom_title or (first_line[:80] if first_line else f"Гайд от {author_tag}")
+                # 5. Extract Title (from translated text if available)
+                import re as _re
+                source_for_title = final_text if auto_translate else clean_text
+                # Try to find first markdown heading
+                heading_match = _re.search(r'^#+\s+(.+)$', source_for_title, _re.MULTILINE)
+                if custom_title:
+                    title = custom_title
+                elif heading_match:
+                    raw_title = heading_match.group(1).strip()
+                    # Strip markdown images, links, and emoji placeholders from title
+                    raw_title = _re.sub(r'!\[.*?\]\(.*?\)', '', raw_title)
+                    raw_title = _re.sub(r'\[([^\]]*?)\]\(.*?\)', r'\1', raw_title)
+                    raw_title = _re.sub(r'\{\{[^}]*\}\}', '', raw_title)
+                    raw_title = _re.sub(r'[\*_~`#]+', '', raw_title).strip()
+                    title = raw_title[:80] if raw_title else f"Гайд от {author_tag}"
+                else:
+                    # Fallback: first non-empty text line, cleaned
+                    first_line = ""
+                    for line in source_for_title.split("\n"):
+                        candidate = line.strip().lstrip("# ").strip()
+                        candidate = _re.sub(r'!\[.*?\]\(.*?\)', '', candidate)
+                        candidate = _re.sub(r'\[([^\]]*?)\]\(.*?\)', r'\1', candidate)
+                        candidate = _re.sub(r'\{\{[^}]*\}\}', '', candidate)
+                        candidate = _re.sub(r'[\*_~`]+', '', candidate).strip()
+                        if candidate and len(candidate) > 3:
+                            first_line = candidate
+                            break
+                    title = first_line[:80] if first_line else f"Гайд от {author_tag}"
 
                 # Key generation
                 guide_key = existing_synced.guide_key if existing_synced else f"discord_{message_id}"

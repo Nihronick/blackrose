@@ -670,7 +670,7 @@ cd frontend && npm run dev
 - **Performance**: N+1 issues in `reorder` operations fixed via SQLAlchemy executemany.
 
 ### Frontend Stack (August 2026)
-- **React 19** + **Vite 6.4** + **TypeScript** + **Tailwind CSS v4** (чистый, без Layui/Bootstrap).
+- **React 18** + **Vite 6** + **TypeScript** + **Tailwind CSS v4** (чистый, без Layui/Bootstrap).
 - **Build target**: `es2022`, без production sourcemaps.
 - **Vendor chunking**: `vendor-react` (283 кБ), `vendor-motion` (126 кБ), `vendor-charts` (333 кБ), `vendor-tanstack` (36 кБ).
 - **Главный JS бандл**: уменьшен с 530 кБ до **152 кБ** (−71.3%).

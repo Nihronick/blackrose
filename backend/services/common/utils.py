@@ -105,12 +105,27 @@ def format_guide_text(text: str, guide_links: dict | None = None) -> str:
     # HR
     text = re.sub(r"^---$", r'<hr class="guide-hr">', text, flags=re.M)
 
-    # Icons {{NAME}} -> <img ...>
+    # Icons {{NAME}} -> <img ...> (mapped icons)
     def replace_icon(match):
         name = match.group(1)
         return f'<img src="{icon_url(name)}" class="inline-icon" alt="{name}">'
 
     text = re.sub(r"\{\{([A-Z0-9_]+)\}\}", replace_icon, text)
+
+    # Icons {{icon:name}} -> <img ...> (legacy Discord emoji format)
+    def replace_icon_legacy(match):
+        name = match.group(1)
+        url = icon_url(name.upper())
+        return f'<img src="{url}" class="inline-icon" alt="{name}">'
+
+    text = re.sub(r"\{\{icon:([a-zA-Z0-9_]+)\}\}", replace_icon_legacy, text)
+
+    # Direct Discord CDN emoji URLs {{https://cdn.discordapp.com/emojis/...}}
+    def replace_cdn_emoji(match):
+        url = match.group(1)
+        return f'<img src="{url}" class="inline-icon" alt="emoji">'
+
+    text = re.sub(r"\{\{(https?://cdn\.discordapp\.com/emojis/[^}]+)\}\}", replace_cdn_emoji, text)
 
     # Final line break handling for plain paragraphs
     text = text.replace("\n", "<br>")

@@ -11,6 +11,5 @@ export const APP_CONFIG = {
     TELEGRAM: 'https://t.me/blackrose',
     DISCORD: 'https://discord.gg/slayerlegend',
     GITHUB: 'https://github.com/Nihronick/blackrose',
-    BOOSTY: 'https://boosty.to/blackrose',
   },
 } as const

@@ -230,16 +230,6 @@ export const RoadmapView: FC<RoadmapViewProps> = () => {
               >
                 <BrandIcon name="github" size={20} />
               </button>
-              <button
-                type="button"
-                className="size-10 rounded-xl bg-muted/30 border border-border/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-300"
-                onClick={() => {
-                  haptic.light()
-                  window.open(APP_CONFIG.LINKS.BOOSTY, '_blank')
-                }}
-              >
-                <BrandIcon name="boosty" size={20} />
-              </button>
             </div>
 
             <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-2">

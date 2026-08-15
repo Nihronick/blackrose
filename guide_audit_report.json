@@ -1,0 +1,297 @@
+{
+  "summary": {
+    "total": 25,
+    "empty": 0,
+    "short": 6,
+    "placeholder": 6,
+    "broken_icons": 0,
+    "expired_cdn": 10,
+    "issues_count": 29
+  },
+  "issues": [
+    {
+      "category": "shop",
+      "key": "discord_1131616234320961569",
+      "title": "![Скриншот](https://cdn.discordapp.com/attachments/112110526",
+      "text_len": 204,
+      "photos": 1,
+      "videos": 0,
+      "views": 2,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)",
+        "BROKEN_TITLE"
+      ]
+    },
+    {
+      "category": "shop",
+      "key": "discord_1361877417085632674",
+      "title": "![Скриншот](https://cdn.discordapp.com/attachments/112110526",
+      "text_len": 194,
+      "photos": 1,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)",
+        "BROKEN_TITLE"
+      ]
+    },
+    {
+      "category": "shop",
+      "key": "discord_1534958007203528890",
+      "title": "{{https://cdn.discordapp.com/emojis/1061204977445507132.webp",
+      "text_len": 418,
+      "photos": 0,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "BROKEN_TITLE"
+      ]
+    },
+    {
+      "category": "shop",
+      "key": "cat_init_shop",
+      "title": "Инициализация Магазин",
+      "text_len": 26,
+      "photos": 0,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "PLACEHOLDER",
+        "SHORT_CONTENT"
+      ]
+    },
+    {
+      "category": "equipment",
+      "category_title": "Экипировка",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "character",
+      "category_title": "Персонаж",
+      "issue": "API_ERROR",
+      "detail": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1006)>"
+    },
+    {
+      "category": "skills",
+      "category_title": "Навыки",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "companion",
+      "category_title": "Компаньоны и Фамильяры",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "adventure",
+      "category_title": "Приключения",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "stage",
+      "category_title": "Этапы",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "slayerpedia-index",
+      "key": "cat_init_slayerpedia-index",
+      "title": "Инициализация Индекс Охотникпедии",
+      "text_len": 26,
+      "photos": 0,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "PLACEHOLDER",
+        "SHORT_CONTENT"
+      ]
+    },
+    {
+      "category": "spirit",
+      "category_title": "Духи",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "beginner-guide",
+      "category_title": "Гайд для начинающих",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370969136745676851",
+      "title": "Ether",
+      "text_len": 2932,
+      "photos": 1,
+      "videos": 0,
+      "views": 1,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370968571320074401",
+      "title": "Silver",
+      "text_len": 419,
+      "photos": 1,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370968915949125682",
+      "title": "Arcanite",
+      "text_len": 1396,
+      "photos": 1,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370969029031886859",
+      "title": "Adamant",
+      "text_len": 1218,
+      "photos": 1,
+      "videos": 0,
+      "views": 2,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370968748231757975",
+      "title": "Mithril",
+      "text_len": 2500,
+      "photos": 1,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370968829773217832",
+      "title": "Orichalcum",
+      "text_len": 427,
+      "photos": 1,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370968676370616320",
+      "title": "Gold",
+      "text_len": 436,
+      "photos": 1,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "discord_1370968331707879564",
+      "title": "Bronze",
+      "text_len": 449,
+      "photos": 2,
+      "videos": 1,
+      "views": 0,
+      "issues": [
+        "EXPIRED_CDN_PHOTOS(1)"
+      ]
+    },
+    {
+      "category": "early-game-promotions",
+      "key": "cat_init_early-game-promotions",
+      "title": "Инициализация Продвижение (Early Game)",
+      "text_len": 26,
+      "photos": 0,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "PLACEHOLDER",
+        "SHORT_CONTENT"
+      ]
+    },
+    {
+      "category": "mid-game-promotions",
+      "category_title": "Продвижение (Mid Game)",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "late-game-promotions",
+      "category_title": "Продвижение (Late Game)",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "story-lore",
+      "category_title": "Сюжет и Лор",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    },
+    {
+      "category": "slayer-playbook",
+      "key": "cat_init_slayer-playbook",
+      "title": "Инициализация Книга Охотника",
+      "text_len": 26,
+      "photos": 0,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "PLACEHOLDER",
+        "SHORT_CONTENT"
+      ]
+    },
+    {
+      "category": "bannibal-experiment-builds",
+      "key": "cat_init_bannibal-experiment-builds",
+      "title": "Инициализация Экспериментальные Билды",
+      "text_len": 26,
+      "photos": 0,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "PLACEHOLDER",
+        "SHORT_CONTENT"
+      ]
+    },
+    {
+      "category": "promotion-and-suit-recommendation",
+      "key": "cat_init_promotion-and-suit-recommendation",
+      "title": "Инициализация Рекомендации Костюмов",
+      "text_len": 26,
+      "photos": 0,
+      "videos": 0,
+      "views": 0,
+      "issues": [
+        "PLACEHOLDER",
+        "SHORT_CONTENT"
+      ]
+    },
+    {
+      "category": "event-help",
+      "category_title": "Помощь по Ивентам",
+      "issue": "API_ERROR",
+      "detail": "The read operation timed out"
+    }
+  ]
+}

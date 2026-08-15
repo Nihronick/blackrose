@@ -6,6 +6,10 @@ logger = get_logger("blackrose.services.discord_sync.translator")
 
 # Comprehensive BlackRose / Gaming Glossary Map
 GAMING_GLOSSARY: dict[str, str] = {
+    "Constellations": "Созвездия",
+    "Constellation": "Созвездие",
+    "Amount": "Количество",
+    "amount": "количество",
     "Rift": "Рифт",
     "Golems": "Големы",
     "Golem": "Голем",
@@ -17,10 +21,10 @@ GAMING_GLOSSARY: dict[str, str] = {
     "Skill Stones": "Камни Навыков",
     "Companion": "Компаньон",
     "Companions": "Компаньоны",
-    "Promotion": "Промоушен",
-    "Promotions": "Промоушены",
-    "Stage": "Стадия",
-    "Stages": "Стадии",
+    "Promotion": "Продвижение",
+    "Promotions": "Продвижения",
+    "Stage": "Этап",
+    "Stages": "Этапы",
     "Rage": "Ярость",
     "Rave": "Рейв",
     "Slayer": "Слейер",
@@ -107,7 +111,9 @@ def sanitize_discord_markdown(text: str) -> tuple[str, list[str], list[str]]:
     # Replace Discord custom animated/static emojis <:name:id> or <a:name:id>
     def replace_custom_emoji(match: re.Match) -> str:
         is_anim, name, emoji_id = match.groups()
-        return f"{{{{icon:{name}}}}}"
+        ext = "gif" if is_anim else "webp"
+        cdn_url = f"https://cdn.discordapp.com/emojis/{emoji_id}.{ext}?size=48&quality=lossless"
+        return f"{{{{{cdn_url}}}}}"
 
     text = re.sub(r'<(a)?:([a-zA-Z0-9_]+):(\d+)>', replace_custom_emoji, text)
 
@@ -195,7 +201,14 @@ async def translate_en_to_ru(text: str) -> str:
         else:
             translated_text = translated_text.replace(key, val)
 
-    return translated_text
+    # Clean up any leftover translation artifacts
+    translated_text = re.sub(r'__(?:ГЛОСС|GLOSS|CODE|КОД)\d*__', '', translated_text, flags=re.IGNORECASE)
+    translated_text = re.sub(r'\baМаунт\b', 'количество', translated_text)
+    translated_text = re.sub(r'\bМаунт\b', 'количество', translated_text)
+    translated_text = re.sub(r'\bСозвездиеs\b', 'Созвездия', translated_text)
+    translated_text = re.sub(r'\bПробуждениеs\b', 'Пробуждения', translated_text)
+
+    return translated_text.strip()
 
 
 def generate_tldr_block(text: str) -> str:
