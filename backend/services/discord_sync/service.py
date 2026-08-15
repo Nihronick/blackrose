@@ -233,20 +233,46 @@ class DiscordSyncService:
                 # 3. Clean Discord Markdown & handle media
                 clean_text, extracted_photos, extracted_videos = sanitize_discord_markdown(raw_content)
 
+                all_media_candidates = list(dict.fromkeys(attachments_urls + extracted_photos + embed_photos + extracted_videos + embed_videos))
+                video_extensions = ('.mp4', '.webm', '.mov', '.mkv', '.avi', '.flv', '.wmv', '.gifv')
+
+                photo_candidates = []
+                video_candidates = []
+
+                for m_url in all_media_candidates:
+                    if not m_url:
+                        continue
+                    clean_u = m_url.lower().split("?")[0]
+                    if any(clean_u.endswith(ext) for ext in video_extensions) or "youtube.com" in clean_u or "youtu.be" in clean_u:
+                        video_candidates.append(m_url)
+                    else:
+                        photo_candidates.append(m_url)
+
                 # Download Discord attachments and extracted photos to persistent storage so URLs never expire
                 local_photos: list[str] = []
-                raw_photos = list(dict.fromkeys(attachments_urls + extracted_photos + embed_photos))
-                all_videos = list(dict.fromkeys(extracted_videos + embed_videos))
+                for url in photo_candidates:
+                    try:
+                        saved_path = await MediaService.import_from_url(url, folder=f"discord/{target_channel_id}")
+                        if saved_path:
+                            local_photos.append(saved_path)
+                    except Exception as err:
+                        logger.warning(f"Failed to import photo {url}: {err}")
+                        local_photos.append(url)
 
-                for url in raw_photos:
-                    if url:
+                # Download and persist video files if they are direct video uploads or discord attachments
+                local_videos: list[str] = []
+                for v_url in video_candidates:
+                    clean_v = v_url.lower().split("?")[0]
+                    if any(clean_v.endswith(ext) for ext in video_extensions) or "discordapp." in v_url:
                         try:
-                            saved_path = await MediaService.import_from_url(url, folder=f"discord/{target_channel_id}")
-                            if saved_path:
-                                local_photos.append(saved_path)
+                            saved_v = await MediaService.import_from_url(v_url, folder=f"discord/{target_channel_id}")
+                            if saved_v:
+                                local_videos.append(saved_v)
                         except Exception as err:
-                            logger.warning(f"Failed to import attachment {url}: {err}")
-                            local_photos.append(url)
+                            logger.warning(f"Failed to import video {v_url}: {err}")
+                            local_videos.append(v_url)
+                    else:
+                        local_videos.append(v_url)
 
                 # 4. Optional Translation (EN -> RU) & TL;DR block
                 final_text = clean_text
@@ -260,34 +286,24 @@ class DiscordSyncService:
                 except Exception as res_err:
                     logger.warning(f"Error resolving inline media: {res_err}")
 
-                # 5. Extract Title (from translated text if available)
+                # 5. Extract and clean Title
                 import re as _re
                 source_for_title = final_text if auto_translate else clean_text
-                # Try to find first markdown heading
                 heading_match = _re.search(r'^#+\s+(.+)$', source_for_title, _re.MULTILINE)
                 if custom_title:
-                    title = custom_title
+                    raw_candidate = custom_title
                 elif heading_match:
-                    raw_title = heading_match.group(1).strip()
-                    # Strip markdown images, links, and emoji placeholders from title
-                    raw_title = _re.sub(r'!\[.*?\]\(.*?\)', '', raw_title)
-                    raw_title = _re.sub(r'\[([^\]]*?)\]\(.*?\)', r'\1', raw_title)
-                    raw_title = _re.sub(r'\{\{[^}]*\}\}', '', raw_title)
-                    raw_title = _re.sub(r'[\*_~`#]+', '', raw_title).strip()
-                    title = raw_title[:80] if raw_title else f"Гайд от {author_tag}"
+                    raw_candidate = heading_match.group(1).strip()
                 else:
-                    # Fallback: first non-empty text line, cleaned
                     first_line = ""
                     for line in source_for_title.split("\n"):
-                        candidate = line.strip().lstrip("# ").strip()
-                        candidate = _re.sub(r'!\[.*?\]\(.*?\)', '', candidate)
-                        candidate = _re.sub(r'\[([^\]]*?)\]\(.*?\)', r'\1', candidate)
-                        candidate = _re.sub(r'\{\{[^}]*\}\}', '', candidate)
-                        candidate = _re.sub(r'[\*_~`]+', '', candidate).strip()
-                        if candidate and len(candidate) > 3:
-                            first_line = candidate
+                        cand = line.strip().lstrip("# ").strip()
+                        if cand and len(cand) > 3:
+                            first_line = cand
                             break
-                    title = first_line[:80] if first_line else f"Гайд от {author_tag}"
+                    raw_candidate = first_line or f"Гайд от {author_tag}"
+
+                title = clean_guide_title(raw_candidate, final_text, category_key)
 
                 # Key generation
                 guide_key = existing_synced.guide_key if existing_synced else f"discord_{message_id}"
@@ -305,7 +321,7 @@ class DiscordSyncService:
                         title=title,
                         text=final_text,
                         photo=local_photos,
-                        video=all_videos,
+                        video=local_videos,
                         views=0,
                     )
                     session.add(guide)
@@ -315,8 +331,8 @@ class DiscordSyncService:
                     guide.category_key = category_key
                     if local_photos:
                         guide.photo = local_photos
-                    if all_videos:
-                        guide.video = all_videos
+                    if local_videos:
+                        guide.video = local_videos
 
                 # 7. Upsert into DiscordSyncedGuide tracker
                 if not existing_synced:

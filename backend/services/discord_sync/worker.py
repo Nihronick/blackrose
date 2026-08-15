@@ -140,34 +140,63 @@ class StealthDiscordWorker:
                                 if str(th.get("parent_id")) == str(channel_id):
                                     threads_to_process.append(th)
 
-                    # Fetch archived public threads
-                    archived_url = f"https://discord.com/api/v10/channels/{channel_id}/threads/archived/public"
-                    ar_status, a_data = await self._get_json(session, archived_url, headers)
-                    if ar_status == 200 and isinstance(a_data, dict):
-                        for th in a_data.get("threads", []):
-                            if not any(t["id"] == th["id"] for t in threads_to_process):
-                                threads_to_process.append(th)
+                    # Fetch archived public threads with pagination
+                    before_ts = None
+                    for _ in range(10):
+                        archived_url = f"https://discord.com/api/v10/channels/{channel_id}/threads/archived/public?limit=100"
+                        if before_ts:
+                            archived_url += f"&before={before_ts}"
+                        ar_status, a_data = await self._get_json(session, archived_url, headers)
+                        if ar_status == 200 and isinstance(a_data, dict):
+                            batch = a_data.get("threads", [])
+                            if not batch:
+                                break
+                            for th in batch:
+                                if not any(t["id"] == th["id"] for t in threads_to_process):
+                                    threads_to_process.append(th)
+                            if not a_data.get("has_more") or len(batch) < 100:
+                                break
+                            last_meta = batch[-1].get("thread_metadata", {})
+                            before_ts = last_meta.get("archive_timestamp")
+                            if not before_ts:
+                                break
+                        else:
+                            break
 
                     logger.info(f"Found {len(threads_to_process)} forum threads in channel {channel_id}")
 
                     for th in threads_to_process:
                         thread_id = th.get("id")
                         thread_name = th.get("name", "Форум Гайд")
-                        msgs_url = f"https://discord.com/api/v10/channels/{thread_id}/messages?limit=100"
-                        m_status, msgs = await self._get_json(session, msgs_url, headers)
-                        if m_status == 200 and isinstance(msgs, list) and msgs:
-                            msgs.sort(key=lambda x: x.get("id", ""))
-                            starter_msg = msgs[0]
-                            combined_content = "\n\n".join(
-                                m.get("content", "") for m in msgs if m.get("content")
-                            )
+                        all_msgs = []
+                        before_msg_id = None
+                        for _ in range(10):
+                            msgs_url = f"https://discord.com/api/v10/channels/{thread_id}/messages?limit=100"
+                            if before_msg_id:
+                                msgs_url += f"&before={before_msg_id}"
+                            m_status, msgs = await self._get_json(session, msgs_url, headers)
+                            if m_status == 200 and isinstance(msgs, list) and msgs:
+                                all_msgs.extend(msgs)
+                                if len(msgs) < 100:
+                                    break
+                                before_msg_id = msgs[-1].get("id")
+                            else:
+                                break
+
+                        if all_msgs:
+                            all_msgs.sort(key=lambda x: int(x.get("id", "0")))
+                            starter_msg = all_msgs[0]
+                            combined_parts = []
                             all_attachments = []
                             all_embeds = []
-                            for m in msgs:
+                            for m in all_msgs:
+                                content = m.get("content", "").strip()
+                                if content:
+                                    combined_parts.append(content)
                                 all_attachments.extend(m.get("attachments", []))
                                 all_embeds.extend(m.get("embeds", []))
 
-                            starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                            starter_msg["content"] = "\n\n".join(combined_parts) or starter_msg.get("content", "")
                             starter_msg["attachments"] = all_attachments
                             starter_msg["embeds"] = all_embeds
                             res = await discord_sync_service.process_discord_message(
@@ -186,19 +215,35 @@ class StealthDiscordWorker:
                 elif ch_type in (11, 12):
                     thread_name = ch_data.get("name", "Гайд")
                     parent_id = ch_data.get("parent_id")
-                    msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit=100"
-                    m_status, msgs = await self._get_json(session, msgs_url, headers)
-                    if m_status == 200 and isinstance(msgs, list) and msgs:
-                        msgs.sort(key=lambda x: x.get("id", ""))
-                        starter_msg = msgs[0]
-                        combined_content = "\n\n".join(m.get("content", "") for m in msgs if m.get("content"))
+                    all_msgs = []
+                    before_msg_id = None
+                    for _ in range(10):
+                        msgs_url = f"https://discord.com/api/v10/channels/{channel_id}/messages?limit=100"
+                        if before_msg_id:
+                            msgs_url += f"&before={before_msg_id}"
+                        m_status, msgs = await self._get_json(session, msgs_url, headers)
+                        if m_status == 200 and isinstance(msgs, list) and msgs:
+                            all_msgs.extend(msgs)
+                            if len(msgs) < 100:
+                                break
+                            before_msg_id = msgs[-1].get("id")
+                        else:
+                            break
+
+                    if all_msgs:
+                        all_msgs.sort(key=lambda x: int(x.get("id", "0")))
+                        starter_msg = all_msgs[0]
+                        combined_parts = []
                         all_attachments = []
                         all_embeds = []
-                        for m in msgs:
+                        for m in all_msgs:
+                            content = m.get("content", "").strip()
+                            if content:
+                                combined_parts.append(content)
                             all_attachments.extend(m.get("attachments", []))
                             all_embeds.extend(m.get("embeds", []))
 
-                        starter_msg["content"] = combined_content or starter_msg.get("content", "")
+                        starter_msg["content"] = "\n\n".join(combined_parts) or starter_msg.get("content", "")
                         starter_msg["attachments"] = all_attachments
                         starter_msg["embeds"] = all_embeds
                         res = await discord_sync_service.process_discord_message(
