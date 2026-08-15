@@ -9,7 +9,7 @@ import { useAppNavigation } from '@/lib/navigation'
 import type { Guide } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { type FC, useEffect, useRef, useState } from 'react'
+import { type FC, useEffect, useRef, useState, useTransition, useDeferredValue } from 'react'
 
 const highlightMatch = (text: string, query: string) => {
   if (!query || !text) return text

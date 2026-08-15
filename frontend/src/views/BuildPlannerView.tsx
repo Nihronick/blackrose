@@ -5,7 +5,7 @@ import { haptic } from '@/lib/haptic'
 import { Award, Check, Copy, Flame, RefreshCw, Share2, Shield, Sparkles, Zap } from '@/lib/icons'
 import { getRankIcon, getRankName } from '@/lib/rankIcons'
 import { motion } from 'framer-motion'
-import { type FC, useEffect, useMemo, useState } from 'react'
+import { type FC, useEffect, useMemo, useState, useTransition } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
