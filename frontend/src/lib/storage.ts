@@ -7,7 +7,7 @@ const tg = window.Telegram?.WebApp
 export const storage = {
   get: (key: string): Promise<string | null> => {
     return new Promise((resolve) => {
-      if (tg?.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg?.CloudStorage) {
+      if (tg?.isVersionAtLeast?.('6.9') && tg?.CloudStorage) {
         try {
           tg.CloudStorage.getItem(key, (err: Error | null, val: string | null) =>
             resolve(err ? null : (val ?? null))
@@ -27,7 +27,7 @@ export const storage = {
 
   set: (key: string, value: string): Promise<boolean> => {
     return new Promise((resolve) => {
-      if (tg?.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg?.CloudStorage) {
+      if (tg?.isVersionAtLeast?.('6.9') && tg?.CloudStorage) {
         try {
           tg.CloudStorage.setItem(key, value, (err: Error | null) => resolve(!err))
         } catch {

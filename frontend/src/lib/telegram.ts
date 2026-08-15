@@ -51,7 +51,7 @@ export function initTelegramApp(navigate?: (path: string) => void) {
     tg.ready()
 
     // 2. Expand / Request Fullscreen for maximum native feel
-    if (tg.isVersionAtLeast && tg.isVersionAtLeast('8.0') && tg.requestFullscreen) {
+    if (tg.isVersionAtLeast?.('8.0') && tg.requestFullscreen) {
       try {
         tg.requestFullscreen()
       } catch {
@@ -66,7 +66,7 @@ export function initTelegramApp(navigate?: (path: string) => void) {
     }
 
     // 3. Enable closing confirmation when navigating
-    if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.2') && tg.enableClosingConfirmation) {
+    if (tg.isVersionAtLeast?.('6.2') && tg.enableClosingConfirmation) {
       try {
         tg.enableClosingConfirmation()
       } catch {
