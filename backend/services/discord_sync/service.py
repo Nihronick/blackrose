@@ -335,63 +335,66 @@ class DiscordSyncService:
     async def sanitize_all_existing_guides(self) -> dict:
         """
         Cleans titles, removes cat_init_* placeholders, and purges translation artifacts from all guides in DB.
+        Uses direct atomic SQL queries to avoid ORM relationship issues.
         """
         import re
+        from sqlalchemy import update
         from models.db_models import Guide
         updated = 0
         deleted_placeholders = 0
         async with get_sessionmaker()() as session:
-            # 1. Delete cat_init_* placeholders
-            res_ph = await session.execute(
-                select(Guide).where(Guide.key.like("cat_init_%"))
+            # 1. Delete cat_init_* placeholders directly
+            del_res = await session.execute(
+                delete(Guide).where(Guide.key.like("cat_init_%"))
             )
-            placeholders = res_ph.scalars().all()
-            for ph in placeholders:
-                await session.delete(ph)
-                deleted_placeholders += 1
+            deleted_placeholders = del_res.rowcount or 0
 
-            # 2. Iterate all remaining guides
-            res = await session.execute(select(Guide))
-            guides = res.scalars().all()
-            for g in guides:
+            # 2. Fetch all guides columns
+            res = await session.execute(
+                select(Guide.key, Guide.title, Guide.text, Guide.category_key)
+            )
+            rows = res.all()
+
+            for key, title, text, category_key in rows:
                 changed = False
-                title = g.title or ""
-                # Clean title
-                clean_t = title
+                clean_t = title or ""
                 if clean_t.startswith("![") or "{{" in clean_t or clean_t.startswith("http") or len(clean_t) > 100:
                     lines = [
-                        ln.strip() for ln in (g.text or "").split("\n")
+                        ln.strip() for ln in (text or "").split("\n")
                         if ln.strip() and not ln.strip().startswith("![") and not ln.strip().startswith("{{") and not ln.strip().startswith("http")
                     ]
                     if lines:
                         clean_t = re.sub(r"^#+\s*", "", lines[0])
                     else:
-                        clean_t = f"Гайд: {g.category_key.capitalize()}"
+                        clean_t = f"Гайд: {category_key.capitalize() if category_key else 'Гайд'}"
 
                 clean_t = re.sub(r"!\[.*?\]\(.*?\)", "", clean_t)
                 clean_t = re.sub(r"\{\{.*?\}\}", "", clean_t)
                 clean_t = re.sub(r"https?://\S+", "", clean_t)
                 clean_t = re.sub(r"^#+\s*", "", clean_t).strip()
                 if not clean_t:
-                    clean_t = f"Гайд: {g.category_key.capitalize()}"
+                    clean_t = f"Гайд: {category_key.capitalize() if category_key else 'Гайд'}"
 
-                if clean_t != g.title:
-                    g.title = clean_t
+                if clean_t != (title or ""):
                     changed = True
 
-                # Clean text translation artifacts
-                if g.text:
-                    new_text = g.text
+                new_text = text or ""
+                if text:
                     new_text = re.sub(r"__ГЛОСС\d+__", "", new_text)
                     new_text = re.sub(r"\baМаунт\b", "Количество", new_text, flags=re.IGNORECASE)
                     new_text = re.sub(r"\bСозвездиеs\b", "Созвездия", new_text, flags=re.IGNORECASE)
                     new_text = re.sub(r"\bПродвижениеs\b", "Продвижения", new_text, flags=re.IGNORECASE)
                     new_text = re.sub(r"\bЭтапs\b", "Этапы", new_text, flags=re.IGNORECASE)
-                    if new_text != g.text:
-                        g.text = new_text
+                    if new_text != text:
                         changed = True
 
                 if changed:
+                    await session.execute(
+                        update(Guide).where(Guide.key == key).values(
+                            title=clean_t,
+                            text=new_text
+                        )
+                    )
                     updated += 1
 
             await session.commit()
