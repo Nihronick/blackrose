@@ -337,7 +337,7 @@ class DiscordSyncService:
         Cleans titles, removes cat_init_* placeholders, and purges translation artifacts from all guides in DB.
         """
         import re
-        from models.guide import Guide
+        from models.db_models import Guide
         updated = 0
         deleted_placeholders = 0
         async with get_sessionmaker()() as session:
