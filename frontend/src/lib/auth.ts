@@ -83,6 +83,18 @@ export function getStoredUser(): O.Option<User> {
   }
 }
 
+export function isIso88591(str: string): boolean {
+  for (let i = 0; i < str.length; i++) {
+    if (str.charCodeAt(i) > 255) return false
+  }
+  return true
+}
+
+export function sanitizeHeaderValue(val: string): string {
+  if (!val) return ''
+  return isIso88591(val) ? val : encodeURI(val)
+}
+
 export function getTelegramInitData(): string {
   if (typeof window !== 'undefined') {
     const tgData = window.Telegram?.WebApp?.initData
@@ -97,7 +109,7 @@ export function getTelegramInitData(): string {
       const searchParams = new URLSearchParams(search)
       const rawParam = hashParams.get('tgWebAppData') || searchParams.get('tgWebAppData')
       if (rawParam) {
-        return decodeURIComponent(rawParam)
+        return rawParam
       }
     } catch {}
   }
@@ -122,19 +134,19 @@ export function isTelegram(): boolean {
   return !!initData && initData.length > 0
 }
 
-export function getAuthHeaders() {
+export function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {}
 
   // Priority 1: Bearer JWT for stored web/admin sessions
   const token = getStoredToken()
   if (token) {
-    headers.Authorization = `Bearer ${token}`
+    headers.Authorization = sanitizeHeaderValue(`Bearer ${token}`)
   }
 
   // Priority 2: Supplementary Telegram Init-Data if launched inside TMA
   const initData = getTelegramInitData()
   if (initData) {
-    headers['X-Telegram-Init-Data'] = initData
+    headers['X-Telegram-Init-Data'] = sanitizeHeaderValue(initData)
   }
 
   return headers

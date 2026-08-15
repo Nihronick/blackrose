@@ -5,6 +5,7 @@ import {
   clearStoredToken,
   getAuthHeaders,
   getStoredRefreshToken,
+  sanitizeHeaderValue,
   setStoredAccessToken,
 } from './auth'
 import type {
@@ -56,6 +57,15 @@ function throwHttpError(res: Response, data: ApiResponse<unknown>): never {
   throw new Error(detail ?? `Ошибка ${res.status}`)
 }
 
+function sanitizeHeaders(headers: Record<string, string>): Record<string, string> {
+  const clean: Record<string, string> = {}
+  for (const [key, value] of Object.entries(headers)) {
+    if (value == null) continue
+    clean[key] = sanitizeHeaderValue(String(value))
+  }
+  return clean
+}
+
 /**
  * Generic API call helper
  */
@@ -66,7 +76,7 @@ async function apiRaw<T>(
   isFormData = false,
   hasRetried = false
 ): Promise<T> {
-  const headers = getAuthHeaders()
+  const headers = sanitizeHeaders(getAuthHeaders())
   if (!isFormData) {
     headers['Content-Type'] = 'application/json'
   }
