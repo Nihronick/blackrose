@@ -84,7 +84,7 @@ def test_webhook_ingest_success(
             "document": [],
             "sort_order": 5
         },
-        changed_by="webhook_ai_ingest"
+        changed_by=None
     )
     mock_invalidate_all.assert_called_once()
     mock_invalidate_guide.assert_called_once_with("test-guide")
