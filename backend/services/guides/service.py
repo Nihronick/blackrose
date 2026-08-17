@@ -165,11 +165,12 @@ class GuideService:
             await session.execute(stmt)
 
             try:
+                safe_changed_by = changed_by if isinstance(changed_by, int) else None
                 async with session.begin_nested():
                     history = GuideHistory(
                         guide_key=key,
                         action="created" if is_new else "updated",
-                        changed_by=changed_by,
+                        changed_by=safe_changed_by,
                         snapshot=old_snapshot
                     )
                     session.add(history)

@@ -54,7 +54,7 @@ async def webhook_ingest_guide(payload: IngestGuidePayload):
             "document": payload.document,
             "sort_order": payload.sort_order
         },
-        changed_by="webhook_ai_ingest"
+        changed_by=None
     )
     # Clear both global categories cache and specific guide details cache
     await cache_service.invalidate_all()
