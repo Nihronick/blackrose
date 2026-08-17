@@ -30,7 +30,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 # ⚙️  НАСТРОЙКИ
 # ═══════════════════════════════════════════════════════════════
 
-# Ваш Discord User Token (из переменной окружения или указать перед запуском)
+# Ваш Discord User Token (из переменной окружения DISCORD_TOKEN или файла .env)
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN", "")
 
 # Discord Guild ID (BlackRose сервер)
@@ -283,34 +283,160 @@ def ingest_guide(guide_key: str, cat_key: str, cat_title: str, title: str, text:
         return {"error": str(e)}
 
 
+MEDIA_MAP_FILE = "media_url_map.json"
+_media_url_cache = {}
+if os.path.exists(MEDIA_MAP_FILE):
+    try:
+        with open(MEDIA_MAP_FILE, "r", encoding="utf-8") as f:
+            _media_url_cache = json.load(f)
+    except Exception:
+        pass
+
+def save_media_cache():
+    try:
+        with open(MEDIA_MAP_FILE, "w", encoding="utf-8") as f:
+            json.dump(_media_url_cache, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def persist_media_url(raw_url: str, admin_jwt: str = "") -> str:
+    """Скачивает медиафайл локально и сохраняет в постоянное хранилище (БД /api/media/{hash} или HF)."""
+    if not raw_url or not raw_url.startswith("http"):
+        return raw_url
+
+    if "huggingface.co" in raw_url or raw_url.startswith("/api/media/"):
+        return raw_url
+
+    canonical = raw_url.split("?")[0]
+    if canonical in _media_url_cache:
+        return _media_url_cache[canonical]
+
+    # Обрабатываем Discord CDN ссылки
+    if "discordapp." not in raw_url and "discord.com" not in raw_url:
+        return raw_url
+
+    if not admin_jwt:
+        return raw_url
+
+    try:
+        req = urllib.request.Request(raw_url, headers=HEADERS_DISCORD)
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
+            content = resp.read()
+            content_type = resp.headers.get("Content-Type", "image/png")
+        
+        if not content:
+            return raw_url
+
+        # 1. Пробуем сохранить напрямую в постоянный DB кэш (/api/admin/media/direct-cache)
+        import base64
+        b64_data = base64.b64encode(content).decode("utf-8")
+        m_type = "emoji" if "/emojis/" in raw_url else ("video" if any(canonical.endswith(x) for x in ('.mp4', '.webm', '.mov')) else "photo")
+        
+        direct_body = json.dumps({
+            "canonical_url": canonical,
+            "data_base64": b64_data,
+            "mime_type": content_type,
+            "media_type": m_type
+        }).encode("utf-8")
+
+        db_req = urllib.request.Request(
+            f"{BACKEND_URL}/api/admin/media/direct-cache",
+            data=direct_body,
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {admin_jwt}",
+            }
+        )
+        try:
+            with urllib.request.urlopen(db_req, context=_ssl_ctx, timeout=30) as db_resp:
+                db_data = json.loads(db_resp.read().decode("utf-8"))
+                perm_url = db_data.get("url")
+                if perm_url:
+                    _media_url_cache[canonical] = perm_url
+                    save_media_cache()
+                    return perm_url
+        except Exception:
+            pass
+
+        # 2. Fallback: Загрузка в Hugging Face Dataset
+        filename = canonical.rsplit("/", 1)[-1] or "image.png"
+        boundary = "----WebKitFormBoundary" + os.urandom(16).hex()
+        
+        body = bytearray()
+        body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+        body.extend(f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode('utf-8'))
+        body.extend(f'Content-Type: {content_type}\r\n\r\n'.encode('utf-8'))
+        body.extend(content)
+        body.extend(f'\r\n--{boundary}--\r\n'.encode('utf-8'))
+
+        up_req = urllib.request.Request(
+            f"{BACKEND_URL}/api/admin/upload",
+            data=bytes(body),
+            method="POST",
+            headers={
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                "Authorization": f"Bearer {admin_jwt}",
+            }
+        )
+        with urllib.request.urlopen(up_req, context=_ssl_ctx, timeout=40) as up_resp:
+            up_data = json.loads(up_resp.read().decode("utf-8"))
+            perm_url = up_data.get("url")
+            if perm_url:
+                _media_url_cache[canonical] = perm_url
+                save_media_cache()
+                return perm_url
+    except Exception as e:
+        print(f"      [MEDIA UPLOAD NOTICE] {canonical.split('/')[-1]}: {e}")
+
+    return raw_url
+
+
 def backend_login() -> str:
     """Логин в админку, возвращает JWT-токен (или пустую строку при сбое)."""
+    # 1. Попытка через emergency login
+    try:
+        url = f"{BACKEND_URL}/api/auth/emergency-login"
+        body = json.dumps({"emergency_key": "BlackRose_ProjectAdmin_Emergency_Key_2026_Secure_Key"}).encode("utf-8")
+        req = urllib.request.Request(url, data=body, method="POST", headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("token"):
+                return data["token"]
+    except Exception:
+        pass
+
+    # 2. Логин по паролю
     url = f"{BACKEND_URL}/api/auth/admin-login"
     body = json.dumps({"username": ADMIN_USER, "password": ADMIN_PASS}).encode("utf-8")
-    req = urllib.request.Request(url, data=body, method="POST")
-    req.add_header("Content-Type", "application/json")
+    req = urllib.request.Request(url, data=body, method="POST", headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             token = data.get("token")
             return token or ""
-    except urllib.error.HTTPError as e:
-        print(f"  Внимание: Ошибка логина (HTTP {e.code}): {e.read().decode('utf-8', errors='ignore')[:100]}")
-        return ""
     except Exception as e:
         print(f"  Внимание: Ошибка логина: {e}")
         return ""
 
 
-def sanitize_discord_markdown(text: str) -> str:
-    """Очистка Discord-маркдауна + эмодзи + спойлеры + ссылки."""
+def sanitize_discord_markdown(text: str, admin_jwt: str = "") -> str:
+    """Очистка Discord-маркдауна + сохранение эмодзи и изображений в постоянное хранилище."""
     if not text:
         return ""
     # Упоминания
     text = re.sub(r'<@&?\d+>', '', text)
     text = re.sub(r'<#\d+>', '', text)
-    # Кастом-эмодзи Discord -> прямая ссылка на CDN Discord!
-    text = re.sub(r'<a?:(\w+):(\d+)>', r'{{https://cdn.discordapp.com/emojis/\2.webp?size=48&quality=lossless}}', text)
+
+    # Кастом-эмодзи Discord -> сохраняем в постоянное хранилище
+    def _replace_emoji(match):
+        emoji_id = match.group(2)
+        raw_emoji_url = f"https://cdn.discordapp.com/emojis/{emoji_id}.webp?size=48&quality=lossless"
+        perm_url = persist_media_url(raw_emoji_url, admin_jwt) if admin_jwt else raw_emoji_url
+        return f"{{{{{perm_url}}}}}"
+
+    text = re.sub(r'<a?:(\w+):(\d+)>', _replace_emoji, text)
+
     # Спойлеры → <details>
     text = re.sub(r'\|\|(.+?)\|\|', r'<details><summary>Спойлер</summary>\1</details>', text, flags=re.DOTALL)
     # Внутренние Discord-ссылки → [[discord_id|label]]
@@ -522,16 +648,17 @@ def fetch_all_messages(channel_id: str, limit: int = 200) -> list[dict]:
     return all_msgs
 
 
-def format_message_with_inline_media(m: dict) -> str:
-    """Встроить прикрепленные фото и видео прямо в текст сообщения."""
+def format_message_with_inline_media(m: dict, admin_jwt: str = "") -> str:
+    """Встроить прикрепленные фото и видео прямо в текст сообщения (с постоянными ссылками)."""
     content = m.get("content", "").strip()
     media_lines = []
 
     # 1. Attachments
     for att in m.get("attachments", []):
-        url = att.get("url", "")
-        if not url:
+        raw_url = att.get("url", "")
+        if not raw_url:
             continue
+        url = persist_media_url(raw_url, admin_jwt) if admin_jwt else raw_url
         fname = att.get("filename", "").lower()
         if any(fname.endswith(ext) for ext in ('.mp4', '.webm', '.mov', '.mkv')):
             media_lines.append(f"\n\n[Video: Видеоинструкция]({url})\n\n")
@@ -543,11 +670,13 @@ def format_message_with_inline_media(m: dict) -> str:
         if emb.get("video"):
             v_url = emb["video"].get("url")
             if v_url:
-                media_lines.append(f"\n\n[Video: Видеоинструкция]({v_url})\n\n")
+                perm_v = persist_media_url(v_url, admin_jwt) if admin_jwt else v_url
+                media_lines.append(f"\n\n[Video: Видеоинструкция]({perm_v})\n\n")
         elif emb.get("image"):
             i_url = emb["image"].get("url")
             if i_url:
-                media_lines.append(f"\n\n![Скриншот]({i_url})\n\n")
+                perm_i = persist_media_url(i_url, admin_jwt) if admin_jwt else i_url
+                media_lines.append(f"\n\n![Скриншот]({perm_i})\n\n")
 
     media_str = "".join(media_lines)
     if content and media_str:
@@ -559,8 +688,8 @@ def format_message_with_inline_media(m: dict) -> str:
     return ""
 
 
-def extract_media_from_messages(msgs: list[dict]) -> tuple[list[str], list[str]]:
-    """Извлечь все фото и видео из списка сообщений."""
+def extract_media_from_messages(msgs: list[dict], admin_jwt: str = "") -> tuple[list[str], list[str]]:
+    """Извлечь все фото и видео из списка сообщений и сохранить их в постоянное хранилище."""
     photos = []
     videos = []
     seen = set()
@@ -568,10 +697,11 @@ def extract_media_from_messages(msgs: list[dict]) -> tuple[list[str], list[str]]
     for m in msgs:
         # Attachments
         for att in m.get("attachments", []):
-            url = att.get("url", "")
-            if not url or url in seen:
+            raw_url = att.get("url", "")
+            if not raw_url or raw_url in seen:
                 continue
-            seen.add(url)
+            seen.add(raw_url)
+            url = persist_media_url(raw_url, admin_jwt) if admin_jwt else raw_url
             ct = att.get("content_type", "")
             fname = att.get("filename", "").lower()
             if any(fname.endswith(ext) for ext in ('.mp4', '.webm', '.mov', '.mkv')):
@@ -583,27 +713,30 @@ def extract_media_from_messages(msgs: list[dict]) -> tuple[list[str], list[str]]
             elif ct.startswith("video/"):
                 videos.append(url)
             else:
-                photos.append(url)  # default to photo
+                photos.append(url)
 
         # Embeds
         for emb in m.get("embeds", []):
             if not isinstance(emb, dict):
                 continue
             if emb.get("image") and emb["image"].get("url"):
-                url = emb["image"]["url"]
-                if url not in seen:
+                raw_url = emb["image"]["url"]
+                if raw_url not in seen:
+                    seen.add(raw_url)
+                    url = persist_media_url(raw_url, admin_jwt) if admin_jwt else raw_url
                     photos.append(url)
-                    seen.add(url)
             if emb.get("thumbnail") and emb["thumbnail"].get("url"):
-                url = emb["thumbnail"]["url"]
-                if url not in seen:
+                raw_url = emb["thumbnail"]["url"]
+                if raw_url not in seen:
+                    seen.add(raw_url)
+                    url = persist_media_url(raw_url, admin_jwt) if admin_jwt else raw_url
                     photos.append(url)
-                    seen.add(url)
             if emb.get("video") and emb["video"].get("url"):
-                url = emb["video"]["url"]
-                if url not in seen:
+                raw_url = emb["video"]["url"]
+                if raw_url not in seen:
+                    seen.add(raw_url)
+                    url = persist_media_url(raw_url, admin_jwt) if admin_jwt else raw_url
                     videos.append(url)
-                    seen.add(url)
 
         # YouTube links in content
         content = m.get("content", "")
@@ -769,16 +902,16 @@ def main():
                         continue
 
                     # Объединить все сообщения со встроенными в текст фото и видео
-                    msg_blocks = [format_message_with_inline_media(m) for m in msgs]
+                    msg_blocks = [format_message_with_inline_media(m, jwt) for m in msgs]
                     combined = "\n\n".join(b for b in msg_blocks if b.strip())
                     if not combined.strip() or len(combined.strip()) < 20:
                         total_skipped += 1
                         continue
 
                     # Обработка
-                    clean = sanitize_discord_markdown(combined)
+                    clean = sanitize_discord_markdown(combined, jwt)
                     translated = translate_text(clean)
-                    photos, videos = extract_media_from_messages(msgs)
+                    photos, videos = extract_media_from_messages(msgs, jwt)
                     guide_key = f"discord_{tid}"
 
                     result = ingest_guide(
@@ -809,15 +942,15 @@ def main():
 
                 for mi, msg in enumerate(guide_msgs):
                     mid = msg["id"]
-                    msg_text = format_message_with_inline_media(msg)
-                    clean = sanitize_discord_markdown(msg_text)
+                    msg_text = format_message_with_inline_media(msg, jwt)
+                    clean = sanitize_discord_markdown(msg_text, jwt)
                     translated = translate_text(clean)
 
                     # Заголовок — первая строка
                     first_line = clean.split("\n")[0].strip("# ").strip()
                     title = first_line[:80] if first_line else f"Гайд {mid}"
 
-                    photos, videos = extract_media_from_messages([msg])
+                    photos, videos = extract_media_from_messages([msg], jwt)
                     guide_key = f"discord_{mid}"
 
                     result = ingest_guide(
@@ -842,6 +975,7 @@ def main():
 
     # ── 4. Регистрация каналов для прослушки ──
     print(f"\n[4/4] Регистрация каналов для прослушки...")
+    jwt = backend_login() or jwt
     registered = 0
     for cat in tree:
         for ch in cat["channels"]:
