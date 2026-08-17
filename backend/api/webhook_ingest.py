@@ -31,9 +31,14 @@ async def verify_ingest_token(x_ingest_token: str = Header(..., alias="X-Ingest-
 @router.post("/ingest", dependencies=[Depends(verify_ingest_token)])
 async def webhook_ingest_guide(payload: IngestGuidePayload):
     # 1. Автоматическое перманентное кэширование всех медиафайлов (Discord CDN -> /api/media/{hash})
-    clean_text = await media_cache_service.process_text_media(payload.text)
-    clean_photos = await media_cache_service.process_media_urls(payload.photo, media_type="photo")
-    clean_videos = await media_cache_service.process_media_urls(payload.video, media_type="video")
+    try:
+        clean_text = await media_cache_service.process_text_media(payload.text)
+        clean_photos = await media_cache_service.process_media_urls(payload.photo, media_type="photo")
+        clean_videos = await media_cache_service.process_media_urls(payload.video, media_type="video")
+    except Exception:
+        clean_text = payload.text
+        clean_photos = payload.photo
+        clean_videos = payload.video
 
     # 2. Call core database upsert through guide_service
     is_new = await guide_service.upsert(
