@@ -1,7 +1,7 @@
-// @ts-nocheck
 import DOMPurify from 'dompurify'
 import { type RendererExtension, type TokenizerExtension, type Tokens, marked } from 'marked'
 import { normalizeUrl, parseVideo } from './utils'
+
 
 /**
  * Форматтер гайдов — порт Python format_guide_text на JS.
@@ -309,6 +309,7 @@ const PURIFY_CONFIG = {
     'br',
     'hr',
     'span',
+    'button',
     'svg',
     'path',
   ],
@@ -342,9 +343,72 @@ const PURIFY_CONFIG = {
     'data-icon-name',
     'data-video-url',
     'data-video-alt',
+    'data-tab-group',
+    'data-tab-target',
+    'data-tab-id',
+    'type',
     'id',
   ],
   FORCE_BODY: false,
+}
+
+// ── Интерактивные табы (:::tabs ... :::) ────────────────────────
+
+let tabCounter = 0
+
+function replaceTabs(text: string): string {
+  return text.replace(/:::tabs\s*([\s\S]*?):::/g, (_match, content) => {
+    tabCounter++
+    const groupId = `tabgroup_${tabCounter}`
+    const rawTabs = content.split(/^==\s+/m).filter((s: string) => s.trim().length > 0)
+
+    if (rawTabs.length === 0) return ''
+
+    const tabs: Array<{ title: string; body: string }> = []
+    for (const block of rawTabs) {
+      const firstNewline = block.indexOf('\n')
+      if (firstNewline === -1) {
+        tabs.push({ title: block.trim(), body: '' })
+      } else {
+        const title = block.slice(0, firstNewline).trim()
+        const body = block.slice(firstNewline + 1).trim()
+        tabs.push({ title, body })
+      }
+    }
+
+    const navButtons = tabs
+      .map((t, idx) => {
+        const tabId = `${groupId}_tab_${idx}`
+        const activeClass = idx === 0 ? ' active' : ''
+        return `<button type="button" class="guide-tab-btn${activeClass}" data-tab-target="${tabId}">${t.title}</button>`
+      })
+      .join('')
+
+    const panels = tabs
+      .map((t, idx) => {
+        const tabId = `${groupId}_tab_${idx}`
+        const hiddenClass = idx === 0 ? '' : ' hidden'
+        return `<div class="guide-tab-panel${hiddenClass}" data-tab-id="${tabId}">\n\n${t.body}\n\n</div>`
+      })
+      .join('\n')
+
+    return `\n\n<div class="guide-tabs" data-tab-group="${groupId}"><div class="guide-tabs-nav">${navButtons}</div>${panels}</div>\n\n`
+  })
+}
+
+// ── Информационные плашки (:::note/tip/warning/danger) ─────────
+
+function replaceCallouts(text: string): string {
+  return text.replace(/:::(note|tip|warning|danger)\s*([\s\S]*?):::/g, (_match, type, content) => {
+    const icons: Record<string, string> = {
+      note: 'ℹ️',
+      tip: '💡',
+      warning: '⚠️',
+      danger: '🚨',
+    }
+    const icon = icons[type] || 'ℹ️'
+    return `\n\n<div class="guide-callout guide-callout-${type}"><span class="guide-callout-icon">${icon}</span><div class="guide-callout-content">\n\n${content.trim()}\n\n</div></div>\n\n`
+  })
 }
 
 // ── Главная функция ───────────────────────────────────────────
@@ -367,6 +431,8 @@ export function formatGuideText(raw: string, options: FormatOptions = {}): strin
 
   // 1. Заменяем кастомный синтаксис ДО marked (иначе marked их поломает)
   let text = normalizeDiscordMarkdown(raw, iconResolver)
+  text = replaceTabs(text)
+  text = replaceCallouts(text)
   text = replaceIcons(text, iconResolver)
   text = replaceCyberlinks(text, guideLinks)
 
@@ -376,3 +442,4 @@ export function formatGuideText(raw: string, options: FormatOptions = {}): strin
   // 3. DOMPurify санитизирует
   return DOMPurify.sanitize(html, PURIFY_CONFIG)
 }
+

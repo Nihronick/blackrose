@@ -1,3 +1,4 @@
+import { haptic } from '@/lib/haptic'
 import { motion } from 'framer-motion'
 import { type FC, useEffect, useRef } from 'react'
 
@@ -14,32 +15,61 @@ export const GuideContent: FC<GuideContentProps> = ({ html, onImageClick, onCybe
     const el = contentRef.current
     if (!el) return
 
-    const handleImageClick = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.tagName === 'IMG') {
-        const src = (target as HTMLImageElement).src
-        if (src) onImageClick(src)
-      }
-    }
 
-    const handleCyberlinkClick = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest('.guide-cyberlink') as HTMLElement
-      if (target) {
+      // 1. Image Click (Lightbox)
+      if (target.tagName === 'IMG' && !target.classList.contains('inline-icon')) {
+        const src = (target as HTMLImageElement).src
+        if (src) {
+          onImageClick(src)
+          return
+        }
+      }
+
+      // 2. Cyberlink Click
+      const cyberlink = target.closest('.guide-cyberlink') as HTMLElement
+      if (cyberlink) {
         e.preventDefault()
         const data = {
-          key: target.dataset.guideKey || '',
-          title: target.dataset.guideTitle || '',
-          icon: target.dataset.guideIcon || '',
+          key: cyberlink.dataset.guideKey || '',
+          title: cyberlink.dataset.guideTitle || '',
+          icon: cyberlink.dataset.guideIcon || '',
         }
         onCyberlinkClick(data)
+        return
+      }
+
+      // 3. Tab Button Click
+      const tabBtn = target.closest('.guide-tab-btn') as HTMLElement
+      if (tabBtn) {
+        e.preventDefault()
+        const tabTargetId = tabBtn.dataset.tabTarget
+        const tabContainer = tabBtn.closest('.guide-tabs')
+        if (tabTargetId && tabContainer) {
+          haptic.selection()
+          // Update active button state
+          const buttons = tabContainer.querySelectorAll('.guide-tab-btn')
+          buttons.forEach((b) => b.classList.remove('active'))
+          tabBtn.classList.add('active')
+
+          // Update active panel state
+          const panels = tabContainer.querySelectorAll('.guide-tab-panel')
+          panels.forEach((p) => {
+            if ((p as HTMLElement).dataset.tabId === tabTargetId) {
+              p.classList.remove('hidden')
+            } else {
+              p.classList.add('hidden')
+            }
+          })
+        }
+        return
       }
     }
 
-    el.addEventListener('click', handleImageClick)
-    el.addEventListener('click', handleCyberlinkClick)
+    el.addEventListener('click', handleClick)
     return () => {
-      el.removeEventListener('click', handleImageClick)
-      el.removeEventListener('click', handleCyberlinkClick)
+      el.removeEventListener('click', handleClick)
     }
   }, [onImageClick, onCyberlinkClick])
 

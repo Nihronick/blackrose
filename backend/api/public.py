@@ -19,7 +19,7 @@ from services.cache.redis_cache import cache_service
 from services.common.members import member_service
 from services.common.utils import format_guide_text
 from models.db_models import LocalAdmin
-from models.schemas import CommentIn
+from models.schemas import CommentIn, ReactionIn
 from core.db import get_sessionmaker
 from core.cache import cached
 
@@ -288,6 +288,35 @@ async def recent_guides(request: Request, user=Depends(require_public_user)):
 async def recent_comments(request: Request, user=Depends(require_public_user)):
     comments = await guide_service.get_recent_comments(limit=10)
     return {"comments": comments}
+
+@router.get("/guide/{key}/reactions")
+async def get_guide_reactions(key: str, request: Request, user=Depends(require_public_user)):
+    user_id = str(user.get("id")) if user else request.client.host
+    return await guide_service.get_reactions(key, user_id)
+
+@router.post("/guide/{key}/react")
+@limiter.limit("30/minute")
+async def post_guide_reaction(request: Request, key: str, body: ReactionIn, user=Depends(require_public_user)):
+    user_id = str(user.get("id")) if user and user.get("id") else request.client.host
+    if body.reaction not in ("fire", "like", "idea", "dragon"):
+        raise HTTPException(status_code=400, detail="Неверный тип реакции")
+    return await guide_service.toggle_reaction(key, body.reaction, user_id)
+
+@router.get("/user/favorites")
+async def get_my_favorites(user=Depends(require_user)):
+    favs = await guide_service.get_user_favorites(user["id"])
+    return {"favorites": favs}
+
+@router.post("/user/favorites/{key}")
+async def add_my_favorite(key: str, user=Depends(require_user)):
+    ok = await guide_service.add_user_favorite(user["id"], key)
+    return {"ok": ok}
+
+@router.delete("/user/favorites/{key}")
+async def remove_my_favorite(key: str, user=Depends(require_user)):
+    ok = await guide_service.remove_user_favorite(user["id"], key)
+    return {"ok": ok}
+
 
 
 

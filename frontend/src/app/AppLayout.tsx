@@ -298,6 +298,9 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   <button
                     key={tab.path}
                     type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-label={tab.label}
                     className={`flex flex-col items-center gap-1.5 py-1 px-3 rounded-2xl transition-all duration-300 relative ${
                       isActive
                         ? 'text-primary'
@@ -308,6 +311,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                       push(tab.route)
                     }}
                   >
+
                     {isActive && (
                       <motion.div
                         layoutId="active-tab"

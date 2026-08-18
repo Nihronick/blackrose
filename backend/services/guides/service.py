@@ -14,6 +14,8 @@ from models.db_models import (
     GuideTag,
     UserSubscription,
     ViewLog,
+    GuideReaction,
+    UserFavorite,
 )
 from core.logging import get_logger
 from services.common.utils import _strip_markdown
@@ -378,6 +380,83 @@ class GuideService:
         except Exception as e:
             logger.error(f"get_analytics unexpected failure: {e}")
             return []
+
+    @classmethod
+    async def get_reactions(cls, guide_key: str, user_id: str | None = None) -> dict:
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(GuideReaction.reaction, func.count(GuideReaction.id))
+                .where(GuideReaction.guide_key == guide_key)
+                .group_by(GuideReaction.reaction)
+            )
+            res = await session.execute(stmt)
+            counts = {r: int(c) for r, c in res.all()}
+
+            user_active = []
+            if user_id:
+                u_stmt = select(GuideReaction.reaction).where(
+                    GuideReaction.guide_key == guide_key,
+                    GuideReaction.user_id == str(user_id)
+                )
+                u_res = await session.execute(u_stmt)
+                user_active = list(u_res.scalars())
+
+            return {"counts": counts, "user_reactions": user_active}
+
+    @classmethod
+    async def toggle_reaction(cls, guide_key: str, reaction: str, user_id: str) -> dict:
+        async with get_sessionmaker()() as session:
+            existing_stmt = select(GuideReaction).where(
+                GuideReaction.guide_key == guide_key,
+                GuideReaction.reaction == reaction,
+                GuideReaction.user_id == str(user_id)
+            )
+            existing = (await session.execute(existing_stmt)).scalar_one_or_none()
+            if existing:
+                await session.delete(existing)
+            else:
+                session.add(GuideReaction(
+                    guide_key=guide_key,
+                    reaction=reaction,
+                    user_id=str(user_id)
+                ))
+            await session.commit()
+            return await cls.get_reactions(guide_key, user_id)
+
+    @classmethod
+    async def get_user_favorites(cls, user_id: int) -> list[dict]:
+        async with get_sessionmaker()() as session:
+            stmt = (
+                select(Guide)
+                .join(UserFavorite, UserFavorite.guide_key == Guide.key)
+                .where(UserFavorite.user_id == user_id)
+                .order_by(desc(UserFavorite.created_at))
+            )
+            result = await session.execute(stmt)
+            return [cls._to_dict(g) for g in result.scalars()]
+
+    @classmethod
+    async def add_user_favorite(cls, user_id: int, guide_key: str) -> bool:
+        async with get_sessionmaker()() as session:
+            stmt = insert(UserFavorite).values(user_id=user_id, guide_key=guide_key)
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=[UserFavorite.user_id, UserFavorite.guide_key]
+            )
+            await session.execute(stmt)
+            await session.commit()
+            return True
+
+    @classmethod
+    async def remove_user_favorite(cls, user_id: int, guide_key: str) -> bool:
+        async with get_sessionmaker()() as session:
+            await session.execute(
+                delete(UserFavorite).where(
+                    UserFavorite.user_id == user_id,
+                    UserFavorite.guide_key == guide_key,
+                )
+            )
+            await session.commit()
+            return True
 
     @classmethod
     async def reorder(cls, order: list[dict]):

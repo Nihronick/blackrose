@@ -1,24 +1,27 @@
 import { EmptyState } from '@/components/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { apiFetch } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { FileText, Loader2, Search, X } from '@/lib/icons'
+import { FileText, Loader2, Search, X, Sparkles } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
+import { indexGuides, searchGuidesClient, type SearchDoc } from '@/lib/searchIndex'
 import type { Guide } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { type FC, useDeferredValue, useEffect, useRef, useState, useTransition } from 'react'
+import { type FC, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 
 const highlightMatch = (text: string, query: string) => {
   if (!query || !text) return text
-  const parts = text.split(new RegExp(`(${query})`, 'gi'))
+  const terms = query.trim().split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return text
+  const regex = new RegExp(`(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')
+  const parts = text.split(regex)
   return (
     <span>
       {parts.map((part, i) =>
-        part.toLowerCase() === query.toLowerCase() ? (
-          <span key={i} className="bg-primary/20 text-primary font-bold px-1 rounded-sm">
+        terms.some((t) => t.toLowerCase() === part.toLowerCase()) ? (
+          <span key={i} className="bg-primary/25 text-primary font-bold px-1 py-0.5 rounded-md">
             {part}
           </span>
         ) : (
@@ -34,16 +37,17 @@ export const SearchView: FC = () => {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const deferredQuery = useDeferredValue(debouncedQuery)
-  const [isPending, startTransition] = useTransition()
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [, startTransition] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Debounce logic with transition
+  // Debounce logic
   useEffect(() => {
     const timer = setTimeout(() => {
       startTransition(() => {
         setDebouncedQuery(query)
       })
-    }, 250)
+    }, 150)
     return () => clearTimeout(timer)
   }, [query])
 
@@ -54,21 +58,67 @@ export const SearchView: FC = () => {
     }, 100)
   }, [])
 
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['search', deferredQuery],
-    queryFn: () =>
-      apiFetch(`/search?q=${encodeURIComponent(deferredQuery)}`) as Promise<{ results: Guide[] }>,
-    enabled: deferredQuery.trim().length >= 2,
+  // Pre-fetch all categories/guides to populate instant client-side search index
+  const { data: categoriesData } = useQuery({
+    queryKey: ['categories-all-search'],
+    queryFn: async () => {
+      const res = await apiFetch<{ categories: Array<{ key: string; title: string }> }>('/categories')
+      return res.categories || []
+    },
+    staleTime: 1000 * 60 * 10,
   })
 
-  const results = data?.results || []
-  const hasSearched = deferredQuery.trim().length >= 2
-  const showEmpty = hasSearched && !isLoading && !isFetching && results.length === 0
+  // Backend full-text search query
+  const { data: serverData, isLoading, isFetching } = useQuery({
+    queryKey: ['search', deferredQuery],
+    queryFn: async () => {
+      const res = await apiFetch<{ results: Guide[] }>(`/search?q=${encodeURIComponent(deferredQuery)}`)
+      if (res.results) {
+        indexGuides(res.results)
+      }
+      return res.results || []
+    },
+    enabled: deferredQuery.trim().length >= 2,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  // Client-side MiniSearch instant matching
+  const clientResults = useMemo(() => {
+    return searchGuidesClient(query, 50)
+  }, [query])
+
+  // Merge and deduplicate client & server results
+  const allResults = useMemo(() => {
+    const map = new Map<string, Guide | SearchDoc>()
+    for (const item of clientResults) {
+      map.set(item.key, item)
+    }
+    for (const item of serverData || []) {
+      map.set(item.key, item)
+    }
+    let list = Array.from(map.values())
+    if (selectedCategory) {
+      list = list.filter((g) => g.category_key === selectedCategory)
+    }
+    return list
+  }, [clientResults, serverData, selectedCategory])
+
+  // Categories present in results for quick filtering
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>()
+    for (const g of allResults) {
+      if (g.category_key) set.add(g.category_key)
+    }
+    return Array.from(set)
+  }, [allResults])
+
+  const hasSearched = query.trim().length >= 2
+  const showEmpty = hasSearched && !isLoading && !isFetching && allResults.length === 0
 
   return (
     <div className="flex flex-col min-h-full bg-background animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* 1. Header with large search input */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/10">
+      <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-xl border-b border-border/10">
         <div className="flex flex-col gap-3 p-4 container-padding">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
@@ -79,7 +129,7 @@ export const SearchView: FC = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Искать в базе знаний..."
-                className="w-full h-14 pl-12 pr-12 rounded-3xl bg-muted/30 border border-border/10 focus:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground font-medium text-base transition-all"
+                className="w-full h-14 pl-12 pr-12 rounded-3xl bg-muted/30 border border-border/10 focus:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/25 text-foreground font-medium text-base transition-all"
               />
               {query && (
                 <button
@@ -103,10 +153,45 @@ export const SearchView: FC = () => {
             </button>
           </div>
 
+          {/* Category Filter Chips */}
+          {hasSearched && availableCategories.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory(null)}
+                className={`px-3 py-1 text-xs rounded-full font-bold transition-colors shrink-0 ${
+                  selectedCategory === null
+                    ? 'bg-primary text-white'
+                    : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                Все ({allResults.length})
+              </button>
+              {availableCategories.map((catKey) => {
+                const catTitle = categoriesData?.find((c) => c.key === catKey)?.title || catKey
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => setSelectedCategory(selectedCategory === catKey ? null : catKey)}
+                    className={`px-3 py-1 text-xs rounded-full font-bold transition-colors shrink-0 ${
+                      selectedCategory === catKey
+                        ? 'bg-primary text-white'
+                        : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {catTitle}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           <div className="flex items-center justify-between px-2">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50 font-heading">
-              Полнотекстовый поиск
-            </span>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60 font-heading">
+              <Sparkles className="size-3 text-primary" />
+              <span>Мгновенный поиск MiniSearch</span>
+            </div>
             {(isLoading || isFetching) && <Loader2 className="size-4 text-primary animate-spin" />}
           </div>
         </div>
@@ -118,7 +203,7 @@ export const SearchView: FC = () => {
           <EmptyState
             icon={<Search className="size-8 text-rose-400" />}
             title="Поиск по базе знаний"
-            description="Введите хотя бы 2 символа, чтобы найти нужные гайды, советы и калькуляторы Slayer Legend."
+            description="Введите хотя бы 2 символа, чтобы мгновенно найти нужные гайды, советы и тактики Slayer Legend."
           />
         )}
 
@@ -126,41 +211,44 @@ export const SearchView: FC = () => {
           <EmptyState
             icon="🥀"
             title="Ничего не найдено"
-            description={`По запросу «${debouncedQuery}» материалов не найдено. Попробуйте сформулировать иначе.`}
+            description={`По запросу «${query}» материалов не найдено. Попробуйте ввести другие ключевые слова.`}
             actionLabel="Сбросить поиск"
-            onAction={() => setQuery('')}
+            onAction={() => {
+              setQuery('')
+              setSelectedCategory(null)
+            }}
           />
         )}
 
-        {hasSearched && results.length > 0 && (
-          <div className="flex flex-col gap-4">
+        {hasSearched && allResults.length > 0 && (
+          <div className="flex flex-col gap-3">
             <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 px-1">
-              Найдено совпадений: <span className="text-primary">{results.length}</span>
+              Найдено совпадений: <span className="text-primary">{allResults.length}</span>
             </div>
-            {results.map((guide, i) => (
+            {allResults.map((guide, i) => (
               <motion.div
                 key={guide.key}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
+                transition={{ delay: Math.min(i * 0.03, 0.3) }}
                 onClick={() => {
                   haptic.light()
                   push({ type: 'guide', id: guide.key })
                 }}
                 className="group cursor-pointer"
               >
-                <Card className="card-elevated rounded-3xl border border-border/10 overflow-hidden hover:border-primary/20 transition-all duration-300 hover:shadow-glow">
+                <Card className="card-elevated rounded-3xl border border-border/10 overflow-hidden hover:border-primary/25 transition-all duration-300 hover:shadow-glow">
                   <CardContent className="p-4 sm:p-5 flex gap-4">
                     <div className="size-12 shrink-0 rounded-[18px] bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
                       <FileText className="size-6" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <h3 className="text-[15px] font-black text-foreground font-heading truncate group-hover:text-primary transition-colors">
-                        {highlightMatch(guide.title, debouncedQuery)}
+                        {highlightMatch(guide.title, query)}
                       </h3>
                       <div className="mt-1.5 text-xs font-medium leading-relaxed text-muted-foreground/80 line-clamp-2">
                         {guide.preview ? (
-                          highlightMatch(guide.preview, debouncedQuery)
+                          highlightMatch(guide.preview, query)
                         ) : (
                           <span className="italic opacity-50">Контент гайда...</span>
                         )}
@@ -170,7 +258,7 @@ export const SearchView: FC = () => {
                           variant="secondary"
                           className="bg-muted/50 text-[10px] uppercase tracking-wider font-bold"
                         >
-                          {guide.category_key || 'Гайд'}
+                          {categoriesData?.find((c) => c.key === guide.category_key)?.title || guide.category_key || 'Гайд'}
                         </Badge>
                       </div>
                     </div>

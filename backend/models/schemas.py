@@ -16,6 +16,9 @@ def _validate_key(v: str) -> str:
 class PreviewIn(BaseModel):
     text: str = ""
 
+class ReactionIn(BaseModel):
+    reaction: str
+
 class CategoryIn(BaseModel):
     title: str
     icon_url: str | None = None

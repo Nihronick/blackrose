@@ -498,3 +498,65 @@ img.inline-icon {
 .guide-content-wrapper td {
   @apply px-4 py-3 text-sm text-foreground/90 border-b border-rose-500/10 hover:bg-rose-500/5 transition-colors;
 }
+
+/* ── Interactive Build Tabs ── */
+.guide-tabs {
+  @apply my-6 rounded-3xl border border-rose-500/25 bg-card/75 backdrop-blur-xl overflow-hidden shadow-2xl;
+}
+
+.guide-tabs-nav {
+  @apply flex items-center gap-1.5 p-2 bg-rose-950/40 border-b border-rose-500/20 overflow-x-auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.guide-tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+
+
+.guide-tab-btn {
+  @apply px-4 py-2 rounded-2xl text-xs font-bold font-heading uppercase tracking-wider text-muted-foreground transition-all duration-200 cursor-pointer select-none border border-transparent;
+}
+
+.guide-tab-btn:hover {
+  @apply text-foreground bg-rose-500/10;
+}
+
+.guide-tab-btn.active {
+  @apply text-white bg-primary shadow-lg shadow-rose-950/60 border-primary/30;
+}
+
+.guide-tab-panel {
+  @apply p-5 transition-opacity duration-300;
+}
+
+.guide-tab-panel.hidden {
+  display: none !important;
+}
+
+/* ── Callout Badges & Alerts ── */
+.guide-callout {
+  @apply my-5 p-4 rounded-2xl border backdrop-blur-md flex gap-3.5 items-start;
+}
+
+.guide-callout-note {
+  @apply bg-blue-500/10 border-blue-500/30 text-blue-200;
+}
+
+.guide-callout-tip {
+  @apply bg-emerald-500/10 border-emerald-500/30 text-emerald-200;
+}
+
+.guide-callout-warning {
+  @apply bg-amber-500/10 border-amber-500/30 text-amber-200;
+}
+
+.guide-callout-danger {
+  @apply bg-rose-500/10 border-rose-500/30 text-rose-200;
+}
+
+.guide-callout-icon {
+  @apply text-lg shrink-0 select-none;
+}
+

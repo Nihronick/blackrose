@@ -61,11 +61,37 @@ export const GuideView: FC<GuideViewProps> = ({
     staleTime: 120_000,
   })
 
+  const { data: reactionsData, refetch: refetchReactions } = useQuery({
+    queryKey: ['guide-reactions', guideKey],
+    queryFn: () =>
+      apiFetch<{ counts: Record<string, number>; user_reactions: string[] }>(
+        `/api/guide/${guideKey}/reactions`
+      ),
+    staleTime: 30_000,
+  })
+
+  const handleToggleReaction = async (reactionKey: string) => {
+    haptic.selection()
+    try {
+      await apiFetch<{ counts: Record<string, number>; user_reactions: string[] }>(
+        `/api/guide/${guideKey}/react`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ reaction: reactionKey }),
+        }
+      )
+      refetchReactions()
+    } catch {
+      toast.error('Не удалось сохранить реакцию')
+    }
+  }
+
   const { formattedText } = useGuideLogic(guide)
   const { mutate: recordView } = useRecordView()
   const { pullY, refreshing } = usePullToRefresh(scrollRef, async () => {
     await refetch()
   })
+
 
   const recordedKeyRef = useRef<string | null>(null)
 
@@ -168,27 +194,38 @@ export const GuideView: FC<GuideViewProps> = ({
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-heading">
                 Оцените гайд:
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {[
                   { emoji: '🔥', key: 'fire', label: 'Огонь' },
                   { emoji: '👍', key: 'like', label: 'Полезно' },
                   { emoji: '💡', key: 'idea', label: 'Познавательно' },
                   { emoji: '🐉', key: 'dragon', label: 'Слеер' },
-                ].map((r) => (
-                  <button
-                    key={r.key}
-                    onClick={() => {
-                      haptic.light()
-                      toast.success(`Реакция ${r.emoji} принята!`)
-                    }}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-card border border-rose-500/20 hover:border-rose-500/50 hover:bg-rose-500/10 text-xs font-bold transition-all active:scale-95 shadow-sm"
-                  >
-                    <span>{r.emoji}</span>
-                    <span className="text-rose-300/90">{r.label}</span>
-                  </button>
-                ))}
+                ].map((r) => {
+                  const count = reactionsData?.counts?.[r.key] || 0
+                  const isUserActive = reactionsData?.user_reactions?.includes(r.key)
+                  return (
+                    <button
+                      key={r.key}
+                      onClick={() => handleToggleReaction(r.key)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                        isUserActive
+                          ? 'bg-rose-500/25 border-rose-500 text-white shadow-rose-950/40'
+                          : 'bg-card border-rose-500/20 hover:border-rose-500/50 hover:bg-rose-500/10 text-muted-foreground'
+                      }`}
+                    >
+                      <span>{r.emoji}</span>
+                      <span className="text-rose-300/90">{r.label}</span>
+                      {count > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500/20 text-[10px] text-rose-200">
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
+
           </motion.div>
 
           {/* Media Gallery (Photos & Videos) */}

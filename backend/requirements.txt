@@ -21,3 +21,4 @@ python-dotenv>=1.0.0
 pyjwt==2.10.1
 inngest==0.4.0
 agent-sandbox>=0.0.30
+aiogram>=3.4.0

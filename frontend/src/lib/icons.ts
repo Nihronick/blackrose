@@ -81,6 +81,8 @@ export {
   Strikethrough,
   Trash2,
   TrendingUp,
+  Trophy,
+  Bookmark,
   Underline,
   Upload,
   User,

@@ -48,4 +48,22 @@ class NotificationService:
         text = f"🏆 <b>Обновление ранга в гильдии!</b>\n\nВаш ранг в гильдии <b>{guild_name}</b> был изменён на <b>{new_rank} ({rank_name})</b>."
         await cls.send_telegram_message(user_id, text)
 
+    @classmethod
+    async def notify_new_guide(cls, subscriber_ids: list[int], category_title: str, guide_title: str, guide_key: str):
+        """Sends a notification about a new guide to all subscribed users."""
+        if not subscriber_ids:
+            return
+        url = f"https://blackrosesl.me/guide/{guide_key}"
+        text = (
+            f"📖 <b>Новый гайд в разделе «{category_title}»!</b>\n\n"
+            f"🗡️ <b>{guide_title}</b>\n\n"
+            f"👉 <a href='{url}'>Открыть в BlackRose Mini App</a>"
+        )
+        for uid in subscriber_ids:
+            try:
+                await cls.send_telegram_message(uid, text)
+            except Exception as e:
+                logger.debug(f"Failed to notify subscriber {uid}: {e}")
+
 notification_service = NotificationService()
+

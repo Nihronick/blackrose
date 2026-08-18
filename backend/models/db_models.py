@@ -94,12 +94,44 @@ class GuideComment(Base):
     )
     guide: Mapped["Guide"] = relationship("Guide", back_populates="comments")
 
+class GuideReaction(Base):
+    __tablename__ = "guide_reactions"
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    guide_key: Mapped[str] = mapped_column(
+        Text, ForeignKey("guides.key", ondelete="CASCADE"), nullable=False, index=True
+    )
+    reaction: Mapped[str] = mapped_column(Text, nullable=False)
+    user_id: Mapped[str] = mapped_column(Text, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+
+    __table_args__ = (
+        Index("ix_guide_reactions_user_unique", "guide_key", "user_id", "reaction", unique=True),
+    )
+
 class UserSubscription(Base):
     __tablename__ = "user_subscriptions"
     user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     category_key: Mapped[str] = mapped_column(
         Text, ForeignKey("categories.key", ondelete="CASCADE"), primary_key=True
     )
+
+class UserFavorite(Base):
+    __tablename__ = "user_favorites"
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    guide_key: Mapped[str] = mapped_column(
+        Text, ForeignKey("guides.key", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()")
+    )
+
+    __table_args__ = (
+        Index("ix_user_favorites_user_guide", "user_id", "guide_key", unique=True),
+    )
+
 
 class Member(Base):
     __tablename__ = "members"
