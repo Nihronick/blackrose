@@ -302,87 +302,6 @@ GAMING_GLOSSARY = {
 }
 
 
-def _translate_single_chunk(text: str) -> str:
-    """Перевод одного блока (до 3000 символов) через Google GTX с надежной защитой плейсхолдеров и глоссария."""
-    if not text or len(text.strip()) < 5:
-        return text
-
-    # Очистка мусорных пометок авторов
-    text = re.sub(r'\(insert_[a-zA-Z0-9_\.]+\)', '', text)
-    text = re.sub(r'insert_[a-zA-Z0-9_\.]+', '', text)
-
-    placeholders = {}
-    masked = text
-    
-    # 1. Защита блоков кода, медиа, ссылок и разметки
-    code_blocks = {}
-    cidx = 0
-    patterns = [
-        r'```[\s\S]*?```',
-        r'`[^`]+`',
-        r'\{\{[^}]+\}\}',
-        r'\[\[[^\]]+\]\]',
-        r'\[Видео:\s*[^\]]+\]\([^)]+\)',
-        r'\[Video:\s*[^\]]+\]\([^)]+\)',
-        r'!\[[^\]]*\]\([^)]+\)',
-        r'https?://\S+',
-        r'<details>[\s\S]*?</details>',
-    ]
-    for pat in patterns:
-        for m in re.finditer(pat, masked):
-            ph = f"XZYBLOCK{cidx}XZY"
-            code_blocks[ph] = m.group()
-            masked = masked.replace(m.group(), ph, 1)
-            cidx += 1
-
-    # 2. Защита глоссария (сортируем по длине ключа по убыванию, чтобы сначала заменять длинные фразы)
-    idx = 0
-    for en in sorted(GAMING_GLOSSARY.keys(), key=len, reverse=True):
-        ru = GAMING_GLOSSARY[en]
-        # Границы слов для точного совпадения
-        pattern = re.compile(rf'\b{re.escape(en)}\b', re.IGNORECASE)
-        if pattern.search(masked):
-            ph = f"XZYGLOSS{idx}XZY"
-            masked = pattern.sub(ph, masked)
-            placeholders[ph] = ru
-            idx += 1
-
-    try:
-        encoded = urllib.parse.quote(masked)
-        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q={encoded}"
-        req = urllib.request.Request(url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        })
-        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            translated = "".join(seg[0] for seg in result[0] if seg and seg[0])
-    except Exception as e:
-        print(f"      [WARN] Перевод фрагмента пропущен ({e}), сохраняем оригинал")
-        translated = masked
-
-    # 3. Нормализация пробелов и регистра внутри плейсхолдеров, добавленных переводчиком
-    translated = re.sub(r'XZY\s*BLOCK\s*(\d+)\s*XZY', r'XZYBLOCK\1XZY', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'XZY\s*GLOSS\s*(\d+)\s*XZY', r'XZYGLOSS\1XZY', translated, flags=re.IGNORECASE)
-
-    # 4. Многопроходная замена для гарантии отсутствия остаточных тегов
-    for _ in range(3):
-        for ph, val in placeholders.items():
-            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
-        for ph, val in code_blocks.items():
-            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
-
-    # 5. Окончательная зачистка любых случайных остатков масок
-    translated = re.sub(r'XZY(?:BLOCK|GLOSS)\d+XZY', '', translated, flags=re.IGNORECASE)
-    
-    # 6. Дополнительная пост-коррекция распространенных курьезов
-    translated = re.sub(r'\bспиртные напитки\b', 'Духи', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bспиртных напитков\b', 'Духов', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bспиртными напитками\b', 'Духами', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bкрепкие напитки\b', 'сильные Духи', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bкомпакт-диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bкомпакт диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
-
-    return translated
 
 
 def discord_get(path: str) -> tuple[int, any]:
@@ -636,30 +555,55 @@ def sanitize_discord_markdown(text: str, admin_jwt: str = "") -> str:
 
 
 def _translate_single_chunk(text: str) -> str:
-    """Перевод одного блока (до 3000 символов) через Google GTX с защитой глоссария."""
-    if not text or len(text.strip()) < 10:
+    """Перевод одного блока (до 3000 символов) через Google GTX с надежной защитой плейсхолдеров и глоссария."""
+    if not text or len(text.strip()) < 5:
         return text
 
-    placeholders = {}
-    masked = text
-    idx = 0
-    for en, ru in GAMING_GLOSSARY.items():
-        pattern = re.compile(re.escape(en), re.IGNORECASE)
-        if pattern.search(masked):
-            ph = f"__GLOSS{idx}__"
-            masked = pattern.sub(ph, masked)
-            placeholders[ph] = ru
-            idx += 1
+    # Очистка мусорных пометок авторов
+    text = re.sub(r'\(insert_[a-zA-Z0-9_\.]+\)', '', text)
+    text = re.sub(r'insert_[a-zA-Z0-9_\.]+', '', text)
 
+    # 1. ЗАЩИТА ВСЕХ URL, ПУТЕЙ, ИКОНОК И ТЕГОВ
     code_blocks = {}
     cidx = 0
-    for pat in [r'```[\s\S]*?```', r'`[^`]+`', r'\{\{[^}]+\}\}', r'\[\[[^\]]+\]\]',
-                r'https?://\S+', r'<details>[\s\S]*?</details>']:
+    patterns = [
+        r'```[\s\S]*?```',
+        r'`[^`]+`',
+        r'\{\{[^}]+\}\}',
+        r'\[\[[^\]]+\]\]',
+        r'\[(?:Видео|Video)[^\]]*\]\([^)]+\)',
+        r'!\[[^\]]*\]\([^)]+\)',
+        r'<details>[\s\S]*?</details>',
+        r'https?://[^\s)\]]+',
+        r'/api/media/[a-f0-9]+',
+    ]
+
+    masked = text
+    for pat in patterns:
         for m in re.finditer(pat, masked):
-            ph = f"XZYBLOCK{cidx}XZY"
-            code_blocks[ph] = m.group()
-            masked = masked.replace(m.group(), ph, 1)
+            val = m.group(0)
+            ph = f"___SAFEBLOCK_{cidx}___"
+            code_blocks[ph] = val
+            masked = masked.replace(val, ph, 1)
             cidx += 1
+
+    # 2. ЗАЩИТА ГЛОССАРИЯ (строго по границам слов)
+    placeholders = {}
+    gidx = 0
+    for en in sorted(GAMING_GLOSSARY.keys(), key=len, reverse=True):
+        ru = GAMING_GLOSSARY[en]
+        pattern = re.compile(rf'\b{re.escape(en)}\b', re.IGNORECASE if len(en) > 2 else 0)
+        if pattern.search(masked):
+            ph = f"___GLOSS_{gidx}___"
+            masked = pattern.sub(ph, masked)
+            placeholders[ph] = ru
+            gidx += 1
+
+    if re.search(r'\bcd\b', masked, re.IGNORECASE):
+        ph = f"___GLOSS_{gidx}___"
+        masked = re.sub(r'\bcd\b', ph, masked, flags=re.IGNORECASE)
+        placeholders[ph] = "КД"
+        gidx += 1
 
     try:
         encoded = urllib.parse.quote(masked)
@@ -667,17 +611,33 @@ def _translate_single_chunk(text: str) -> str:
         req = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         })
-        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=12) as resp:
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             translated = "".join(seg[0] for seg in result[0] if seg and seg[0])
     except Exception as e:
         print(f"      [WARN] Перевод фрагмента пропущен ({e}), сохраняем оригинал")
         translated = masked
 
-    for ph, val in code_blocks.items():
-        translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
-    for ph, val in placeholders.items():
-        translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
+    # 3. НОРМАЛИЗАЦИЯ ПЛЕЙСХОЛДЕРОВ
+    translated = re.sub(r'___\s*SAFEBLOCK\s*_*\s*(\d+)\s*___', r'___SAFEBLOCK_\1___', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'___\s*GLOSS\s*_*\s*(\d+)\s*___', r'___GLOSS_\1___', translated, flags=re.IGNORECASE)
+
+    # 4. ВОССТАНОВЛЕНИЕ
+    for _ in range(3):
+        for ph, val in placeholders.items():
+            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
+        for ph, val in code_blocks.items():
+            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
+
+    # 5. ОЧИСТКА
+    translated = re.sub(r'___(?:SAFEBLOCK|GLOSS)_\d+___', '', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'XZY(?:BLOCK|GLOSS)\d+XZY', '', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bспиртные напитки\b', 'Духи', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bспиртных напитков\b', 'Духов', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bспиртными напитками\b', 'Духами', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bкрепкие напитки\b', 'сильные Духи', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bкомпакт-диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bкомпакт диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
 
     return translated
 
