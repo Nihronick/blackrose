@@ -936,53 +936,54 @@ def main():
         print(f"  Ошибка получения каналов (HTTP {s}): {str(channels)[:100]}")
         sys.exit(1)
 
-    # Группировка
-    categories_raw = sorted(
-        [c for c in channels if c.get("type") == 4],
-        key=lambda x: x.get("position", 0)
-    )
-    print(f"  Найдено {len(categories_raw)} категорий Discord")
+    # Точный список 14 официальных разделов Slayerpedia в порядке Discord:
+    SLAYERPEDIA_ORDER = [
+        ("beginner-guide", "Гайд для начинающих"),
+        ("character", "Персонаж"),
+        ("promotion-and-suit-recommendation", "Рекомендации Костюмов"),
+        ("late-game-promotions", "Продвижение (Late Game)"),
+        ("mid-game-promotions", "Продвижение (Mid Game)"),
+        ("early-game-promotions", "Продвижение (Early Game)"),
+        ("stage", "Этапы"),
+        ("skills", "Навыки"),
+        ("spirit", "Духи"),
+        ("equipment", "Экипировка"),
+        ("companion", "Компаньоны и Фамильяры"),
+        ("adventure", "Приключения"),
+        ("event-help", "Помощь по Ивентам"),
+        ("shop", "Магазин"),
+    ]
 
-    # Построение дерева: Работаем СТРОГО с категорией Slayerpedia
+    # Находим категорию Slayerpedia
+    slayerpedia_cat_id = None
+    for c in channels:
+        if c.get("type") == 4 and "slayerpedia" in c.get("name", "").lower():
+            slayerpedia_cat_id = c["id"]
+            break
+
+    # Ищем каналы внутри Slayerpedia
     tree = []
-    import unicodedata
-    for cat in categories_raw:
-        cat_name = cat["name"].strip()
-        cat_name_clean = unicodedata.normalize('NFKD', cat_name).lower().strip()
-        cat_id = cat["id"]
+    for slug, ru_title in SLAYERPEDIA_ORDER:
+        matched_ch = None
+        for ch in channels:
+            # Проверяем каналы из категории Slayerpedia или по названию
+            ch_name_clean = ch.get("name", "").lower().strip()
+            if (ch.get("parent_id") == slayerpedia_cat_id or not slayerpedia_cat_id) and ch.get("type") in GUIDE_CHANNEL_TYPES:
+                if ch_name_clean == slug or ch_name_clean.replace("-", "") == slug.replace("-", "") or (slug in ch_name_clean):
+                    matched_ch = ch
+                    break
 
-        # Сканируем категории: Slayerpedia, Resources, Start here
-        allowed_cats = {"slayerpedia", "resources", "start here"}
-        if not any(ac in cat_name_clean for ac in allowed_cats):
-            print(f"  [SKIP] {cat_name} (пропускаем)")
-            continue
-
-        # Дочерние каналы (forum channels & text channels)
-        child_channels = [
-            c for c in channels
-            if c.get("parent_id") == cat_id
-            and c.get("type") in GUIDE_CHANNEL_TYPES
-            and c.get("name", "").lower() not in {"slayerpedia-feedback", "slayerpedia-change-log", "disclaimer", "rules", "invite-link", "welcome-slayers"}
-        ]
-
-        print(f"  🎯 НАЙДЕНА КАТЕГОРИЯ «{cat_name}»! Содержит {len(child_channels)} каналов-разделов.")
-
-        # Каждый канал внутри Slayerpedia становится отдельной Категорией на сайте
-        for ch in child_channels:
-            ch_name = ch["name"].strip()
-            # Очистка и перевод названия канала (напр. "equipment" -> "Экипировка", "skills" -> "Навыки")
-            clean_ch_name = re.sub(r'^[^\w\s]+', '', ch_name).strip()
-            ru_cat_name = translate_category_name(clean_ch_name or ch_name)
-            cat_key = slugify(clean_ch_name or ch_name)
-
+        if matched_ch:
             tree.append({
-                "discord_id": ch["id"],
-                "name_en": ch_name,
-                "name_ru": ru_cat_name,
-                "key": cat_key,
-                "channels": [ch],
+                "discord_id": matched_ch["id"],
+                "name_en": matched_ch["name"],
+                "name_ru": ru_title,
+                "key": slug,
+                "channels": [matched_ch],
             })
-            print(f"    ├─ Раздел: «{ch_name}» -> Категория сайта: «{ru_cat_name}» (/{cat_key})")
+            print(f"  [+] Раздел: «{matched_ch['name']}» -> Категория сайта: «{ru_title}» (/{slug})")
+        else:
+            print(f"  [-] Внимание: канал «{slug}» не найден в Discord")
 
     if not tree:
         print("\n  Нет категорий с гайдами для импорта!")
