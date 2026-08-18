@@ -415,6 +415,25 @@ textarea:-webkit-autofill:active {
   @apply text-sm sm:text-base leading-relaxed text-foreground/90 my-3 font-normal;
 }
 
+/* Inline icons inside text must always flow inline, never block */
+.guide-content-wrapper .inline-icon,
+.prose .inline-icon,
+.prose img.inline-icon,
+img.inline-icon {
+  display: inline-block !important;
+  vertical-align: -0.22em !important;
+  margin: 0 3px !important;
+  height: 1.35em !important;
+  max-height: 24px !important;
+  width: auto !important;
+  min-width: 1.2em !important;
+  object-fit: contain !important;
+  border-radius: 4px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
 .guide-content-wrapper strong,
 .guide-content-wrapper b {
   @apply font-bold text-rose-300;

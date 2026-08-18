@@ -203,15 +203,15 @@ function replaceIcons(text: string, iconResolver: (name: string) => string) {
 
     if (/^https?:\/\//i.test(name)) {
       const normalized = normalizeUrl(name)
-      return `<img src="${normalized}" alt="icon" title="icon" class="inline-icon" width="20" height="20" style="vertical-align:middle;margin:0 4px;cursor:pointer;">`
+      return `<img src="${normalized}" alt="icon" title="icon" class="inline-icon" width="20" height="20" style="display:inline-block;vertical-align:middle;margin:0 3px;cursor:pointer;">`
     }
 
     const cleanName = name.replace(/^icon:/i, '').trim()
     const url = iconResolver(cleanName) || iconResolver(name)
     if (!url) {
-      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[11px] font-semibold mx-0.5 select-none" data-icon-name="${cleanName}" style="vertical-align:middle;">✨ ${cleanName}</span>`
+      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[11px] font-semibold mx-0.5 select-none" data-icon-name="${cleanName}" style="display:inline-flex;vertical-align:middle;">✨ ${cleanName}</span>`
     }
-    return `<img src="${url}" alt="${cleanName}" title="${cleanName}" data-icon-name="${cleanName}" class="inline-icon" width="20" height="20" style="vertical-align:middle;margin:0 4px;cursor:pointer;">`
+    return `<img src="${url}" alt="${cleanName}" title="${cleanName}" data-icon-name="${cleanName}" class="inline-icon" width="20" height="20" style="display:inline-block;vertical-align:middle;margin:0 3px;cursor:pointer;">`
   })
 }
 
