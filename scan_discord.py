@@ -186,25 +186,203 @@ HEADERS_DISCORD = {
 
 # ── Игровой глоссарий для перевода ──
 GAMING_GLOSSARY = {
-    "Rift": "Рифт", "Golem": "Голем", "Slayer": "Охотник",
-    "Demon Metal": "Демон-Металл", "Sealed Shrine": "Запечатанное Святилище",
-    "Ancient Canine": "Древний Пёс", "Blue Abyss": "Синяя Бездна",
-    "Latent Power": "Латентная Сила", "Skill Stone": "Камень Навыка",
-    "Companion": "Компаньон", "Familiar": "Фамильяр",
-    "Promotion": "Продвижение", "Awakening": "Пробуждение",
-    "Stage": "Этап", "Orichalcum": "Орихалк",
-    "Dark Realm": "Тёмное Царство", "Soul Crystal": "Кристалл Души",
-    "Enhancement": "Усиление", "Transcendence": "Трансценденция",
-    "Artifact": "Артефакт", "Rune": "Руна",
-    "Constellation": "Созвездие", "Talent": "Талант",
-    "Ascension": "Вознесение", "Breakthrough": "Прорыв",
-    "Refine": "Улучшение", "Forge": "Ковка",
-    "Mount": "Маунт", "Pet": "Питомец",
-    "Dungeon": "Подземелье", "Raid": "Рейд",
-    "Boss": "Босс", "Arena": "Арена",
-    "Guild": "Гильдия", "Alliance": "Альянс",
-    "Territory": "Территория", "Siege": "Осада",
+    # Духи и питомцы
+    "Spirits": "Духи",
+    "Spirit": "Дух",
+    "Strong Spirits": "Сильные Духи",
+    "Fountain of Circulation": "Фонтан Циркуляции",
+    "Forest of Circulation": "Лес Циркуляции",
+    "Familiars": "Фамильяры",
+    "Familiar": "Фамильяр",
+    "Fams": "Фамильяры",
+    "Fam": "Фамильяр",
+    "Salamander": "Саламандра",
+    "Sala": "Саламандра",
+    "Noah": "Ной",
+    "Golem": "Голем",
+    "Draco": "Драко",
+    "Shadow Beast": "Теневой Зверь",
+    "Beast": "Зверь",
+    "Beasts": "Звери",
+    
+    # Механики боя и кулдауны
+    "Cooldown": "Перезарядка (КД)",
+    "Cooldowns": "Перезарядка (КД)",
+    "CD": "КД",
+    "cd": "КД",
+    "Bossing": "Битвы с боссами",
+    "bossing": "битвы с боссами",
+    "Boss": "Босс",
+    "Bosses": "Боссы",
+    "Rage": "Ярость",
+    "Rave": "Рейв",
+    "Raves": "Рейвы",
+    "Meditation": "Медитация",
+    "Medi": "Медитация",
+    "Demon Hunter": "Охотник на Демонов (DH)",
+    "DH": "DH (Demon Hunter)",
+    "Life Steal": "Похищение жизни (Вампиризм)",
+    "Stun": "Оглушение (Стан)",
+    "Stuns": "Оглушения",
+    "HP bars": "Полоски HP",
+    "HP bar": "Полоска HP",
+    "HP": "HP",
+    "Shield": "Щит",
+    "Attack Speed": "Скорость атаки",
+    "Attack": "Атака",
+    "Pity System": "Система Гаранта (Pity)",
+    "Pity": "Гарант (Pity)",
+    "Summon": "Призыв",
+    "Summons": "Призывы",
+    "Tornado Mark": "Метка Торнадо",
+    "Tornado": "Торнадо",
+    "Torando": "Торнадо",
+    "Statue": "Статуя",
+    "Statues": "Статуи",
+    
+    # Продвижения (Promotions)
+    "Blitz Gold": "Блиц Голд (Blitz Gold)",
+    "Diadust": "Диадаст (Diadust)",
+    "Gigarock": "Гигарок (Gigarock)",
+    "Eldenwood": "Элденвуд (Eldenwood)",
+    "Auroite": "Ауроит (Auroite)",
+    "Eisenhart": "Эйзенхарт (Eisenhart)",
+    "Infinaut": "Инфинавт (Infinaut)",
+    "Ragnablood": "Рагнаблад (Ragnablood)",
+    "Ancient Canine": "Древний Пёс (Ancient Canine)",
+    "Dragonos": "Драгонос (Dragonos)",
+    "Demon Metal": "Демон-Металл (Demon Metal)",
+    "Cyclos": "Циклос (Cyclos)",
+    "Warfrost": "Варфрост (Warfrost)",
+    "Dark Nox": "Темный Нокс (Dark Nox)",
+    "Blue Abyss": "Синяя Бездна (Blue Abyss)",
+    "Black Mythril": "Черный Мифрил (Black Mythril)",
+    "Mithril": "Мифрил",
+    "Arcanite": "Арканит",
+    "Adamant": "Адамант",
+    "Orichalcum": "Орихалк",
+    "Ether": "Эфир",
+    "Bronze": "Бронза",
+    "Silver": "Серебро",
+    "Gold": "Золото",
+    "Iron": "Железо",
+    "Stone": "Камень",
+    
+    # Локации и контент
+    "Sealed Shrine": "Запечатанное Святилище",
+    "Closed Mine": "Закрытая Шахта",
+    "Training Cave": "Пещера Тренировок",
+    "Dragon Valley": "Долина Драконов",
+    "Dimensional Rift": "Пространственный Рифт",
+    "Rift": "Рифт",
+    "Latent Power": "Латентная Сила",
+    "Skill Stone": "Камень Навыка",
+    "Soul Weapon": "Оружие Души",
+    "Soul Weapons": "Оружие Души",
+    "Light Shard": "Осколок Света",
+    "Memory Tree": "Дерево Памяти",
+    "Training Diary": "Дневник Тренировок",
+    "Constellation": "Созвездие",
+    "Immortal Skills": "Бессмертные Навыки",
+    "Immortal Skill": "Бессмертный Навык",
+    "Skill Mastery": "Мастерство Навыков",
+    "Skill Refinement": "Улучшение Навыков",
+    "Slayer": "Охотник",
+    "Slayerpedia": "Охотникпедия",
+    "Promotion": "Продвижение",
+    "Promotions": "Продвижение",
+    "Awakening": "Пробуждение",
+    "Stage": "Этап",
+    "Stages": "Этапы",
+    "Enhancement": "Усиление",
+    "Transcendence": "Трансценденция",
+    "Artifact": "Артефакт",
+    "Rune": "Руна",
+    "Talent": "Талант",
 }
+
+
+def _translate_single_chunk(text: str) -> str:
+    """Перевод одного блока (до 3000 символов) через Google GTX с надежной защитой плейсхолдеров и глоссария."""
+    if not text or len(text.strip()) < 5:
+        return text
+
+    # Очистка мусорных пометок авторов
+    text = re.sub(r'\(insert_[a-zA-Z0-9_\.]+\)', '', text)
+    text = re.sub(r'insert_[a-zA-Z0-9_\.]+', '', text)
+
+    placeholders = {}
+    masked = text
+    
+    # 1. Защита блоков кода, медиа, ссылок и разметки
+    code_blocks = {}
+    cidx = 0
+    patterns = [
+        r'```[\s\S]*?```',
+        r'`[^`]+`',
+        r'\{\{[^}]+\}\}',
+        r'\[\[[^\]]+\]\]',
+        r'\[Видео:\s*[^\]]+\]\([^)]+\)',
+        r'\[Video:\s*[^\]]+\]\([^)]+\)',
+        r'!\[[^\]]*\]\([^)]+\)',
+        r'https?://\S+',
+        r'<details>[\s\S]*?</details>',
+    ]
+    for pat in patterns:
+        for m in re.finditer(pat, masked):
+            ph = f"XZYBLOCK{cidx}XZY"
+            code_blocks[ph] = m.group()
+            masked = masked.replace(m.group(), ph, 1)
+            cidx += 1
+
+    # 2. Защита глоссария (сортируем по длине ключа по убыванию, чтобы сначала заменять длинные фразы)
+    idx = 0
+    for en in sorted(GAMING_GLOSSARY.keys(), key=len, reverse=True):
+        ru = GAMING_GLOSSARY[en]
+        # Границы слов для точного совпадения
+        pattern = re.compile(rf'\b{re.escape(en)}\b', re.IGNORECASE)
+        if pattern.search(masked):
+            ph = f"XZYGLOSS{idx}XZY"
+            masked = pattern.sub(ph, masked)
+            placeholders[ph] = ru
+            idx += 1
+
+    try:
+        encoded = urllib.parse.quote(masked)
+        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q={encoded}"
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        })
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            translated = "".join(seg[0] for seg in result[0] if seg and seg[0])
+    except Exception as e:
+        print(f"      [WARN] Перевод фрагмента пропущен ({e}), сохраняем оригинал")
+        translated = masked
+
+    # 3. Нормализация пробелов и регистра внутри плейсхолдеров, добавленных переводчиком
+    translated = re.sub(r'XZY\s*BLOCK\s*(\d+)\s*XZY', r'XZYBLOCK\1XZY', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'XZY\s*GLOSS\s*(\d+)\s*XZY', r'XZYGLOSS\1XZY', translated, flags=re.IGNORECASE)
+
+    # 4. Многопроходная замена для гарантии отсутствия остаточных тегов
+    for _ in range(3):
+        for ph, val in placeholders.items():
+            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
+        for ph, val in code_blocks.items():
+            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
+
+    # 5. Окончательная зачистка любых случайных остатков масок
+    translated = re.sub(r'XZY(?:BLOCK|GLOSS)\d+XZY', '', translated, flags=re.IGNORECASE)
+    
+    # 6. Дополнительная пост-коррекция распространенных курьезов
+    translated = re.sub(r'\bспиртные напитки\b', 'Духи', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bспиртных напитков\b', 'Духов', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bспиртными напитками\b', 'Духами', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bкрепкие напитки\b', 'сильные Духи', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bкомпакт-диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'\bкомпакт диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
+
+    return translated
 
 
 def discord_get(path: str) -> tuple[int, any]:
