@@ -126,7 +126,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error("unhandled_exception", error=str(exc), path=request.url.path, exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "request_id": getattr(request.state, "request_id", "unknown")}
+        content={
+            "detail": "Internal Server Error",
+            "error_debug": str(exc),
+            "request_id": getattr(request.state, "request_id", "unknown")
+        }
     )
 
 # Setup uvloop for performance on Linux

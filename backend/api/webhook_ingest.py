@@ -57,6 +57,10 @@ async def webhook_ingest_guide(payload: IngestGuidePayload):
         changed_by=None
     )
     # Clear both global categories cache and specific guide details cache
-    await cache_service.invalidate_all()
-    await cache_service.invalidate_guide(payload.guide_key)
+    try:
+        await cache_service.invalidate_all()
+        await cache_service.invalidate_guide(payload.guide_key)
+    except Exception:
+        pass
+
     return {"ok": True, "created": is_new}
