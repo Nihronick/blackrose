@@ -187,9 +187,9 @@ HEADERS_DISCORD = {
 # ── Игровой глоссарий для перевода ──
 GAMING_GLOSSARY = {
     # Духи и питомцы
+    "Strong Spirits": "Сильные Духи",
     "Spirits": "Духи",
     "Spirit": "Дух",
-    "Strong Spirits": "Сильные Духи",
     "Fountain of Circulation": "Фонтан Циркуляции",
     "Forest of Circulation": "Лес Циркуляции",
     "Familiars": "Фамильяры",
@@ -202,28 +202,25 @@ GAMING_GLOSSARY = {
     "Golem": "Голем",
     "Draco": "Драко",
     "Shadow Beast": "Теневой Зверь",
-    "Beast": "Зверь",
     "Beasts": "Звери",
+    "Beast": "Зверь",
     
     # Механики боя и кулдауны
-    "Cooldown": "Перезарядка (КД)",
     "Cooldowns": "Перезарядка (КД)",
-    "CD": "КД",
-    "cd": "КД",
+    "Cooldown": "Перезарядка (КД)",
     "Bossing": "Битвы с боссами",
     "bossing": "битвы с боссами",
-    "Boss": "Босс",
     "Bosses": "Боссы",
-    "Rage": "Ярость",
-    "Rave": "Рейв",
+    "Boss": "Босс",
     "Raves": "Рейвы",
+    "Rave": "Рейв",
+    "Rage": "Ярость",
     "Meditation": "Медитация",
-    "Medi": "Медитация",
     "Demon Hunter": "Охотник на Демонов (DH)",
     "DH": "DH (Demon Hunter)",
     "Life Steal": "Похищение жизни (Вампиризм)",
-    "Stun": "Оглушение (Стан)",
     "Stuns": "Оглушения",
+    "Stun": "Оглушение (Стан)",
     "HP bars": "Полоски HP",
     "HP bar": "Полоска HP",
     "HP": "HP",
@@ -232,13 +229,20 @@ GAMING_GLOSSARY = {
     "Attack": "Атака",
     "Pity System": "Система Гаранта (Pity)",
     "Pity": "Гарант (Pity)",
-    "Summon": "Призыв",
     "Summons": "Призывы",
+    "Summon": "Призыв",
     "Tornado Mark": "Метка Торнадо",
+    "Torando Mark": "Метка Торнадо",
     "Tornado": "Торнадо",
     "Torando": "Торнадо",
-    "Statue": "Статуя",
     "Statues": "Статуи",
+    "Statue": "Статуя",
+    "Late Game": "Поздняя игра (Late Game)",
+    "late game": "поздней игры",
+    "Early Game": "Ранняя игра (Early Game)",
+    "early game": "ранней игры",
+    "Mid Game": "Средняя игра (Mid Game)",
+    "mid game": "средней игры",
     
     # Продвижения (Promotions)
     "Blitz Gold": "Блиц Голд (Blitz Gold)",
@@ -277,8 +281,8 @@ GAMING_GLOSSARY = {
     "Rift": "Рифт",
     "Latent Power": "Латентная Сила",
     "Skill Stone": "Камень Навыка",
-    "Soul Weapon": "Оружие Души",
     "Soul Weapons": "Оружие Души",
+    "Soul Weapon": "Оружие Души",
     "Light Shard": "Осколок Света",
     "Memory Tree": "Дерево Памяти",
     "Training Diary": "Дневник Тренировок",
@@ -287,13 +291,13 @@ GAMING_GLOSSARY = {
     "Immortal Skill": "Бессмертный Навык",
     "Skill Mastery": "Мастерство Навыков",
     "Skill Refinement": "Улучшение Навыков",
-    "Slayer": "Охотник",
     "Slayerpedia": "Охотникпедия",
-    "Promotion": "Продвижение",
+    "Slayer": "Охотник",
     "Promotions": "Продвижение",
+    "Promotion": "Продвижение",
     "Awakening": "Пробуждение",
-    "Stage": "Этап",
     "Stages": "Этапы",
+    "Stage": "Этап",
     "Enhancement": "Усиление",
     "Transcendence": "Трансценденция",
     "Artifact": "Артефакт",
@@ -582,7 +586,7 @@ def _translate_single_chunk(text: str) -> str:
     for pat in patterns:
         for m in re.finditer(pat, masked):
             val = m.group(0)
-            ph = f"___SAFEBLOCK_{cidx}___"
+            ph = f"XQB{cidx}BQX"
             code_blocks[ph] = val
             masked = masked.replace(val, ph, 1)
             cidx += 1
@@ -594,13 +598,13 @@ def _translate_single_chunk(text: str) -> str:
         ru = GAMING_GLOSSARY[en]
         pattern = re.compile(rf'\b{re.escape(en)}\b', re.IGNORECASE if len(en) > 2 else 0)
         if pattern.search(masked):
-            ph = f"___GLOSS_{gidx}___"
+            ph = f"XQG{gidx}GQX"
             masked = pattern.sub(ph, masked)
             placeholders[ph] = ru
             gidx += 1
 
     if re.search(r'\bcd\b', masked, re.IGNORECASE):
-        ph = f"___GLOSS_{gidx}___"
+        ph = f"XQG{gidx}GQX"
         masked = re.sub(r'\bcd\b', ph, masked, flags=re.IGNORECASE)
         placeholders[ph] = "КД"
         gidx += 1
@@ -619,8 +623,8 @@ def _translate_single_chunk(text: str) -> str:
         translated = masked
 
     # 3. НОРМАЛИЗАЦИЯ ПЛЕЙСХОЛДЕРОВ
-    translated = re.sub(r'___\s*SAFEBLOCK\s*_*\s*(\d+)\s*___', r'___SAFEBLOCK_\1___', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'___\s*GLOSS\s*_*\s*(\d+)\s*___', r'___GLOSS_\1___', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'XQ\s*B\s*(\d+)\s*B\s*QX', r'XQB\1BQX', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'XQ\s*G\s*(\d+)\s*G\s*QX', r'XQG\1GQX', translated, flags=re.IGNORECASE)
 
     # 4. ВОССТАНОВЛЕНИЕ
     for _ in range(3):
@@ -629,8 +633,9 @@ def _translate_single_chunk(text: str) -> str:
         for ph, val in code_blocks.items():
             translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
 
-    # 5. ОЧИСТКА
-    translated = re.sub(r'___(?:SAFEBLOCK|GLOSS)_\d+___', '', translated, flags=re.IGNORECASE)
+    # 5. ОЧИСТКА ВСЕХ ВОЗМОЖНЫХ АРТЕФАКТОВ
+    translated = re.sub(r'XQ[BG]\d+[BG]QX', '', translated, flags=re.IGNORECASE)
+    translated = re.sub(r'___(?:SAFEBLOCK|GLOSS|БЕЗОПАСНЫЙ|ГЛОСС)[_\s]*\d+[_\s]*___', '', translated, flags=re.IGNORECASE)
     translated = re.sub(r'XZY(?:BLOCK|GLOSS)\d+XZY', '', translated, flags=re.IGNORECASE)
     translated = re.sub(r'\bспиртные напитки\b', 'Духи', translated, flags=re.IGNORECASE)
     translated = re.sub(r'\bспиртных напитков\b', 'Духов', translated, flags=re.IGNORECASE)
