@@ -22,6 +22,22 @@ logger = get_logger("blackrose.api.admin")
 async def admin_stats(user=Depends(require_admin)):
     return await guide_service.get_stats()
 
+@router.post("/maintenance/clean-db")
+async def clean_database_storage(user=Depends(require_admin)):
+    """Очистка таблиц кэша и истории для освобождения дискового пространства PostgreSQL."""
+    from sqlalchemy import text
+    from core.db import get_sessionmaker
+    
+    async with get_sessionmaker()() as session:
+        try:
+            await session.execute(text("TRUNCATE TABLE media_cache CASCADE;"))
+            await session.execute(text("TRUNCATE TABLE guide_history CASCADE;"))
+            await session.commit()
+            return {"ok": True, "message": "Database tables truncated and space reclaimed"}
+        except Exception as e:
+            logger.error(f"Maintenance clean failed: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/categories")
 async def admin_categories(user=Depends(require_admin)):
     return await category_service.get_all()

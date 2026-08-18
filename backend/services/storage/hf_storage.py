@@ -87,18 +87,22 @@ class HFStorageService:
         filename = f"{uuid.uuid4()}{ext}"
         full_path = f"{self.path_prefix}/{folder}/{filename}".replace("//", "/")
 
-        try:
-            self.api.upload_file(
-                path_or_fileobj=content,
-                path_in_repo=full_path,
-                repo_id=self.repo_id,
-                repo_type="dataset",
-                commit_message=f"Admin: Upload {filename}"
-            )
-            return self._get_public_url(full_path)
-        except Exception as e:
-            logger.error(f"HF upload failed: {e}")
-            raise RuntimeError(f"Storage error: {str(e).split('?')[0]}")
+        for attempt in range(3):
+            try:
+                self.api.upload_file(
+                    path_or_fileobj=content,
+                    path_in_repo=full_path,
+                    repo_id=self.repo_id,
+                    repo_type="dataset",
+                    commit_message=f"Admin: Upload {filename}"
+                )
+                return self._get_public_url(full_path)
+            except Exception as e:
+                logger.warning(f"HF upload attempt {attempt+1} notice: {e}")
+                if attempt < 2:
+                    await asyncio.sleep(1.0 * (attempt + 1))
+                else:
+                    raise RuntimeError(f"Storage error: {str(e).split('?')[0]}")
         finally:
             await file.close()
             del content

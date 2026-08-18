@@ -257,7 +257,7 @@ def backend_request(path: str, data: dict | None, token: str, method: str = "PUT
 
 
 def ingest_guide(guide_key: str, cat_key: str, cat_title: str, title: str, text: str, photos: list, videos: list, sort_order: int) -> dict:
-    """Безопасный импорт гайда через эндпоинт webhook ingest."""
+    """Безопасный импорт гайда через эндпоинт webhook ingest с автоматическим retry."""
     url = f"{BACKEND_URL}/api/webhook/ingest"
     body = json.dumps({
         "guide_key": guide_key,
@@ -270,17 +270,29 @@ def ingest_guide(guide_key: str, cat_key: str, cat_title: str, title: str, text:
         "document": [],
         "sort_order": sort_order
     }).encode("utf-8")
-    req = urllib.request.Request(url, data=body, method="POST")
-    req.add_header("Content-Type", "application/json")
-    req.add_header("X-Ingest-Token", "dev_ingest_token")
-    try:
-        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        body_str = e.read().decode("utf-8", errors="ignore")
-        return {"error": f"HTTP {e.code}: {body_str[:200]}"}
-    except Exception as e:
-        return {"error": str(e)}
+
+    last_err = ""
+    for attempt in range(3):
+        req = urllib.request.Request(url, data=body, method="POST")
+        req.add_header("Content-Type", "application/json")
+        req.add_header("X-Ingest-Token", "dev_ingest_token")
+        try:
+            with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            body_str = e.read().decode("utf-8", errors="ignore")
+            last_err = f"HTTP {e.code}: {body_str[:200]}"
+            if e.code in (500, 502, 503, 504, 429) and attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            return {"error": last_err}
+        except Exception as e:
+            last_err = str(e)
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            return {"error": last_err}
+    return {"error": last_err}
 
 
 MEDIA_MAP_FILE = "media_url_map.json"
@@ -300,11 +312,11 @@ def save_media_cache():
         pass
 
 def persist_media_url(raw_url: str, admin_jwt: str = "") -> str:
-    """Скачивает медиафайл локально и сохраняет в постоянное хранилище (БД /api/media/{hash} или HF)."""
+    """Скачивает медиафайл локально и загружает в постоянное облачное хранилище Hugging Face."""
     if not raw_url or not raw_url.startswith("http"):
         return raw_url
 
-    if "huggingface.co" in raw_url or raw_url.startswith("/api/media/"):
+    if "huggingface.co" in raw_url:
         return raw_url
 
     canonical = raw_url.split("?")[0]
@@ -318,76 +330,47 @@ def persist_media_url(raw_url: str, admin_jwt: str = "") -> str:
     if not admin_jwt:
         return raw_url
 
-    try:
-        req = urllib.request.Request(raw_url, headers=HEADERS_DISCORD)
-        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
-            content = resp.read()
-            content_type = resp.headers.get("Content-Type", "image/png")
-        
-        if not content:
-            return raw_url
-
-        # 1. Пробуем сохранить напрямую в постоянный DB кэш (/api/admin/media/direct-cache)
-        import base64
-        b64_data = base64.b64encode(content).decode("utf-8")
-        m_type = "emoji" if "/emojis/" in raw_url else ("video" if any(canonical.endswith(x) for x in ('.mp4', '.webm', '.mov')) else "photo")
-        
-        direct_body = json.dumps({
-            "canonical_url": canonical,
-            "data_base64": b64_data,
-            "mime_type": content_type,
-            "media_type": m_type
-        }).encode("utf-8")
-
-        db_req = urllib.request.Request(
-            f"{BACKEND_URL}/api/admin/media/direct-cache",
-            data=direct_body,
-            method="POST",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {admin_jwt}",
-            }
-        )
+    for attempt in range(3):
         try:
-            with urllib.request.urlopen(db_req, context=_ssl_ctx, timeout=30) as db_resp:
-                db_data = json.loads(db_resp.read().decode("utf-8"))
-                perm_url = db_data.get("url")
+            req = urllib.request.Request(raw_url, headers=HEADERS_DISCORD)
+            with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
+                content = resp.read()
+                content_type = resp.headers.get("Content-Type", "image/png")
+            
+            if not content:
+                return raw_url
+
+            filename = canonical.rsplit("/", 1)[-1] or "image.png"
+            boundary = "----WebKitFormBoundary" + os.urandom(16).hex()
+            
+            body = bytearray()
+            body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+            body.extend(f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode('utf-8'))
+            body.extend(f'Content-Type: {content_type}\r\n\r\n'.encode('utf-8'))
+            body.extend(content)
+            body.extend(f'\r\n--{boundary}--\r\n'.encode('utf-8'))
+
+            up_req = urllib.request.Request(
+                f"{BACKEND_URL}/api/admin/upload",
+                data=bytes(body),
+                method="POST",
+                headers={
+                    "Content-Type": f"multipart/form-data; boundary={boundary}",
+                    "Authorization": f"Bearer {admin_jwt}",
+                }
+            )
+            with urllib.request.urlopen(up_req, context=_ssl_ctx, timeout=40) as up_resp:
+                up_data = json.loads(up_resp.read().decode("utf-8"))
+                perm_url = up_data.get("url")
                 if perm_url:
                     _media_url_cache[canonical] = perm_url
                     save_media_cache()
                     return perm_url
-        except Exception:
-            pass
-
-        # 2. Fallback: Загрузка в Hugging Face Dataset
-        filename = canonical.rsplit("/", 1)[-1] or "image.png"
-        boundary = "----WebKitFormBoundary" + os.urandom(16).hex()
-        
-        body = bytearray()
-        body.extend(f'--{boundary}\r\n'.encode('utf-8'))
-        body.extend(f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode('utf-8'))
-        body.extend(f'Content-Type: {content_type}\r\n\r\n'.encode('utf-8'))
-        body.extend(content)
-        body.extend(f'\r\n--{boundary}--\r\n'.encode('utf-8'))
-
-        up_req = urllib.request.Request(
-            f"{BACKEND_URL}/api/admin/upload",
-            data=bytes(body),
-            method="POST",
-            headers={
-                "Content-Type": f"multipart/form-data; boundary={boundary}",
-                "Authorization": f"Bearer {admin_jwt}",
-            }
-        )
-        with urllib.request.urlopen(up_req, context=_ssl_ctx, timeout=40) as up_resp:
-            up_data = json.loads(up_resp.read().decode("utf-8"))
-            perm_url = up_data.get("url")
-            if perm_url:
-                _media_url_cache[canonical] = perm_url
-                save_media_cache()
-                return perm_url
-    except Exception as e:
-        print(f"      [MEDIA UPLOAD NOTICE] {canonical.split('/')[-1]}: {e}")
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(1.0 * (attempt + 1))
+                continue
+            print(f"      [MEDIA UPLOAD NOTICE] {canonical.split('/')[-1]}: {e}")
 
     return raw_url
 
