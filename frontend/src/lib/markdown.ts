@@ -115,10 +115,20 @@ marked.use({
       const normalizedHref = normalizeUrl(href ?? '')
       const label = text || normalizedHref
 
-      // Специальная обработка для [Video: name](url) и прямых ссылок на видео
+      // Специальная обработка для [Video: name](url), [Видео: name](url) и прямых ссылок на видео
+      const isVideoLabel =
+        label.toLowerCase().includes('video') ||
+        label.toLowerCase().includes('видео') ||
+        label.toLowerCase().includes('инструкция')
+      const isVideoExt = /\.(mp4|webm|mov|avi)($|\?)/i.test(normalizedHref)
+      const isApiMediaVideo =
+        normalizedHref.includes('/api/media/') &&
+        (isVideoLabel || label === normalizedHref || isVideoExt)
+
       if (
-        label.includes('Video:') ||
-        /\.(mp4|webm|mov|avi)($|\?)/i.test(normalizedHref) ||
+        isVideoLabel ||
+        isVideoExt ||
+        isApiMediaVideo ||
         normalizedHref.includes('youtube.com') ||
         normalizedHref.includes('youtu.be')
       ) {
@@ -201,7 +211,7 @@ function replaceIcons(text: string, iconResolver: (name: string) => string) {
     const name = String(rawName || '').trim()
     if (!name) return ''
 
-    if (/^https?:\/\//i.test(name)) {
+    if (/^https?:\/\//i.test(name) || name.startsWith('/api/media/') || name.startsWith('api/media/')) {
       const normalized = normalizeUrl(name)
       return `<img src="${normalized}" alt="icon" title="icon" class="inline-icon" width="20" height="20" style="display:inline-block;vertical-align:middle;margin:0 3px;cursor:pointer;">`
     }

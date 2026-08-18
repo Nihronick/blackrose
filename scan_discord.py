@@ -422,6 +422,19 @@ def sanitize_discord_markdown(text: str, admin_jwt: str = "") -> str:
 
     # Спойлеры → <details>
     text = re.sub(r'\|\|(.+?)\|\|', r'<details><summary>Спойлер</summary>\1</details>', text, flags=re.DOTALL)
+    # Преобразуем прямые ссылки на Discord CDN в тексте в постоянные ссылки
+    def _replace_discord_cdn(m):
+        raw_url = m.group(0)
+        perm = persist_media_url(raw_url, admin_jwt) if admin_jwt else raw_url
+        clean_url = raw_url.split('?')[0].lower()
+        if any(clean_url.endswith(ext) for ext in ('.mp4', '.webm', '.mov', '.avi')):
+            return f"[Видео: Видеоинструкция]({perm})"
+        if any(clean_url.endswith(ext) for ext in ('.png', '.jpg', '.jpeg', '.webp', '.gif')):
+            return f"![Скриншот]({perm})"
+        return perm
+
+    text = re.sub(r'https?://(?:cdn\.discordapp\.com|media\.discordapp\.net)/attachments/\S+', _replace_discord_cdn, text)
+
     # Внутренние Discord-ссылки → [[discord_id|label]]
     def _convert_markdown_discord_link(m):
         label = m.group(1).strip() or "Ссылка на гайд"
