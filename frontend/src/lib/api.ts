@@ -66,24 +66,94 @@ function sanitizeHeaders(headers: Record<string, string>): Record<string, string
   return clean
 }
 
+// ── Circuit Breaker State ─────────────────────────────────────────
+class CircuitBreaker {
+  private failures = 0
+  private lastFailureTime = 0
+  private readonly threshold: number
+  private readonly resetTimeout: number
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED'
+
+  constructor(threshold = 5, resetTimeout = 10000) {
+    this.threshold = threshold
+    this.resetTimeout = resetTimeout
+  }
+
+  canRequest(): boolean {
+    if (this.state === 'CLOSED') return true
+    if (this.state === 'OPEN') {
+      const now = Date.now()
+      if (now - this.lastFailureTime > this.resetTimeout) {
+        this.state = 'HALF_OPEN'
+        return true
+      }
+      return false
+    }
+    return true // HALF_OPEN
+  }
+
+  recordSuccess() {
+    this.failures = 0
+    this.state = 'CLOSED'
+  }
+
+  recordFailure() {
+    this.failures++
+    this.lastFailureTime = Date.now()
+    if (this.failures >= this.threshold) {
+      this.state = 'OPEN'
+    }
+  }
+
+  getState() {
+    return this.state
+  }
+}
+
+export const apiCircuitBreaker = new CircuitBreaker(5, 10000)
+
 /**
- * Generic API call helper
+ * Calculates exponential backoff with full jitter to avoid thundering herds.
+ */
+function getExponentialBackoffDelay(attempt: number, baseDelay = 300, maxDelay = 3000): number {
+  const exponential = Math.min(maxDelay, baseDelay * 2 ** attempt)
+  const jitter = Math.random() * (exponential * 0.5)
+  return exponential + jitter
+}
+
+/**
+ * Generic API call helper with Circuit Breaker, Exponential Backoff, Idempotency and Timeouts.
  */
 async function apiRaw<T>(
   endpoint: string,
   method = 'GET',
   body?: unknown,
   isFormData = false,
-  hasRetried = false
+  hasRetried = false,
+  attempt = 0
 ): Promise<T> {
+  if (!apiCircuitBreaker.canRequest() && method === 'GET') {
+    throw new Error('CIRCUIT_OPEN: Сервер временно недоступен. Используется локальный кэш.')
+  }
+
   const headers = sanitizeHeaders(getAuthHeaders())
   if (!isFormData) {
     headers['Content-Type'] = 'application/json'
   }
 
+  // Idempotency key for mutations
+  if (method !== 'GET' && !headers['X-Idempotency-Key']) {
+    headers['X-Idempotency-Key'] = `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+  }
+
+  // Request timeout protection (15 seconds)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000)
+
   const options: RequestInit = {
     method,
     headers,
+    signal: controller.signal,
   }
 
   if (body) {
@@ -100,11 +170,17 @@ async function apiRaw<T>(
   let res: Response
   try {
     res = await fetch(`${BASE}${endpoint}`, options)
+    clearTimeout(timeoutId)
+    apiCircuitBreaker.recordSuccess()
   } catch (err) {
-    // Transparent retry for transient network glitches or HF Space wakeups
-    if (!hasRetried && method === 'GET') {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      return apiRaw<T>(endpoint, method, body, isFormData, true)
+    clearTimeout(timeoutId)
+    apiCircuitBreaker.recordFailure()
+
+    // Retry policy: Exponential backoff with jitter on network glitches or 5xx/429
+    if (attempt < 2 && (method === 'GET' || method === 'HEAD')) {
+      const delay = getExponentialBackoffDelay(attempt)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return apiRaw<T>(endpoint, method, body, isFormData, true, attempt + 1)
     }
     throw err
   } finally {
@@ -127,7 +203,7 @@ async function apiRaw<T>(
         const refreshData = (await refreshRes.json()) as { token?: string }
         if (refreshData?.token) {
           setStoredAccessToken(refreshData.token)
-          return apiRaw<T>(endpoint, method, body, isFormData, true)
+          return apiRaw<T>(endpoint, method, body, isFormData, true, attempt)
         }
       } else {
         clearStoredToken()
@@ -135,10 +211,26 @@ async function apiRaw<T>(
     }
   }
 
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throwHttpError(res, data)
+  // Auto-retry 502/503/504 Bad Gateway / Cold Starts with backoff (only once if not retried)
+  if (res && (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429) && !hasRetried && attempt < 1 && method === 'GET') {
+    apiCircuitBreaker.recordFailure()
+    const delay = getExponentialBackoffDelay(attempt, 200, 2000)
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    const retryRes = await apiRaw<T>(endpoint, method, body, isFormData, true, attempt + 1).catch(() => null)
+    if (retryRes !== null) return retryRes
+  }
+
+  const data = res?.json ? await res.json().catch(() => ({})) : {}
+  if (!res || !res.ok) {
+    if (res?.status && res.status >= 500) {
+      apiCircuitBreaker.recordFailure()
+    }
+    throwHttpError(res, data)
+  }
   return data
+
 }
+
 
 // Basic methods
 export const apiFetch = <T>(path: string) => apiRaw<T>(path, 'GET')

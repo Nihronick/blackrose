@@ -88,10 +88,33 @@ setup_cors(app)
 app.add_middleware(RequestContextMiddleware)
 app.middleware("http")(add_security_headers)
 
-# Root Health Alias
+from fastapi.responses import Response, PlainTextResponse
+from core.metrics import metrics_registry
+from core.db import get_health as get_db_health
+
+# Kubernetes Liveness Probe
+@app.get("/healthz", tags=["health"])
 @app.get("/health", tags=["health"])
-async def root_health():
+async def liveness_probe():
     return {"status": "ok", "version": settings.VERSION}
+
+# Kubernetes Readiness Probe (Validates DB & Redis connections)
+@app.get("/readyz", tags=["health"])
+async def readiness_probe():
+    db_health = await get_db_health()
+    redis_health = await cache_service.ping()
+    if db_health.get("status") != "healthy":
+        return JSONResponse(status_code=503, content={"status": "not_ready", "db": db_health, "redis": redis_health})
+    return {"status": "ready", "db": db_health, "redis": redis_health}
+
+# Prometheus & Performance Metrics Endpoint
+@app.get("/metrics", response_class=PlainTextResponse, tags=["metrics"])
+@app.get("/api/metrics", tags=["metrics"])
+async def get_metrics(request: Request):
+    if "text/plain" in request.headers.get("accept", "") or request.url.path == "/metrics":
+        return PlainTextResponse(metrics_registry.to_prometheus())
+    return JSONResponse(metrics_registry.get_summary())
+
 
 # Routers
 app.include_router(public.router, prefix="/api")

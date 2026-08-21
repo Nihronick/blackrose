@@ -35,13 +35,48 @@ def setup_cors(app: FastAPI):
         expose_headers=["X-Request-ID"],
     )
 
+import time
+import uuid
+from core.metrics import metrics_registry
+
 async def add_security_headers(request: Request, call_next):
+    start_time = time.time()
+    
+    # Distributed Tracing Request ID
+    req_id = request.headers.get("X-Request-ID") or f"br_{uuid.uuid4().hex[:16]}"
+    request.state.request_id = req_id
+
     response = await call_next(request)
+    
+    # Latency tracking
+    duration_ms = (time.time() - start_time) * 1000.0
+    metrics_registry.record_request(
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration_ms=duration_ms
+    )
+
+    # Security & WAF Headers
+    response.headers["X-Request-ID"] = req_id
+    response.headers["X-Response-Time-Ms"] = f"{duration_ms:.2f}"
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https: blob:; "
+        "media-src 'self' data: https: blob:; "
+        "connect-src 'self' https: wss:; "
+        "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org https://blackrosesl.me;"
+    )
     return response
+
 
 def setup_honeybadger(app: FastAPI):
     if not settings.HONEYBADGER_API_KEY:
