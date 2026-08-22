@@ -2,7 +2,6 @@ import DOMPurify from 'dompurify'
 import { type RendererExtension, type TokenizerExtension, type Tokens, marked } from 'marked'
 import { normalizeUrl, parseVideo } from './utils'
 
-
 /**
  * Форматтер гайдов — порт Python format_guide_text на JS.
  *
@@ -217,7 +216,11 @@ function replaceIcons(text: string, iconResolver: (name: string) => string) {
     const name = String(rawName || '').trim()
     if (!name) return ''
 
-    if (/^https?:\/\//i.test(name) || name.startsWith('/api/media/') || name.startsWith('api/media/')) {
+    if (
+      /^https?:\/\//i.test(name) ||
+      name.startsWith('/api/media/') ||
+      name.startsWith('api/media/')
+    ) {
       const normalized = normalizeUrl(name)
       return `<img src="${normalized}" alt="icon" title="icon" class="inline-icon" width="20" height="20" style="display:inline-block;vertical-align:middle;margin:0 3px;cursor:pointer;">`
     }
@@ -448,4 +451,3 @@ export function formatGuideText(raw: string, options: FormatOptions = {}): strin
   // 3. DOMPurify санитизирует
   return DOMPurify.sanitize(html, PURIFY_CONFIG)
 }
-

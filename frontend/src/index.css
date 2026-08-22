@@ -514,7 +514,6 @@ img.inline-icon {
   display: none;
 }
 
-
 .guide-tab-btn {
   @apply px-4 py-2 rounded-2xl text-xs font-bold font-heading uppercase tracking-wider text-muted-foreground transition-all duration-200 cursor-pointer select-none border border-transparent;
 }
@@ -576,5 +575,3 @@ img.inline-icon {
   text-shadow: none;
   user-select: text;
 }
-
-

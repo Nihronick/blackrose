@@ -41,7 +41,7 @@ const queryClient = new QueryClient({
   },
 })
 
-import { isNative, setStatusBarDark, initDeepLinks } from './lib/capacitor'
+import { initDeepLinks, isNative, setStatusBarDark } from './lib/capacitor'
 
 initTheme()
 

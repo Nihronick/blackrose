@@ -81,9 +81,12 @@ export const GuideContent: FC<GuideContentProps> = ({ html, onImageClick, onCybe
         const text = codeEl.textContent?.trim()
         if (text && text.length < 150) {
           haptic.medium()
-          navigator.clipboard?.writeText(text).then(() => {
-            toast.success(`«${text}» скопировано в буфер!`)
-          }).catch(() => {})
+          navigator.clipboard
+            ?.writeText(text)
+            .then(() => {
+              toast.success(`«${text}» скопировано в буфер!`)
+            })
+            .catch(() => {})
           return
         }
       }

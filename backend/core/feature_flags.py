@@ -2,7 +2,6 @@
 Feature Flags — Simple Redis-backed feature toggle system.
 Allows enabling/disabling features without redeployment.
 """
-import json
 from core.logging import get_logger
 
 logger = get_logger("blackrose.core.feature_flags")

@@ -1,8 +1,12 @@
+import asyncio
+import time
+import uuid
 from urllib.parse import urlparse
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.logging import get_logger
+from core.metrics import metrics_registry
 
 logger = get_logger("blackrose.core.middleware")
 
@@ -34,11 +38,6 @@ def setup_cors(app: FastAPI):
         allow_headers=["*"],
         expose_headers=["X-Request-ID"],
     )
-
-import time
-import uuid
-import asyncio
-from core.metrics import metrics_registry
 
 # Backpressure: limit concurrent request processing
 _concurrency_semaphore = asyncio.Semaphore(100)

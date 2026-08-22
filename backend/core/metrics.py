@@ -1,7 +1,6 @@
 import time
 import math
 import collections
-from datetime import datetime
 
 class MetricsRegistry:
     def __init__(self, max_samples: int = 1000):

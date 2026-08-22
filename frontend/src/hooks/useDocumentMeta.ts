@@ -10,7 +10,9 @@ interface MetaProps {
 export function useDocumentMeta({ title, description, image, url }: MetaProps) {
   useEffect(() => {
     // 1. Update Document Title
-    const formattedTitle = title ? `${title} | BlackRose` : 'BlackRose — База знаний и сообщество Slayer Legend'
+    const formattedTitle = title
+      ? `${title} | BlackRose`
+      : 'BlackRose — База знаний и сообщество Slayer Legend'
     document.title = formattedTitle
 
     // 2. Helper to set/update meta tag
@@ -25,7 +27,8 @@ export function useDocumentMeta({ title, description, image, url }: MetaProps) {
       element.setAttribute(attr, value)
     }
 
-    const defaultDesc = 'Главная база знаний, калькуляторы билдов, тир-листы и гайды по Slayer Legend'
+    const defaultDesc =
+      'Главная база знаний, калькуляторы билдов, тир-листы и гайды по Slayer Legend'
     const finalDesc = description || defaultDesc
     const finalUrl = url || window.location.href
     const finalImage = image || `${window.location.origin}/app-icon.png`

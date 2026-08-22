@@ -67,7 +67,7 @@ def validate_url(url: str, *, allow_any_https: bool = False) -> str:
 
     # Block IP-based URLs (e.g. https://169.254.169.254/)
     try:
-        ip = ipaddress.ip_address(hostname)
+        ipaddress.ip_address(hostname)
         raise SSRFError(f"Direct IP addresses are not allowed: {hostname}")
     except ValueError:
         pass  # Not an IP, it's a hostname — continue

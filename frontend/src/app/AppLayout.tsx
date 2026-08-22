@@ -77,7 +77,20 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
   // Sync Telegram WebApp Native BackButton with React Router
   useEffect(() => {
-    const tg = (window as unknown as { Telegram?: { WebApp?: { BackButton?: { show: () => void; hide: () => void; onClick: (fn: () => void) => void; offClick: (fn: () => void) => void } } } })?.Telegram?.WebApp
+    const tg = (
+      window as unknown as {
+        Telegram?: {
+          WebApp?: {
+            BackButton?: {
+              show: () => void
+              hide: () => void
+              onClick: (fn: () => void) => void
+              offClick: (fn: () => void) => void
+            }
+          }
+        }
+      }
+    )?.Telegram?.WebApp
     if (!tg?.BackButton) return
 
     if (location.pathname !== '/') {
@@ -86,9 +99,8 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
       return () => {
         tg.BackButton.offClick(handleBack)
       }
-    } else {
-      tg.BackButton.hide()
     }
+    tg.BackButton.hide()
   }, [location.pathname, handleBack])
 
   const headerTitle = useMemo(() => {
@@ -99,7 +111,8 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
     if (path === '/roadmap') return 'Дорожная карта'
     if (path === '/build') return 'Калькулятор билда'
     if (path === '/search') return 'Поиск'
-    if (path === '/legal' || path === '/privacy' || path === '/terms' || path === '/dmca') return 'Правовая информация'
+    if (path === '/legal' || path === '/privacy' || path === '/terms' || path === '/dmca')
+      return 'Правовая информация'
     if (path.startsWith('/category/')) {
       const id = path.split('/').pop()
       const cat = cats?.find((c) => c.key === id)
@@ -333,7 +346,6 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                       push(tab.route)
                     }}
                   >
-
                     {isActive && (
                       <motion.div
                         layoutId="active-tab"
@@ -421,7 +433,10 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
               </div>
 
               <p className="text-[11px] text-muted-foreground/60 leading-relaxed max-w-2xl mx-auto">
-                BlackRose — независимая некоммерческая база знаний и сообщество по игре <strong>Slayer Legend</strong>. Все права на игровые ассеты, товарные знаки и названия принадлежат <strong>GEAR2PLAY Co., Ltd.</strong> Проект не аффилирован с разработчиками игры. Возрастная маркировка: <strong>12+</strong>.
+                BlackRose — независимая некоммерческая база знаний и сообщество по игре{' '}
+                <strong>Slayer Legend</strong>. Все права на игровые ассеты, товарные знаки и
+                названия принадлежат <strong>GEAR2PLAY Co., Ltd.</strong> Проект не аффилирован с
+                разработчиками игры. Возрастная маркировка: <strong>12+</strong>.
               </p>
             </div>
           </footer>

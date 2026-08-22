@@ -1,9 +1,9 @@
 import { BrandIcon } from '@/components/ui/BrandIcon'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { APP_CONFIG } from '@/lib/constants'
 import { haptic } from '@/lib/haptic'
-import { Sparkles, Trophy, Flame, Zap, Shield } from '@/lib/icons'
+import { Flame, Shield, Sparkles, Trophy, Zap } from '@/lib/icons'
 import { motion } from 'framer-motion'
 import { type FC, useState } from 'react'
 
@@ -18,8 +18,18 @@ const TIER_LIST_DATA = {
       color: 'from-amber-500/30 to-amber-950/40 border-amber-500/50 text-amber-400',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
       items: [
-        { name: 'Sala (Саламандра)', icon: '🔥', desc: '+25% Крит. урон, топ-1 для боссов и соло-целей', guideKey: 'discord_1266502911324721335' },
-        { name: 'Loia (Лоия)', icon: '🧚', desc: '+20% Базовая атака, абсолютный мета-дух для фарма стадий', guideKey: 'discord_1266502911324721335' },
+        {
+          name: 'Sala (Саламандра)',
+          icon: '🔥',
+          desc: '+25% Крит. урон, топ-1 для боссов и соло-целей',
+          guideKey: 'discord_1266502911324721335',
+        },
+        {
+          name: 'Loia (Лоия)',
+          icon: '🧚',
+          desc: '+20% Базовая атака, абсолютный мета-дух для фарма стадий',
+          guideKey: 'discord_1266502911324721335',
+        },
       ],
     },
     {
@@ -27,8 +37,18 @@ const TIER_LIST_DATA = {
       color: 'from-rose-500/30 to-rose-950/40 border-rose-500/50 text-rose-400',
       badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
       items: [
-        { name: 'Noah (Ной)', icon: '🦅', desc: '+18% Скорость атаки, универсален для Разлома и Эфира', guideKey: 'discord_1266502911324721335' },
-        { name: 'Mum (Мум)', icon: '🦇', desc: '+22% Урон навыков, мощный бафф для бурст-прокастов', guideKey: 'discord_1266502911324721335' },
+        {
+          name: 'Noah (Ной)',
+          icon: '🦅',
+          desc: '+18% Скорость атаки, универсален для Разлома и Эфира',
+          guideKey: 'discord_1266502911324721335',
+        },
+        {
+          name: 'Mum (Мум)',
+          icon: '🦇',
+          desc: '+22% Урон навыков, мощный бафф для бурст-прокастов',
+          guideKey: 'discord_1266502911324721335',
+        },
       ],
     },
     {
@@ -36,8 +56,18 @@ const TIER_LIST_DATA = {
       color: 'from-blue-500/30 to-blue-950/40 border-blue-500/50 text-blue-400',
       badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
       items: [
-        { name: 'Todd (Тодд)', icon: '🐸', desc: '+15% КД навыков, полезен на затяжных боссах', guideKey: 'discord_1266502911324721335' },
-        { name: 'Radum (Радон)', icon: '🛡️', desc: '+30% Защита, спасает от ваншотов на высоких стадиях', guideKey: 'discord_1266502911324721335' },
+        {
+          name: 'Todd (Тодд)',
+          icon: '🐸',
+          desc: '+15% КД навыков, полезен на затяжных боссах',
+          guideKey: 'discord_1266502911324721335',
+        },
+        {
+          name: 'Radum (Радон)',
+          icon: '🛡️',
+          desc: '+30% Защита, спасает от ваншотов на высоких стадиях',
+          guideKey: 'discord_1266502911324721335',
+        },
       ],
     },
   ],
@@ -47,9 +77,24 @@ const TIER_LIST_DATA = {
       color: 'from-amber-500/30 to-amber-950/40 border-amber-500/50 text-amber-400',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
       items: [
-        { name: 'Rage (Ярость)', icon: '🔥', desc: 'Огромный множитель урона', guideKey: 'discord_1266502911324721335' },
-        { name: 'Rave (Рейв)', icon: '⚡', desc: 'Ускорение атаки и крит. удары', guideKey: 'discord_1266502911324721335' },
-        { name: 'Fulgur (Молния)', icon: '🌩️', desc: 'Цепная зачистка всех волн', guideKey: 'discord_1266502911324721335' },
+        {
+          name: 'Rage (Ярость)',
+          icon: '🔥',
+          desc: 'Огромный множитель урона',
+          guideKey: 'discord_1266502911324721335',
+        },
+        {
+          name: 'Rave (Рейв)',
+          icon: '⚡',
+          desc: 'Ускорение атаки и крит. удары',
+          guideKey: 'discord_1266502911324721335',
+        },
+        {
+          name: 'Fulgur (Молния)',
+          icon: '🌩️',
+          desc: 'Цепная зачистка всех волн',
+          guideKey: 'discord_1266502911324721335',
+        },
       ],
     },
     {
@@ -57,9 +102,24 @@ const TIER_LIST_DATA = {
       color: 'from-rose-500/30 to-rose-950/40 border-rose-500/50 text-rose-400',
       badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
       items: [
-        { name: 'Flame Wave (Огненная волна)', icon: '🌋', desc: 'AoE горение', guideKey: 'discord_1266502911324721335' },
-        { name: 'Demon Hunt (Охота на демонов)', icon: '👹', desc: 'Урон по боссам', guideKey: 'discord_1266502911324721335' },
-        { name: 'Blizzard (Метель)', icon: '❄️', desc: 'Замедление и контроль', guideKey: 'discord_1266502911324721335' },
+        {
+          name: 'Flame Wave (Огненная волна)',
+          icon: '🌋',
+          desc: 'AoE горение',
+          guideKey: 'discord_1266502911324721335',
+        },
+        {
+          name: 'Demon Hunt (Охота на демонов)',
+          icon: '👹',
+          desc: 'Урон по боссам',
+          guideKey: 'discord_1266502911324721335',
+        },
+        {
+          name: 'Blizzard (Метель)',
+          icon: '❄️',
+          desc: 'Замедление и контроль',
+          guideKey: 'discord_1266502911324721335',
+        },
       ],
     },
   ],
@@ -72,7 +132,6 @@ export const RoadmapView: FC<RoadmapViewProps> = ({ onSelectGuide }) => {
     <div className="view-scroll flex-1 overflow-y-auto container-padding py-4 sm:py-6 relative z-0">
       <div className="absolute top-0 left-0 w-full h-80 mesh-bg opacity-30 pointer-events-none -z-10" />
       <div className="flex flex-col gap-6 sm:gap-8 pb-28 sm:pb-32 max-w-xl mx-auto stagger-in relative z-10">
-        
         {/* Navigation Tabs */}
         <div className="flex items-center justify-center p-1 bg-card/60 backdrop-blur-xl rounded-2xl border border-border/10 shadow-sm">
           <button
@@ -130,7 +189,11 @@ export const RoadmapView: FC<RoadmapViewProps> = ({ onSelectGuide }) => {
                         Tier {group.tier}
                       </Badge>
                       <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                        {group.tier === 'S' ? 'Обязательный пик' : group.tier === 'A' ? 'Сильная мета' : 'Ситуативный выбор'}
+                        {group.tier === 'S'
+                          ? 'Обязательный пик'
+                          : group.tier === 'A'
+                            ? 'Сильная мета'
+                            : 'Ситуативный выбор'}
                       </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
@@ -242,10 +305,21 @@ export const RoadmapView: FC<RoadmapViewProps> = ({ onSelectGuide }) => {
                     active: true,
                     content: (
                       <ul className="space-y-1.5 mt-1 text-[11px] text-muted-foreground/90 leading-relaxed">
-                        <li>• 📱 <strong>PWA & Offline</strong>: Service Worker кэширует гайды и медиафайлы.</li>
-                        <li>• 🔥 <strong>Живые реакции</strong>: Реальные счетчики лайков и реакций в БД.</li>
-                        <li>• ☁️ <strong>Облачное избранное</strong>: Автоматическая синхронизация между устройствами.</li>
-                        <li>• 🤖 <strong>Telegram-бот</strong>: Поддержка Mini App и push-уведомлений.</li>
+                        <li>
+                          • 📱 <strong>PWA & Offline</strong>: Service Worker кэширует гайды и
+                          медиафайлы.
+                        </li>
+                        <li>
+                          • 🔥 <strong>Живые реакции</strong>: Реальные счетчики лайков и реакций в
+                          БД.
+                        </li>
+                        <li>
+                          • ☁️ <strong>Облачное избранное</strong>: Автоматическая синхронизация
+                          между устройствами.
+                        </li>
+                        <li>
+                          • 🤖 <strong>Telegram-бот</strong>: Поддержка Mini App и push-уведомлений.
+                        </li>
                       </ul>
                     ),
                   },
@@ -255,9 +329,16 @@ export const RoadmapView: FC<RoadmapViewProps> = ({ onSelectGuide }) => {
                     active: false,
                     content: (
                       <ul className="space-y-1.5 mt-1 text-[11px] text-muted-foreground/90 leading-relaxed">
-                        <li>• ⚡ <strong>Новая типографика</strong>: Внедрены шрифты Inter и Outfit.</li>
-                        <li>• 🧭 <strong>Удобная навигация</strong>: Проектная карта и быстрый доступ.</li>
-                        <li>• 🧼 <strong>Чистота дашборда</strong>: Строгий список из 14 официальных категорий.</li>
+                        <li>
+                          • ⚡ <strong>Новая типографика</strong>: Внедрены шрифты Inter и Outfit.
+                        </li>
+                        <li>
+                          • 🧭 <strong>Удобная навигация</strong>: Проектная карта и быстрый доступ.
+                        </li>
+                        <li>
+                          • 🧼 <strong>Чистота дашборда</strong>: Строгий список из 14 официальных
+                          категорий.
+                        </li>
                       </ul>
                     ),
                   },

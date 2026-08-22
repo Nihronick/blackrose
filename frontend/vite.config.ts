@@ -53,7 +53,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/nihronick-blackrose-backend\.hf\.space\/api\/(categories|guide\/|guilds)/i,
+            urlPattern:
+              /^https:\/\/nihronick-blackrose-backend\.hf\.space\/api\/(categories|guide\/|guilds)/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'blackrose-api-cache',

@@ -216,11 +216,19 @@ async function apiRaw<T>(
   }
 
   // Auto-retry 502/503/504 Bad Gateway / Cold Starts with backoff (only once if not retried)
-  if (res && (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429) && !hasRetried && attempt < 1 && method === 'GET') {
+  if (
+    res &&
+    (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429) &&
+    !hasRetried &&
+    attempt < 1 &&
+    method === 'GET'
+  ) {
     apiCircuitBreaker.recordFailure()
     const delay = getExponentialBackoffDelay(attempt, 200, 2000)
     await new Promise((resolve) => setTimeout(resolve, delay))
-    const retryRes = await apiRaw<T>(endpoint, method, body, isFormData, true, attempt + 1).catch(() => null)
+    const retryRes = await apiRaw<T>(endpoint, method, body, isFormData, true, attempt + 1).catch(
+      () => null
+    )
     if (retryRes !== null) return retryRes
   }
 
@@ -232,9 +240,7 @@ async function apiRaw<T>(
     throwHttpError(res, data)
   }
   return data
-
 }
-
 
 // Basic methods
 export const apiFetch = <T>(path: string) => apiRaw<T>(path, 'GET')
@@ -459,10 +465,10 @@ export const apiExportFullBackup = () => apiFetch<unknown>('/api/admin/backup/ex
 
 // --- GDPR & 152-ФЗ Compliance API ---
 export const apiExportUserData = () => apiFetch<Record<string, unknown>>('/api/user/me/export')
-export const apiDeleteUserData = () => apiDelete<{ deleted: boolean; message: string }>('/api/user/me')
+export const apiDeleteUserData = () =>
+  apiDelete<{ deleted: boolean; message: string }>('/api/user/me')
 export const apiGetPrivacyPolicy = () => apiFetch<Record<string, unknown>>('/api/legal/privacy')
 
 // --- SLO & Feature Flags API ---
 export const apiGetSloMetrics = () => apiFetch<Record<string, unknown>>('/api/slo')
 export const apiGetFeatureFlags = () => apiFetch<Record<string, boolean>>('/api/features')
-

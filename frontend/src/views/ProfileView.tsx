@@ -3,8 +3,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useHistory } from '@/hooks/useHistory'
 import { useSheet } from '@/hooks/useSheet'
-import { getStoredUser, clearStoredToken } from '@/lib/auth'
-import { apiExportUserData, apiDeleteUserData } from '@/lib/api'
+import { apiDeleteUserData, apiExportUserData } from '@/lib/api'
+import { clearStoredToken, getStoredUser } from '@/lib/auth'
 import { haptic } from '@/lib/haptic'
 import {
   BookOpen,
@@ -26,8 +26,8 @@ import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useState, type FC } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { type FC, useState } from 'react'
 
 export const ProfileView: FC = () => {
   const { history } = useHistory()
@@ -313,7 +313,9 @@ export const ProfileView: FC = () => {
                 haptic.medium()
                 try {
                   const data = await apiExportUserData()
-                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                  const blob = new Blob([JSON.stringify(data, null, 2)], {
+                    type: 'application/json',
+                  })
                   const url = URL.createObjectURL(blob)
                   const a = document.createElement('a')
                   a.href = url
@@ -346,7 +348,11 @@ export const ProfileView: FC = () => {
               whileTap={{ scale: 0.98 }}
               onClick={async () => {
                 haptic.heavy()
-                if (window.confirm('Вы уверены, что хотите удалить все свои данные (закладки, реакции, историю)? Это действие необратимо.')) {
+                if (
+                  window.confirm(
+                    'Вы уверены, что хотите удалить все свои данные (закладки, реакции, историю)? Это действие необратимо.'
+                  )
+                ) {
                   try {
                     await apiDeleteUserData()
                     clearStoredToken()

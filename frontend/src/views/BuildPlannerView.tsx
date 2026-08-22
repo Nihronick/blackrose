@@ -3,7 +3,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { haptic } from '@/lib/haptic'
-import { Award, Check, Copy, Flame, RefreshCw, Share2, Shield, Sparkles, Zap, Trophy, Bookmark } from '@/lib/icons'
+import {
+  Award,
+  Bookmark,
+  Check,
+  Copy,
+  Flame,
+  RefreshCw,
+  Share2,
+  Shield,
+  Sparkles,
+  Trophy,
+  Zap,
+} from '@/lib/icons'
 import { getRankIcon, getRankName } from '@/lib/rankIcons'
 import { motion } from 'framer-motion'
 import { type FC, useEffect, useMemo, useState, useTransition } from 'react'
@@ -30,27 +42,165 @@ export interface SpiritItem {
 }
 
 const AVAILABLE_SKILLS: SkillItem[] = [
-  { id: 'rave', name: 'Rave (Рейв)', icon: '⚡', element: 'lightning', type: 'Buff', multiplier: 2.5, desc: '+150% скорость атаки и крит. шанс' },
-  { id: 'rage', name: 'Rage (Ярость)', icon: '🔥', element: 'fire', type: 'Active', multiplier: 3.2, desc: 'Колоссальный взрывной урон' },
-  { id: 'flame_wave', name: 'Flame Wave (Огненная волна)', icon: '🌋', element: 'fire', type: 'Active', multiplier: 2.8, desc: 'Периодический урон по площади' },
-  { id: 'blitz_gold', name: 'Blitz Gold (Блиц Голд)', icon: '⚔️', element: 'neutral', type: 'Passive', multiplier: 2.1, desc: 'Увеличение урона и золота' },
-  { id: 'fulgur', name: 'Fulgur (Молния)', icon: '🌩️', element: 'lightning', type: 'Active', multiplier: 2.9, desc: 'Цепная молния по группам врагов' },
-  { id: 'blizzard', name: 'Blizzard (Метель)', icon: '❄️', element: 'water', type: 'AoE', multiplier: 2.4, desc: 'Замедление и урон холодом' },
-  { id: 'golem', name: 'Golem Summon (Голем)', icon: '🗿', element: 'earth', type: 'Summon', multiplier: 1.8, desc: 'Танкование и дополнительный урон' },
-  { id: 'meditate', name: 'Meditate (Медитация)', icon: '🧘', element: 'neutral', type: 'Buff', multiplier: 1.7, desc: 'Быстрая перезарядка всех навыков' },
-  { id: 'supersonic', name: 'Supersonic (Сверхзвук)', icon: '💨', element: 'lightning', type: 'Active', multiplier: 2.6, desc: 'Рывок сквозь ряды монстров' },
-  { id: 'immortal', name: 'Immortal (Бессмертие)', icon: '🛡️', element: 'neutral', type: 'Defensive', multiplier: 1.5, desc: 'Неуязвимость на 4 секунды' },
-  { id: 'demon_hunt', name: 'Demon Hunt (Охота на демонов)', icon: '👹', element: 'fire', type: 'Passive', multiplier: 2.7, desc: '+80% урон по боссам' },
-  { id: 'curse', name: 'Curse (Проклятие)', icon: '💀', element: 'neutral', type: 'Debuff', multiplier: 1.6, desc: 'Снижение защиты босса на 30%' },
+  {
+    id: 'rave',
+    name: 'Rave (Рейв)',
+    icon: '⚡',
+    element: 'lightning',
+    type: 'Buff',
+    multiplier: 2.5,
+    desc: '+150% скорость атаки и крит. шанс',
+  },
+  {
+    id: 'rage',
+    name: 'Rage (Ярость)',
+    icon: '🔥',
+    element: 'fire',
+    type: 'Active',
+    multiplier: 3.2,
+    desc: 'Колоссальный взрывной урон',
+  },
+  {
+    id: 'flame_wave',
+    name: 'Flame Wave (Огненная волна)',
+    icon: '🌋',
+    element: 'fire',
+    type: 'Active',
+    multiplier: 2.8,
+    desc: 'Периодический урон по площади',
+  },
+  {
+    id: 'blitz_gold',
+    name: 'Blitz Gold (Блиц Голд)',
+    icon: '⚔️',
+    element: 'neutral',
+    type: 'Passive',
+    multiplier: 2.1,
+    desc: 'Увеличение урона и золота',
+  },
+  {
+    id: 'fulgur',
+    name: 'Fulgur (Молния)',
+    icon: '🌩️',
+    element: 'lightning',
+    type: 'Active',
+    multiplier: 2.9,
+    desc: 'Цепная молния по группам врагов',
+  },
+  {
+    id: 'blizzard',
+    name: 'Blizzard (Метель)',
+    icon: '❄️',
+    element: 'water',
+    type: 'AoE',
+    multiplier: 2.4,
+    desc: 'Замедление и урон холодом',
+  },
+  {
+    id: 'golem',
+    name: 'Golem Summon (Голем)',
+    icon: '🗿',
+    element: 'earth',
+    type: 'Summon',
+    multiplier: 1.8,
+    desc: 'Танкование и дополнительный урон',
+  },
+  {
+    id: 'meditate',
+    name: 'Meditate (Медитация)',
+    icon: '🧘',
+    element: 'neutral',
+    type: 'Buff',
+    multiplier: 1.7,
+    desc: 'Быстрая перезарядка всех навыков',
+  },
+  {
+    id: 'supersonic',
+    name: 'Supersonic (Сверхзвук)',
+    icon: '💨',
+    element: 'lightning',
+    type: 'Active',
+    multiplier: 2.6,
+    desc: 'Рывок сквозь ряды монстров',
+  },
+  {
+    id: 'immortal',
+    name: 'Immortal (Бессмертие)',
+    icon: '🛡️',
+    element: 'neutral',
+    type: 'Defensive',
+    multiplier: 1.5,
+    desc: 'Неуязвимость на 4 секунды',
+  },
+  {
+    id: 'demon_hunt',
+    name: 'Demon Hunt (Охота на демонов)',
+    icon: '👹',
+    element: 'fire',
+    type: 'Passive',
+    multiplier: 2.7,
+    desc: '+80% урон по боссам',
+  },
+  {
+    id: 'curse',
+    name: 'Curse (Проклятие)',
+    icon: '💀',
+    element: 'neutral',
+    type: 'Debuff',
+    multiplier: 1.6,
+    desc: 'Снижение защиты босса на 30%',
+  },
 ]
 
 const AVAILABLE_SPIRITS: SpiritItem[] = [
-  { id: 'sala', name: 'Sala (Саламандра)', icon: '🔥', element: 'Огонь', bonus: '+25% Крит. урон', multiplier: 1.25 },
-  { id: 'loia', name: 'Loia (Лоия)', icon: '🧚', element: 'Ветер', bonus: '+20% Базовая атака', multiplier: 1.20 },
-  { id: 'noah', name: 'Noah (Ной)', icon: '🦅', element: 'Вода', bonus: '+18% Скорость атаки', multiplier: 1.18 },
-  { id: 'radum', name: 'Radum (Радон)', icon: '🛡️', element: 'Земля', bonus: '+30% Защита и HP', multiplier: 1.15 },
-  { id: 'todd', name: 'Todd (Тодд)', icon: '🐸', element: 'Вода', bonus: '+15% КД навыков', multiplier: 1.15 },
-  { id: 'mum', name: 'Mum (Мум)', icon: '🦇', element: 'Тьма', bonus: '+22% Урон навыков', multiplier: 1.22 },
+  {
+    id: 'sala',
+    name: 'Sala (Саламандра)',
+    icon: '🔥',
+    element: 'Огонь',
+    bonus: '+25% Крит. урон',
+    multiplier: 1.25,
+  },
+  {
+    id: 'loia',
+    name: 'Loia (Лоия)',
+    icon: '🧚',
+    element: 'Ветер',
+    bonus: '+20% Базовая атака',
+    multiplier: 1.2,
+  },
+  {
+    id: 'noah',
+    name: 'Noah (Ной)',
+    icon: '🦅',
+    element: 'Вода',
+    bonus: '+18% Скорость атаки',
+    multiplier: 1.18,
+  },
+  {
+    id: 'radum',
+    name: 'Radum (Радон)',
+    icon: '🛡️',
+    element: 'Земля',
+    bonus: '+30% Защита и HP',
+    multiplier: 1.15,
+  },
+  {
+    id: 'todd',
+    name: 'Todd (Тодд)',
+    icon: '🐸',
+    element: 'Вода',
+    bonus: '+15% КД навыков',
+    multiplier: 1.15,
+  },
+  {
+    id: 'mum',
+    name: 'Mum (Мум)',
+    icon: '🦇',
+    element: 'Тьма',
+    bonus: '+22% Урон навыков',
+    multiplier: 1.22,
+  },
 ]
 
 interface PresetBuild {
@@ -203,7 +353,8 @@ export const BuildPlannerView: FC = () => {
   const handleCopyCard = () => {
     haptic.medium()
     const rankName = getRankName(selectedRank)
-    const spiritName = AVAILABLE_SPIRITS.find((s) => s.id === selectedSpirit)?.name || selectedSpirit
+    const spiritName =
+      AVAILABLE_SPIRITS.find((s) => s.id === selectedSpirit)?.name || selectedSpirit
     const skillNames = selectedSkills
       .map((sid) => AVAILABLE_SKILLS.find((s) => s.id === sid)?.name || sid)
       .join('\n• ')
@@ -295,7 +446,11 @@ export const BuildPlannerView: FC = () => {
                   {getRankName(selectedRank)}
                 </h2>
                 <p className="text-xs text-muted-foreground font-medium">
-                  Дух: <span className="text-rose-300 font-bold">{AVAILABLE_SPIRITS.find((s) => s.id === selectedSpirit)?.name}</span> ({calculatedStats.spiritBonusLabel})
+                  Дух:{' '}
+                  <span className="text-rose-300 font-bold">
+                    {AVAILABLE_SPIRITS.find((s) => s.id === selectedSpirit)?.name}
+                  </span>{' '}
+                  ({calculatedStats.spiritBonusLabel})
                 </p>
               </div>
             </div>
@@ -413,7 +568,10 @@ export const BuildPlannerView: FC = () => {
                       <h4 className="text-xs font-bold text-foreground font-heading truncate">
                         {skill.name}
                       </h4>
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0 uppercase font-bold">
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1.5 py-0 shrink-0 uppercase font-bold"
+                      >
                         {skill.type}
                       </Badge>
                     </div>

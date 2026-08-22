@@ -1,7 +1,7 @@
 import { haptic } from '@/lib/haptic'
 import { Shield, X } from '@/lib/icons'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState, type FC } from 'react'
+import { type FC, useEffect, useState } from 'react'
 
 const STORAGE_CONSENT_KEY = 'blackrose_cookie_consent'
 
@@ -46,10 +46,12 @@ export const CookieConsentBanner: FC = () => {
                 Защита данных и конфиденциальность (152-ФЗ / GDPR)
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Мы используем LocalStorage исключительно для сохранения ваших закладок, истории чтения и тем оформления.{' '}
+                Мы используем LocalStorage исключительно для сохранения ваших закладок, истории
+                чтения и тем оформления.{' '}
                 <a href="/legal" className="text-primary underline hover:text-rose-400">
                   Подробнее в политике
-                </a>.
+                </a>
+                .
               </p>
             </div>
           </div>

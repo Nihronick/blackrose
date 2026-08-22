@@ -33,7 +33,9 @@ export function useFavorites() {
   // 2. Sync with cloud if user is authenticated
   useEffect(() => {
     if (!user) return
-    apiFetch<{ favorites: Array<{ key: string; title: string; icon_url?: string }> }>('/api/user/favorites')
+    apiFetch<{ favorites: Array<{ key: string; title: string; icon_url?: string }> }>(
+      '/api/user/favorites'
+    )
       .then((res) => {
         if (res?.favorites && Array.isArray(res.favorites)) {
           setFavorites((prev) => {

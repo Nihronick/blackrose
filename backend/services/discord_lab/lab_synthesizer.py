@@ -93,16 +93,12 @@ class DiscordGuideSynthesizer:
         full_content = []
         media_urls = []
 
-        # Identify thread creator (OP) if present
-        op_author = sorted_msgs[0].get("author", {}).get("username") if sorted_msgs else None
-
         for msg in sorted_msgs:
             content = msg.get("content", "")
             embed_text = self.extract_embeds(msg.get("embeds", []))
             if embed_text:
                 content = f"{content}\n\n{embed_text}".strip() if content else embed_text
 
-            author = msg.get("author", {}).get("username", "Unknown")
             attachments = msg.get("attachments", [])
 
             if len(content) < 3 and not attachments:

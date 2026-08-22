@@ -4,8 +4,8 @@ import { type FC, Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useRecordView } from '@/hooks/queries'
-import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 import { apiFetch, apiPost } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { Clock, Eye, Film, ImageIcon, Maximize } from '@/lib/icons'
@@ -90,7 +90,6 @@ export const GuideView: FC<GuideViewProps> = ({
     await refetch()
   })
 
-
   const recordedKeyRef = useRef<string | null>(null)
 
   useDocumentMeta({
@@ -107,7 +106,7 @@ export const GuideView: FC<GuideViewProps> = ({
     }
   }, [guide, guideKey, onGuideLoaded, recordView])
 
-  const readingMinutes = Math.max(1, Math.ceil(((guide?.text || guide?.content || '').length) / 1100))
+  const readingMinutes = Math.max(1, Math.ceil((guide?.text || guide?.content || '').length / 1100))
 
   if (isLoading || !guide) {
     return (
@@ -236,7 +235,6 @@ export const GuideView: FC<GuideViewProps> = ({
                 })}
               </div>
             </div>
-
           </motion.div>
 
           {/* Media Gallery (Photos & Videos) */}

@@ -3,19 +3,30 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { apiFetch } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { FileText, Loader2, Search, X, Sparkles } from '@/lib/icons'
+import { FileText, Loader2, Search, Sparkles, X } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
-import { indexGuides, searchGuidesClient, type SearchDoc } from '@/lib/searchIndex'
+import { type SearchDoc, indexGuides, searchGuidesClient } from '@/lib/searchIndex'
 import type { Guide } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { type FC, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import {
+  type FC,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 
 const highlightMatch = (text: string, query: string) => {
   if (!query || !text) return text
   const terms = query.trim().split(/\s+/).filter(Boolean)
   if (terms.length === 0) return text
-  const regex = new RegExp(`(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')
+  const regex = new RegExp(
+    `(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+    'gi'
+  )
   const parts = text.split(regex)
   return (
     <span>
@@ -62,17 +73,25 @@ export const SearchView: FC = () => {
   const { data: categoriesData } = useQuery({
     queryKey: ['categories-all-search'],
     queryFn: async () => {
-      const res = await apiFetch<{ categories: Array<{ key: string; title: string }> }>('/categories')
+      const res = await apiFetch<{ categories: Array<{ key: string; title: string }> }>(
+        '/categories'
+      )
       return res.categories || []
     },
     staleTime: 1000 * 60 * 10,
   })
 
   // Backend full-text search query
-  const { data: serverData, isLoading, isFetching } = useQuery({
+  const {
+    data: serverData,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ['search', deferredQuery],
     queryFn: async () => {
-      const res = await apiFetch<{ results: Guide[] }>(`/search?q=${encodeURIComponent(deferredQuery)}`)
+      const res = await apiFetch<{ results: Guide[] }>(
+        `/search?q=${encodeURIComponent(deferredQuery)}`
+      )
       if (res.results) {
         indexGuides(res.results)
       }
@@ -258,7 +277,9 @@ export const SearchView: FC = () => {
                           variant="secondary"
                           className="bg-muted/50 text-[10px] uppercase tracking-wider font-bold"
                         >
-                          {categoriesData?.find((c) => c.key === guide.category_key)?.title || guide.category_key || 'Гайд'}
+                          {categoriesData?.find((c) => c.key === guide.category_key)?.title ||
+                            guide.category_key ||
+                            'Гайд'}
                         </Badge>
                       </div>
                     </div>

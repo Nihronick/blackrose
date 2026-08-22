@@ -5,7 +5,6 @@ import logging
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
-from urllib.parse import parse_qsl
 
 from fastapi import HTTPException, Request
 import jwt

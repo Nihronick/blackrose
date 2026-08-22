@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from core.auth import require_user, require_admin
 
@@ -13,9 +13,11 @@ import inngest.fast_api
 from core.inngest_client import inngest_client
 from functions.discord_import import discord_import_guide
 from services.cache.redis_cache import cache_service
-from core.db import init_db, close_pool
+from core.db import init_db, close_pool, get_health as get_db_health
 from core.http import http_client
-from core.middleware import setup_cors, add_security_headers, setup_honeybadger
+from core.middleware import setup_cors, add_security_headers, setup_honeybadger, backpressure_middleware
+from core.metrics import metrics_registry
+from core.feature_flags import feature_flag_service
 from api import admin, public, webhook_ingest
 from api.guilds import router as guilds_router
 from api.discord_sync import router as discord_sync_router
@@ -89,14 +91,7 @@ setup_honeybadger(app)
 setup_cors(app)
 app.add_middleware(RequestContextMiddleware)
 app.middleware("http")(add_security_headers)
-
-from core.middleware import backpressure_middleware
 app.middleware("http")(backpressure_middleware)
-
-from fastapi.responses import Response, PlainTextResponse
-from core.metrics import metrics_registry
-from core.db import get_health as get_db_health
-from core.feature_flags import feature_flag_service
 
 # Kubernetes Liveness Probe
 @app.get("/healthz", tags=["health"])
@@ -149,7 +144,7 @@ async def export_user_data(user=Depends(require_user)):
         raise HTTPException(status_code=400, detail="Invalid user")
     
     from core.db import get_sessionmaker
-    from sqlalchemy import select, text
+    from sqlalchemy import select
     from models.db_models import UserFavorite, GuideReaction, GuildMember
     
     async with get_sessionmaker()() as session:
