@@ -24,6 +24,9 @@ const QuickNav = lazy(() => import('@/components/QuickNav').then((m) => ({ defau
 const OnboardingView = lazy(() =>
   import('@/views/OnboardingView').then((m) => ({ default: m.OnboardingView }))
 )
+const CookieConsentBanner = lazy(() =>
+  import('@/components/CookieConsentBanner').then((m) => ({ default: m.CookieConsentBanner }))
+)
 
 interface AppLayoutProps {
   children: ReactNode
@@ -72,12 +75,31 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   const fabVisible = isCategory || isTag
   const logoSrc = `${import.meta.env.BASE_URL}app-icon.png`
 
+  // Sync Telegram WebApp Native BackButton with React Router
+  useEffect(() => {
+    const tg = (window as unknown as { Telegram?: { WebApp?: { BackButton?: { show: () => void; hide: () => void; onClick: (fn: () => void) => void; offClick: (fn: () => void) => void } } } })?.Telegram?.WebApp
+    if (!tg?.BackButton) return
+
+    if (location.pathname !== '/') {
+      tg.BackButton.show()
+      tg.BackButton.onClick(handleBack)
+      return () => {
+        tg.BackButton.offClick(handleBack)
+      }
+    } else {
+      tg.BackButton.hide()
+    }
+  }, [location.pathname, handleBack])
+
   const headerTitle = useMemo(() => {
     const path = location.pathname
     if (path === '/favorites') return 'Избранное'
     if (path === '/history') return 'История'
     if (path === '/admin') return 'Админ-панель'
     if (path === '/roadmap') return 'Дорожная карта'
+    if (path === '/build') return 'Калькулятор билда'
+    if (path === '/search') return 'Поиск'
+    if (path === '/legal' || path === '/privacy' || path === '/terms' || path === '/dmca') return 'Правовая информация'
     if (path.startsWith('/category/')) {
       const id = path.split('/').pop()
       const cat = cats?.find((c) => c.key === id)
@@ -375,6 +397,40 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
             />
           </Suspense>
         )}
+
+        {/* Global Footer with Fan Disclaimer, 12+ Rating, and Legal Links */}
+        {location.pathname !== '/admin' && (
+          <footer className="w-full border-t border-border/10 bg-card/40 backdrop-blur-md py-8 px-4 text-center mt-auto select-none">
+            <div className="max-w-4xl mx-auto space-y-3">
+              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/80 font-medium">
+                <a href="/legal" className="hover:text-primary transition-colors">
+                  Правовая информация (152-ФЗ / GDPR)
+                </a>
+                <span>•</span>
+                <a href="/terms" className="hover:text-primary transition-colors">
+                  Пользовательское соглашение
+                </a>
+                <span>•</span>
+                <a href="/disclaimer" className="hover:text-primary transition-colors">
+                  Дисклеймер
+                </a>
+                <span>•</span>
+                <a href="/dmca" className="hover:text-primary transition-colors">
+                  DMCA / Правообладатели
+                </a>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground/60 leading-relaxed max-w-2xl mx-auto">
+                BlackRose — независимая некоммерческая база знаний и сообщество по игре <strong>Slayer Legend</strong>. Все права на игровые ассеты, товарные знаки и названия принадлежат <strong>GEAR2PLAY Co., Ltd.</strong> Проект не аффилирован с разработчиками игры. Возрастная маркировка: <strong>12+</strong>.
+              </p>
+            </div>
+          </footer>
+        )}
+
+        {/* Cookie / LocalStorage Consent Banner */}
+        <Suspense fallback={null}>
+          <CookieConsentBanner />
+        </Suspense>
       </div>
     </MotionConfig>
   )

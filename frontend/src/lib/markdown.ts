@@ -89,10 +89,16 @@ marked.use({
     hr() {
       return '<hr class="guide-hr">'
     },
-    // Код с классом
+    // Адаптивная таблица
+    table({ header, rows }: Tokens.Table) {
+      const headerHtml = header ? `<thead>${header}</thead>` : ''
+      const bodyHtml = rows ? `<tbody>${rows}</tbody>` : ''
+      return `<div class="guide-table-wrapper my-6 overflow-x-auto rounded-2xl border border-rose-500/20 bg-card/60 shadow-lg"><table class="guide-table w-full text-left border-collapse text-xs sm:text-sm">${headerHtml}${bodyHtml}</table></div>`
+    },
+    // Код с классом и кликабельным копированием
     codespan({ text }: Tokens.Codespan) {
       const codeText = text ?? ''
-      return `<code class="guide-code">${codeText}</code>`
+      return `<code class="guide-code cursor-pointer" title="Нажмите, чтобы скопировать">${codeText}</code>`
     },
     // Внешние ссылки — target=_blank + rel=noreferrer
     link(...args: unknown[]) {

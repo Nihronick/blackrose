@@ -21,7 +21,7 @@ export const ShareButton: FC<ShareButtonProps> = ({ guide }) => {
 
   const share = async () => {
     haptic.light()
-    const shareUrl = `${window.location.origin}${window.location.pathname}#/guide/${guide.key}`
+    const shareUrl = `${window.location.origin}/guide/${guide.key}`
 
     const markShared = () => {
       setShared(true)

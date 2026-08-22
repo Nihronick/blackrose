@@ -37,6 +37,7 @@ const SearchView = lazy(() => import('@/views/SearchView').then((m) => ({ defaul
 const BuildPlannerView = lazy(() =>
   import('@/views/BuildPlannerView').then((m) => ({ default: m.BuildPlannerView }))
 )
+const LegalView = lazy(() => import('@/views/LegalView').then((m) => ({ default: m.LegalView })))
 
 const ViewLoader = () => (
   <div className="flex h-full flex-col overflow-hidden container-padding pt-6 pb-24 space-y-6 animate-pulse">
@@ -125,6 +126,10 @@ export const AppRouter: FC = () => {
         <Route path="/admin" element={<AdminView onClose={() => push({ type: 'home' })} />} />
         <Route path="/guilds" element={<GuildsView />} />
         <Route path="/guilds/:id" element={<InnerGuildRosterView />} />
+        <Route path="/legal" element={<LegalView />} />
+        <Route path="/privacy" element={<LegalView initialTab="privacy" />} />
+        <Route path="/terms" element={<LegalView initialTab="terms" />} />
+        <Route path="/dmca" element={<LegalView initialTab="dmca" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

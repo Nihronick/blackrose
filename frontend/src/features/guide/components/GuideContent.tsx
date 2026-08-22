@@ -1,6 +1,7 @@
 import { haptic } from '@/lib/haptic'
 import { motion } from 'framer-motion'
 import { type FC, useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 
 interface GuideContentProps {
   html: string
@@ -72,6 +73,19 @@ export const GuideContent: FC<GuideContentProps> = ({ html, onImageClick, onCybe
         haptic.light()
         spoiler.classList.toggle('revealed')
         return
+      }
+
+      // 5. Code / Promo Code Click-to-Copy
+      const codeEl = target.closest('.guide-code') as HTMLElement
+      if (codeEl) {
+        const text = codeEl.textContent?.trim()
+        if (text && text.length < 150) {
+          haptic.medium()
+          navigator.clipboard?.writeText(text).then(() => {
+            toast.success(`«${text}» скопировано в буфер!`)
+          }).catch(() => {})
+          return
+        }
       }
     }
 

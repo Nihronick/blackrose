@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { haptic } from '@/lib/haptic'
 import { Award, Check, Copy, Flame, RefreshCw, Share2, Shield, Sparkles, Zap, Trophy, Bookmark } from '@/lib/icons'
 import { getRankIcon, getRankName } from '@/lib/rankIcons'
@@ -115,6 +116,20 @@ export const BuildPlannerView: FC = () => {
   })
   const [copied, setCopied] = useState(false)
   const [, startTransition] = useTransition()
+
+  useDocumentMeta({
+    title: 'Калькулятор Билда и DPS',
+    description: 'Интерактивный конструктор билдов, расчет урона и синергии духов Slayer Legend',
+  })
+
+  // Sync state with URL Search Params without page reload
+  useEffect(() => {
+    const params = new URLSearchParams()
+    params.set('rank', String(selectedRank))
+    params.set('spirit', selectedSpirit)
+    params.set('skills', selectedSkills.join(','))
+    setSearchParams(params, { replace: true })
+  }, [selectedRank, selectedSpirit, selectedSkills, setSearchParams])
 
   const handleRankChange = (rank: number) => {
     startTransition(() => {

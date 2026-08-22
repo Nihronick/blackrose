@@ -5,9 +5,10 @@ import { toast } from 'sonner'
 
 import { useRecordView } from '@/hooks/queries'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { apiFetch, apiPost } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
-import { Eye, Film, ImageIcon, Maximize } from '@/lib/icons'
+import { Clock, Eye, Film, ImageIcon, Maximize } from '@/lib/icons'
 import type { Guide as GuideType } from '@/lib/types'
 
 import { Breadcrumbs } from '@/components/Breadcrumbs'
@@ -92,14 +93,21 @@ export const GuideView: FC<GuideViewProps> = ({
 
   const recordedKeyRef = useRef<string | null>(null)
 
+  useDocumentMeta({
+    title: guide?.title,
+    description: guide ? `${guide.title} — подробный гайд и база знаний Slayer Legend` : undefined,
+    url: typeof window !== 'undefined' ? window.location.href : undefined,
+  })
+
   useEffect(() => {
     if (guide && recordedKeyRef.current !== guideKey) {
       recordedKeyRef.current = guideKey
       onGuideLoaded?.(guide)
       recordView(guideKey)
-      document.title = `${guide.title} | BlackRose`
     }
   }, [guide, guideKey, onGuideLoaded, recordView])
+
+  const readingMinutes = Math.max(1, Math.ceil(((guide?.text || guide?.content || '').length) / 1100))
 
   if (isLoading || !guide) {
     return (
@@ -145,7 +153,7 @@ export const GuideView: FC<GuideViewProps> = ({
                 </h1>
               </motion.div>
               <div className="flex shrink-0 gap-2">
-                <ShareButton title={guide.title} />
+                <ShareButton guide={guide} />
                 <FavoriteButton
                   isFavorite={isFavorite}
                   onClick={() =>
@@ -164,6 +172,12 @@ export const GuideView: FC<GuideViewProps> = ({
                   </span>
                 </div>
               )}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 rounded-full border border-amber-500/30 shadow-inner">
+                <Clock className="size-3.5 text-amber-400" />
+                <span className="text-[11px] font-bold text-amber-400 font-mono tabular-nums">
+                  ~{readingMinutes} мин чтения
+                </span>
+              </div>
               {guide.tags && <TagsList tags={guide.tags} onClick={onTagClick} />}
             </div>
           </header>

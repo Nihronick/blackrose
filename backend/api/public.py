@@ -500,10 +500,50 @@ async def sitemap():
     xml.append(f'  <url><loc>{frontend_url}/</loc><priority>1.0</priority></url>')
     for c in cats:
         xml.append(f'  <url><loc>{frontend_url}/category/{c["key"]}</loc><priority>0.8</priority></url>')
+    guides = await guide_service.get_all()
     for g in guides:
         xml.append(f'  <url><loc>{frontend_url}/guide/{g["key"]}</loc><priority>0.6</priority></url>')
     xml.append('</urlset>')
     return Response(content="\n".join(xml), media_type="application/xml")
+
+
+@router.get("/og/guide/{guide_key}")
+async def og_guide_preview(guide_key: str):
+    """Dynamic OpenGraph and Twitter Card metadata for social bots."""
+    from fastapi.responses import HTMLResponse
+    guide = await guide_service.get_by_key(guide_key)
+    if not guide:
+        raise HTTPException(status_code=404, detail="Гайд не найден")
+
+    title = guide.get("title", "Гайд Slayer Legend")
+    raw_text = guide.get("text") or guide.get("content") or ""
+    clean_desc = (raw_text[:200] if len(raw_text) > 200 else raw_text).replace('"', '&quot;').replace('\n', ' ')
+    icon_url = guide.get("icon_url") or "https://blackrosesl.me/app-icon.png"
+    canonical_url = f"https://blackrosesl.me/guide/{guide_key}"
+
+    html = f"""<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>{title} | BlackRose Slayer Legend</title>
+  <meta name="description" content="{clean_desc}">
+  <meta property="og:site_name" content="BlackRose Slayer Legend Wiki">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{title}">
+  <meta property="og:description" content="{clean_desc}">
+  <meta property="og:image" content="{icon_url}">
+  <meta property="og:url" content="{canonical_url}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{title}">
+  <meta name="twitter:description" content="{clean_desc}">
+  <meta name="twitter:image" content="{icon_url}">
+  <meta http-equiv="refresh" content="0; url={canonical_url}">
+</head>
+<body>
+  <p>Перенаправление на <a href="{canonical_url}">{title}</a>...</p>
+</body>
+</html>"""
+    return HTMLResponse(content=html, media_type="text/html")
 
 
 async def _try_get_user(request: Request) -> dict | None:
