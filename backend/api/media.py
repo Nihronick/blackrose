@@ -28,6 +28,14 @@ class DirectMediaCacheIn(BaseModel):
 async def direct_media_cache(body: DirectMediaCacheIn, user=Depends(require_admin)):
     """Прямое сохранение медиафайла в базу данных PostgreSQL для постоянного кэширования."""
     import hashlib
+    from core.url_validator import validate_media_url, SSRFError
+
+    # SSRF Protection: validate canonical URL
+    try:
+        validate_media_url(body.canonical_url)
+    except SSRFError as e:
+        raise HTTPException(status_code=400, detail=f"URL rejected (SSRF protection): {e}")
+
     canonical = body.canonical_url.split("?")[0]
     file_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:24]
 

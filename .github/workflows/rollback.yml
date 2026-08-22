@@ -1,0 +1,37 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to revert'
+        required: true
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Revert Commit
+        run: |
+          echo "🔄 Reverting commit: ${{ github.event.inputs.commit_sha }}"
+          echo "📝 Reason: ${{ github.event.inputs.reason }}"
+          git revert --no-edit ${{ github.event.inputs.commit_sha }}
+
+      - name: Push Revert
+        run: |
+          git push origin main
+          echo "✅ Rollback pushed. Deploy workflows will trigger automatically."

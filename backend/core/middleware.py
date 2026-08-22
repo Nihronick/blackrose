@@ -37,7 +37,23 @@ def setup_cors(app: FastAPI):
 
 import time
 import uuid
+import asyncio
 from core.metrics import metrics_registry
+
+# Backpressure: limit concurrent request processing
+_concurrency_semaphore = asyncio.Semaphore(100)
+
+async def backpressure_middleware(request: Request, call_next):
+    """Reject requests when server is overloaded (>100 concurrent)."""
+    if _concurrency_semaphore.locked():
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Сервер перегружен. Повторите позже."},
+            headers={"Retry-After": "5"},
+        )
+    async with _concurrency_semaphore:
+        return await call_next(request)
 
 async def add_security_headers(request: Request, call_next):
     start_time = time.time()

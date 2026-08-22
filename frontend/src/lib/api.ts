@@ -7,6 +7,7 @@ import {
   getStoredRefreshToken,
   sanitizeHeaderValue,
   setStoredAccessToken,
+  setStoredRefreshToken,
 } from './auth'
 import type {
   ApiResponse,
@@ -200,9 +201,12 @@ async function apiRaw<T>(
         body: JSON.stringify({ refresh_token: refreshToken }),
       })
       if (refreshRes.ok) {
-        const refreshData = (await refreshRes.json()) as { token?: string }
+        const refreshData = (await refreshRes.json()) as { token?: string; refresh_token?: string }
         if (refreshData?.token) {
           setStoredAccessToken(refreshData.token)
+          if (refreshData.refresh_token) {
+            setStoredRefreshToken(refreshData.refresh_token)
+          }
           return apiRaw<T>(endpoint, method, body, isFormData, true, attempt)
         }
       } else {
@@ -452,3 +456,13 @@ export const apiUploadMediaFile = (file: File) => {
   )
 }
 export const apiExportFullBackup = () => apiFetch<unknown>('/api/admin/backup/export')
+
+// --- GDPR & 152-ФЗ Compliance API ---
+export const apiExportUserData = () => apiFetch<Record<string, unknown>>('/api/user/me/export')
+export const apiDeleteUserData = () => apiDelete<{ deleted: boolean; message: string }>('/api/user/me')
+export const apiGetPrivacyPolicy = () => apiFetch<Record<string, unknown>>('/api/legal/privacy')
+
+// --- SLO & Feature Flags API ---
+export const apiGetSloMetrics = () => apiFetch<Record<string, unknown>>('/api/slo')
+export const apiGetFeatureFlags = () => apiFetch<Record<string, boolean>>('/api/features')
+

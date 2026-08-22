@@ -56,6 +56,12 @@ export function setStoredAccessToken(token: string): void {
   } catch {}
 }
 
+export function setStoredRefreshToken(refreshToken: string): void {
+  try {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+  } catch {}
+}
+
 export function clearStoredToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY)

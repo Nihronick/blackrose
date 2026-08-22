@@ -1,8 +1,10 @@
 import os
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from core.auth import require_user, require_admin
 
 from core.config import settings
 from core.logging import configure_logging, RequestContextMiddleware, get_logger
@@ -88,9 +90,13 @@ setup_cors(app)
 app.add_middleware(RequestContextMiddleware)
 app.middleware("http")(add_security_headers)
 
+from core.middleware import backpressure_middleware
+app.middleware("http")(backpressure_middleware)
+
 from fastapi.responses import Response, PlainTextResponse
 from core.metrics import metrics_registry
 from core.db import get_health as get_db_health
+from core.feature_flags import feature_flag_service
 
 # Kubernetes Liveness Probe
 @app.get("/healthz", tags=["health"])
@@ -115,6 +121,133 @@ async def get_metrics(request: Request):
         return PlainTextResponse(metrics_registry.to_prometheus())
     return JSONResponse(metrics_registry.get_summary())
 
+# SLI / SLO / Error Budget Dashboard
+@app.get("/api/slo", tags=["metrics"])
+async def get_slo():
+    return metrics_registry.get_slo_report()
+
+# Feature Flags
+@app.get("/api/features", tags=["features"])
+async def get_features():
+    return await feature_flag_service.get_all()
+
+@app.put("/api/admin/features", tags=["features"])
+async def update_features(request: Request, user=Depends(require_admin)):
+    body = await request.json()
+    return await feature_flag_service.set_all(body)
+
+# ── GDPR (EU) + 152-ФЗ (РФ): User Data Endpoints ──────────────────
+
+@app.get("/api/user/me/export", tags=["gdpr"])
+async def export_user_data(user=Depends(require_user)):
+    """
+    GDPR Art. 20 — Data Portability / 152-ФЗ ст. 14 — Право на получение данных.
+    Returns all personal data stored about the user in JSON format.
+    """
+    user_id = int(user.get("id", 0))
+    if user_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid user")
+    
+    from core.db import get_sessionmaker
+    from sqlalchemy import select, text
+    from models.db_models import UserFavorite, GuideReaction, GuildMember
+    
+    async with get_sessionmaker()() as session:
+        # Favorites
+        fav_res = await session.execute(
+            select(UserFavorite.guide_key, UserFavorite.created_at)
+            .where(UserFavorite.user_id == str(user_id))
+        )
+        favorites = [{"guide_key": r[0], "added_at": str(r[1])} for r in fav_res.all()]
+        
+        # Reactions
+        react_res = await session.execute(
+            select(GuideReaction.guide_key, GuideReaction.reaction, GuideReaction.created_at)
+            .where(GuideReaction.user_id == str(user_id))
+        )
+        reactions = [{"guide_key": r[0], "reaction": r[1], "created_at": str(r[2])} for r in react_res.all()]
+        
+        # Guild membership
+        guild_res = await session.execute(
+            select(GuildMember.guild_id, GuildMember.rank, GuildMember.joined_at)
+            .where(GuildMember.user_id == user_id)
+        )
+        guilds = [{"guild_id": r[0], "rank": r[1], "joined_at": str(r[2])} for r in guild_res.all()]
+    
+    return {
+        "user_id": user_id,
+        "profile": {
+            "first_name": user.get("first_name"),
+            "username": user.get("username"),
+        },
+        "favorites": favorites,
+        "reactions": reactions,
+        "guild_memberships": guilds,
+        "exported_at": str(datetime.now(timezone.utc)),
+        "legal_basis": "GDPR Art. 20 / 152-ФЗ ст. 14",
+    }
+
+
+@app.delete("/api/user/me", tags=["gdpr"])
+async def delete_user_data(user=Depends(require_user)):
+    """
+    GDPR Art. 17 — Right to Erasure / 152-ФЗ ст. 21 — Право на удаление.
+    Deletes all personal data associated with the user.
+    """
+    user_id = int(user.get("id", 0))
+    if user_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid user")
+    
+    from core.db import get_sessionmaker
+    from sqlalchemy import delete
+    from models.db_models import UserFavorite, GuideReaction, GuildMember
+    
+    async with get_sessionmaker()() as session:
+        await session.execute(delete(UserFavorite).where(UserFavorite.user_id == str(user_id)))
+        await session.execute(delete(GuideReaction).where(GuideReaction.user_id == str(user_id)))
+        await session.execute(delete(GuildMember).where(GuildMember.user_id == user_id))
+        await session.commit()
+    
+    # Revoke all JWT tokens for this user
+    await cache_service.set(f"jwt:revoke_all:{user_id}", True, expire=604800)
+    
+    logger.info(f"User data deleted (GDPR/152-FZ): user_id={user_id}")
+    return {
+        "deleted": True,
+        "user_id": user_id,
+        "message": "Все персональные данные удалены. Сессии отозваны.",
+        "legal_basis": "GDPR Art. 17 / 152-ФЗ ст. 21",
+    }
+
+
+# Privacy Policy (served as JSON for SPA consumption)
+@app.get("/api/legal/privacy", tags=["legal"])
+async def privacy_policy():
+    return {
+        "title": "Политика конфиденциальности / Privacy Policy",
+        "effective_date": "2026-08-22",
+        "data_controller": "BlackRose Project",
+        "legal_basis": ["GDPR (EU 2016/679)", "152-ФЗ (РФ)"],
+        "data_collected": [
+            {"type": "Telegram ID", "purpose": "Идентификация пользователя", "retention": "До удаления аккаунта"},
+            {"type": "Имя и username", "purpose": "Отображение в профиле", "retention": "До удаления аккаунта"},
+            {"type": "Избранные гайды", "purpose": "Персонализация", "retention": "До удаления аккаунта"},
+            {"type": "Реакции и комментарии", "purpose": "Взаимодействие с контентом", "retention": "До удаления аккаунта"},
+        ],
+        "user_rights": [
+            "Право на доступ к данным (GET /api/user/me/export)",
+            "Право на удаление данных (DELETE /api/user/me)",
+            "Право на отзыв согласия",
+            "Право на перенос данных (JSON экспорт)",
+        ],
+        "third_parties": [
+            {"name": "Telegram", "purpose": "Авторизация", "country": "ОАЭ"},
+            {"name": "Hugging Face", "purpose": "Хостинг бэкенда", "country": "США/ЕС"},
+            {"name": "Cloudflare", "purpose": "CDN и защита", "country": "США"},
+        ],
+        "contact": "Telegram: @nihronick",
+    }
+
 
 # Routers
 app.include_router(public.router, prefix="/api")
@@ -124,6 +257,10 @@ app.include_router(guilds_router, prefix="/api")
 app.include_router(discord_sync_router, prefix="/api")
 app.include_router(users_admin_router, prefix="/api")
 app.include_router(media_router, prefix="/api")
+
+# API Versioning: mount all routes also under /api/v1/ for future compatibility
+app.include_router(public.router, prefix="/api/v1")
+
 
 # Static files for frontend (Production)
 static_dir = os.path.join(os.path.dirname(__file__), "static")

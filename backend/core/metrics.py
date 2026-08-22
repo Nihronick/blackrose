@@ -93,4 +93,48 @@ class MetricsRegistry:
         ]
         return "\n".join(lines) + "\n"
 
+    def get_slo_report(self) -> dict:
+        """
+        Service Level Objectives report.
+        SLO Targets:
+          - Availability: 99.5%
+          - Latency P99: < 800ms
+        """
+        total = max(self.total_requests, 1)
+        availability_pct = round(((total - self.total_errors) / total) * 100, 3)
+        p99 = self.get_percentile(99)
+        
+        # SLO definitions
+        slo_availability = 99.5
+        slo_latency_p99_ms = 800.0
+        
+        # Error budget: how many errors we can still afford
+        error_budget_total = (1 - slo_availability / 100) * total
+        error_budget_remaining = round(error_budget_total - self.total_errors, 1)
+        error_budget_pct = round((error_budget_remaining / max(error_budget_total, 0.01)) * 100, 1)
+
+        return {
+            "sli": {
+                "availability_pct": availability_pct,
+                "latency_p99_ms": p99,
+            },
+            "slo": {
+                "availability_target_pct": slo_availability,
+                "latency_p99_target_ms": slo_latency_p99_ms,
+            },
+            "status": {
+                "availability_met": availability_pct >= slo_availability,
+                "latency_met": p99 <= slo_latency_p99_ms,
+                "overall": availability_pct >= slo_availability and p99 <= slo_latency_p99_ms,
+            },
+            "error_budget": {
+                "total_budget": round(error_budget_total, 1),
+                "consumed": self.total_errors,
+                "remaining": max(error_budget_remaining, 0),
+                "remaining_pct": max(error_budget_pct, 0),
+                "exhausted": error_budget_remaining <= 0,
+            },
+            "total_requests": total,
+        }
+
 metrics_registry = MetricsRegistry()

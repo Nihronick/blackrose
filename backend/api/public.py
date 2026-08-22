@@ -1,3 +1,4 @@
+import time
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from core.auth import (
@@ -343,12 +344,46 @@ async def refresh_token(request: Request):
     if user_id <= 0:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
+    # JWT Rotation: Check if this refresh token is blacklisted
+    from services.cache.redis_cache import cache_service
+    token_jti = payload.get("iat", "")  # Use issued-at as unique token ID
+    blacklist_key = f"jwt:blacklist:{user_id}:{token_jti}"
+    is_blacklisted = await cache_service.get(blacklist_key)
+    if is_blacklisted:
+        # Token reuse detected — potential theft. Revoke entire family.
+        logger.warning(f"Refresh token reuse detected for user {user_id}. Revoking all tokens.")
+        await cache_service.set(f"jwt:revoke_all:{user_id}", True, expire=604800)
+        raise HTTPException(status_code=401, detail="Token reuse detected. All sessions revoked.")
+
+    # Check if all tokens for this user have been revoked
+    all_revoked = await cache_service.get(f"jwt:revoke_all:{user_id}")
+    if all_revoked:
+        raise HTTPException(status_code=401, detail="All sessions have been revoked. Please re-authenticate.")
+
+    # Blacklist the used refresh token (TTL = remaining lifetime)
+    exp = payload.get("exp", 0)
+    remaining_ttl = max(int(exp - time.time()), 60)
+    await cache_service.set(blacklist_key, True, expire=remaining_ttl)
+
+    # Issue new access token
     access_payload = {"id": user_id}
     if payload.get("is_local_admin"):
         access_payload["is_local_admin"] = True
         access_payload["is_admin"] = True
     new_access = jwt_encode(access_payload, expires_in=900, token_type="access")
-    return {"token": new_access, "expires_in": 900}
+
+    # Issue NEW refresh token (rotation)
+    refresh_payload = {"id": user_id}
+    if payload.get("is_local_admin"):
+        refresh_payload["is_local_admin"] = True
+        refresh_payload["is_admin"] = True
+    new_refresh = jwt_refresh_encode(refresh_payload, expires_in=60 * 60 * 24 * 7)
+
+    return {
+        "token": new_access,
+        "refresh_token": new_refresh,
+        "expires_in": 900,
+    }
 
 @router.post("/auth/admin-login")
 async def admin_login(request: Request):

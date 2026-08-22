@@ -3,11 +3,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useHistory } from '@/hooks/useHistory'
 import { useSheet } from '@/hooks/useSheet'
-import { getStoredUser } from '@/lib/auth'
+import { getStoredUser, clearStoredToken } from '@/lib/auth'
+import { apiExportUserData, apiDeleteUserData } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import {
   BookOpen,
   ChevronRight,
+  Download,
+  FileText,
   Lock,
   LogOut,
   Moon,
@@ -16,14 +19,15 @@ import {
   ShieldCheck,
   Star,
   Sun,
+  Trash2,
   User as UserIcon,
 } from '@/lib/icons'
 import { useAppNavigation } from '@/lib/navigation'
 import { useAppStore } from '@/store'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
-import { motion } from 'framer-motion'
-import type { FC } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState, type FC } from 'react'
 
 export const ProfileView: FC = () => {
   const { history } = useHistory()
@@ -296,6 +300,81 @@ export const ProfileView: FC = () => {
               <ChevronRight className="size-5 text-muted-foreground/40" />
             </motion.button>
           )}
+
+          {/* GDPR & 152-ФЗ Compliance Section */}
+          <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border/10">
+            <h4 className="text-xs font-bold font-heading text-muted-foreground px-2 uppercase tracking-wider">
+              Конфиденциальность и Данные (152-ФЗ / GDPR)
+            </h4>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={async () => {
+                haptic.medium()
+                try {
+                  const data = await apiExportUserData()
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `blackrose_user_data_${user.id || 'me'}.json`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                } catch {
+                  alert('Для экспорта персональных данных требуется авторизация')
+                }
+              }}
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/10 border border-border/10 hover:bg-muted/20 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="size-8 rounded-lg bg-background flex items-center justify-center shadow-sm">
+                  <Download className="size-4 text-primary" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-xs font-bold font-heading text-foreground">
+                    Выгрузить мои данные (JSON)
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    GDPR Art. 20 / 152-ФЗ ст. 14 — переносимость данных
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground/40" />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={async () => {
+                haptic.heavy()
+                if (window.confirm('Вы уверены, что хотите удалить все свои данные (закладки, реакции, историю)? Это действие необратимо.')) {
+                  try {
+                    await apiDeleteUserData()
+                    clearStoredToken()
+                    alert('Все ваши персональные данные успешно удалены.')
+                    window.location.reload()
+                  } catch {
+                    alert('Для удаления данных требуется авторизация')
+                  }
+                }
+              }}
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-rose-500/5 border border-rose-500/15 hover:bg-rose-500/10 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="size-8 rounded-lg bg-background flex items-center justify-center shadow-sm">
+                  <Trash2 className="size-4 text-rose-500" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-xs font-bold font-heading text-rose-500">
+                    Удалить мой профиль и данные
+                  </h4>
+                  <p className="text-[10px] text-rose-500/60">
+                    GDPR Art. 17 / 152-ФЗ ст. 21 — право на забвение
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="size-4 text-rose-500/40" />
+            </motion.button>
+          </div>
         </div>
       </section>
     </div>
