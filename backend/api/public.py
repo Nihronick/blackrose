@@ -489,8 +489,17 @@ async def preview_guide(request: Request, user=Depends(require_public_user)):
 async def sitemap():
     from fastapi.responses import Response
     cats = await category_service.get_all()
-    guides = await guide_service.get_all()
-    frontend_url = settings.FRONTEND_URL.rstrip("/")
+    primary_url = "https://blackrosesl.me"
+    if settings.FRONTEND_URL:
+        for entry in settings.FRONTEND_URL.split(","):
+            clean = entry.strip().rstrip("/")
+            if "blackrosesl.me" in clean or "nihronick.github.io" in clean:
+                primary_url = clean
+                break
+            if clean.startswith("http"):
+                primary_url = clean
+
+    frontend_url = primary_url
 
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     xml.append(f'  <url><loc>{frontend_url}/</loc><priority>1.0</priority></url>')

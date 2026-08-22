@@ -560,3 +560,21 @@ img.inline-icon {
   @apply text-lg shrink-0 select-none;
 }
 
+/* ── Spoiler Click-to-reveal ── */
+.guide-spoiler {
+  @apply inline-block px-1.5 py-0.5 rounded-lg cursor-pointer transition-all duration-200;
+  background-color: hsl(var(--muted));
+  color: transparent !important;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+  user-select: none;
+}
+
+.guide-spoiler:hover,
+.guide-spoiler.revealed {
+  background-color: hsl(var(--muted) / 0.5);
+  color: inherit !important;
+  text-shadow: none;
+  user-select: text;
+}
+
+

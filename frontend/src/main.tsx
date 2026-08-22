@@ -41,20 +41,17 @@ const queryClient = new QueryClient({
   },
 })
 
+import { isNative, setStatusBarDark, initDeepLinks } from './lib/capacitor'
+
 initTheme()
 
-// @ts-ignore
-import('./lib/capacitor')
-  .then(({ isNative, setStatusBarDark, initDeepLinks }) => {
-    if (isNative()) {
-      setStatusBarDark()
-      initDeepLinks((path: string) => {
-        window.history.pushState(null, '', path)
-        window.dispatchEvent(new PopStateEvent('popstate'))
-      })
-    }
+if (isNative()) {
+  setStatusBarDark()
+  initDeepLinks((path: string) => {
+    window.history.pushState(null, '', path)
+    window.dispatchEvent(new PopStateEvent('popstate'))
   })
-  .catch(() => {})
+}
 
 const rootElement = document.getElementById('root')
 if (rootElement) {

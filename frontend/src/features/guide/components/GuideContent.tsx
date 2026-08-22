@@ -65,6 +65,14 @@ export const GuideContent: FC<GuideContentProps> = ({ html, onImageClick, onCybe
         }
         return
       }
+
+      // 4. Spoiler Click (Click-to-reveal)
+      const spoiler = target.closest('.guide-spoiler') as HTMLElement
+      if (spoiler) {
+        haptic.light()
+        spoiler.classList.toggle('revealed')
+        return
+      }
     }
 
     el.addEventListener('click', handleClick)

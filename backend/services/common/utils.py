@@ -87,8 +87,8 @@ def format_guide_text(text: str, guide_links: dict | None = None) -> str:
             key = content
             label = guide_links.get(key, {}).get("title", key)
 
-        icon_url = guide_links.get(key, {}).get("icon", "")
-        icon_html = f'<img src="{icon_url}" class="inline-icon"> ' if icon_url else ""
+        guide_icon = guide_links.get(key, {}).get("icon", "")
+        icon_html = f'<img src="{guide_icon}" class="inline-icon"> ' if guide_icon else ""
         return f'<a href="#" class="guide-cyberlink" data-guide-key="{key}">{icon_html}{label}</a>'
 
     text = re.sub(r"\[\[(.*?)\]\]", replace_guide_link, text)
