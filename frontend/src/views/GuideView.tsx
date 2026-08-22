@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 
 import { useRecordView } from '@/hooks/queries'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, apiPost } from '@/lib/api'
 import { haptic } from '@/lib/haptic'
 import { Eye, Film, ImageIcon, Maximize } from '@/lib/icons'
 import type { Guide as GuideType } from '@/lib/types'
@@ -73,12 +73,9 @@ export const GuideView: FC<GuideViewProps> = ({
   const handleToggleReaction = async (reactionKey: string) => {
     haptic.selection()
     try {
-      await apiFetch<{ counts: Record<string, number>; user_reactions: string[] }>(
+      await apiPost<{ counts: Record<string, number>; user_reactions: string[] }>(
         `/api/guide/${guideKey}/react`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ reaction: reactionKey }),
-        }
+        { reaction: reactionKey }
       )
       refetchReactions()
     } catch {

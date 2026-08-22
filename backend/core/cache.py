@@ -70,6 +70,8 @@ def cached(expire: int = 300):
 
             # Store in cache
             if result is not None:
+                if isinstance(result, Response):
+                    return result
                 json_compatible = jsonable_encoder(result)
                 await cache_service.set(cache_key, json_compatible, expire=expire)
                 logger.debug(f"Cache stored for {cache_key}")

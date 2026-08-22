@@ -44,16 +44,20 @@ from core.metrics import metrics_registry
 _concurrency_semaphore = asyncio.Semaphore(100)
 
 async def backpressure_middleware(request: Request, call_next):
-    """Reject requests when server is overloaded (>100 concurrent)."""
-    if _concurrency_semaphore.locked():
+    """Graceful backpressure: queue requests during bursts, reject only on persistent overload."""
+    try:
+        await asyncio.wait_for(_concurrency_semaphore.acquire(), timeout=5.0)
+    except asyncio.TimeoutError:
         from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=503,
-            content={"detail": "Сервер перегружен. Повторите позже."},
-            headers={"Retry-After": "5"},
+            content={"detail": "Сервер временно перегружен. Повторите через несколько секунд."},
+            headers={"Retry-After": "3"},
         )
-    async with _concurrency_semaphore:
+    try:
         return await call_next(request)
+    finally:
+        _concurrency_semaphore.release()
 
 async def add_security_headers(request: Request, call_next):
     start_time = time.time()

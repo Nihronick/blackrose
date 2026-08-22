@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { apiFetch } from '../lib/api'
+import { apiDelete, apiFetch, apiPost } from '../lib/api'
 import { storage } from '../lib/storage'
 import { useAppStore } from '../store'
 
@@ -33,9 +33,9 @@ export function useFavorites() {
   // 2. Sync with cloud if user is authenticated
   useEffect(() => {
     if (!user) return
-    apiFetch<{ favorites: Array<{ key: string; title: string; icon_url?: string }> }>('/user/favorites')
+    apiFetch<{ favorites: Array<{ key: string; title: string; icon_url?: string }> }>('/api/user/favorites')
       .then((res) => {
-        if (res.favorites && Array.isArray(res.favorites)) {
+        if (res?.favorites && Array.isArray(res.favorites)) {
           setFavorites((prev) => {
             const map = new Map<string, FavoriteGuide>()
             for (const f of prev) map.set(f.key, f)
@@ -66,9 +66,9 @@ export function useFavorites() {
       // Sync with cloud in background if user is authenticated
       if (user) {
         if (exists) {
-          apiFetch(`/user/favorites/${guide.key}`, { method: 'DELETE' }).catch(() => {})
+          apiDelete(`/api/user/favorites/${guide.key}`).catch(() => {})
         } else {
-          apiFetch(`/user/favorites/${guide.key}`, { method: 'POST' }).catch(() => {})
+          apiPost(`/api/user/favorites/${guide.key}`, {}).catch(() => {})
         }
       }
     },
