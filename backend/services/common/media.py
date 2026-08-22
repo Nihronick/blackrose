@@ -49,9 +49,8 @@ class MediaService:
         if not content:
             return content
 
-        # Find all discord attachment URLs (both cdn and media domains)
-        # Supports URLs that might be inside markdown like ![image](url) or plain text
-        pattern = r'(https?://(?:cdn|media)\.discordapp\.(?:com|net)/attachments/[^\s\)"\'>]+)'
+        # Find all discord media URLs (attachments, emojis, avatars, icons)
+        pattern = r'(https?://(?:cdn|media|images-ext-\d+)\.discordapp\.(?:com|net)/(?:attachments|emojis|avatars|icons)/[^\s\)"\'>]+)'
         urls = list(set(re.findall(pattern, content)))
         
         if not urls:

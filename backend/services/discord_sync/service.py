@@ -55,6 +55,42 @@ def clean_guide_title(title: str, text: str, cat_key: str) -> str:
     return t
 
 
+def extract_discord_embed_text(embeds: list) -> str:
+    """Extracts rich title, description, fields, and footers from Discord embeds into clean Markdown."""
+    if not embeds:
+        return ""
+    parts = []
+    for emb in embeds:
+        if not isinstance(emb, dict):
+            continue
+        emb_parts = []
+        if emb.get("title"):
+            title = emb["title"].strip()
+            if emb.get("url"):
+                emb_parts.append(f"### [{title}]({emb['url']})")
+            else:
+                emb_parts.append(f"### {title}")
+        if emb.get("description"):
+            emb_parts.append(emb["description"].strip())
+
+        # Fields (stats, guides, tips, attributes)
+        for field in emb.get("fields", []):
+            if isinstance(field, dict):
+                f_name = field.get("name", "").strip()
+                f_val = field.get("value", "").strip()
+                if f_name and f_val:
+                    emb_parts.append(f"**{f_name}**\n{f_val}")
+                elif f_val:
+                    emb_parts.append(f_val)
+
+        if emb.get("footer") and isinstance(emb["footer"], dict) and emb["footer"].get("text"):
+            emb_parts.append(f"> *{emb['footer']['text'].strip()}*")
+
+        if emb_parts:
+            parts.append("\n\n".join(emb_parts))
+    return "\n\n---\n\n".join(parts)
+
+
 class DiscordSyncService:
 
     @classmethod
@@ -184,6 +220,11 @@ class DiscordSyncService:
                         embed_photos.append(e_url)
                     elif any(e_url.lower().endswith(ext) for ext in (".mp4", ".webm", ".mov", ".mkv", ".gifv")) or "youtube.com" in e_url or "youtu.be" in e_url:
                         embed_videos.append(e_url)
+
+        # Extract rich content from Discord Embeds
+        embed_text = extract_discord_embed_text(embeds)
+        if embed_text:
+            raw_content = f"{raw_content}\n\n{embed_text}".strip() if raw_content.strip() else embed_text
 
         if not raw_content.strip():
             if attachments_urls or embed_photos or embed_videos:

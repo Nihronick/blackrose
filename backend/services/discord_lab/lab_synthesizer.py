@@ -54,15 +54,58 @@ class DiscordGuideSynthesizer:
             text = re.sub(pattern, f"{term} ({full_name})", text)
         return text
 
+    def extract_embeds(self, embeds: List[Dict]) -> str:
+        """Extracts rich title, description, and fields from Discord embeds into Markdown."""
+        if not embeds:
+            return ""
+        parts = []
+        for emb in embeds:
+            if not isinstance(emb, dict):
+                continue
+            emb_parts = []
+            if emb.get("title"):
+                title = emb["title"].strip()
+                if emb.get("url"):
+                    emb_parts.append(f"### [{title}]({emb['url']})")
+                else:
+                    emb_parts.append(f"### {title}")
+            if emb.get("description"):
+                emb_parts.append(emb["description"].strip())
+            for field in emb.get("fields", []):
+                if isinstance(field, dict):
+                    f_name = field.get("name", "").strip()
+                    f_val = field.get("value", "").strip()
+                    if f_name and f_val:
+                        emb_parts.append(f"**{f_name}**\n{f_val}")
+                    elif f_val:
+                        emb_parts.append(f_val)
+            if emb.get("footer") and isinstance(emb["footer"], dict) and emb["footer"].get("text"):
+                emb_parts.append(f"> *{emb['footer']['text'].strip()}*")
+            if emb_parts:
+                parts.append("\n\n".join(emb_parts))
+        return "\n\n---\n\n".join(parts)
+
     def synthesize(self, messages: List[Dict]) -> Dict:
-        sorted_msgs = sorted(messages, key=lambda x: x.get('timestamp', ''))
+        sorted_msgs = sorted(
+            messages,
+            key=lambda x: int(x.get("id", "0")) if str(x.get("id", "")).isdigit() else 0
+        )
         full_content = []
         media_urls = []
 
+        # Identify thread creator (OP) if present
+        op_author = sorted_msgs[0].get("author", {}).get("username") if sorted_msgs else None
+
         for msg in sorted_msgs:
-            content = msg.get('content', '')
-            author = msg.get('author', {}).get('username', 'Unknown')
-            if len(content) < 5 and not msg.get('attachments'):
+            content = msg.get("content", "")
+            embed_text = self.extract_embeds(msg.get("embeds", []))
+            if embed_text:
+                content = f"{content}\n\n{embed_text}".strip() if content else embed_text
+
+            author = msg.get("author", {}).get("username", "Unknown")
+            attachments = msg.get("attachments", [])
+
+            if len(content) < 3 and not attachments:
                 continue
 
             clean_text = self.clean_noise(content)
@@ -70,13 +113,13 @@ class DiscordGuideSynthesizer:
             enriched_text = self.enrich_text(mapped_text)
 
             if enriched_text:
-                full_content.append(f"--- (Автор: {author}) ---\n{enriched_text}")
+                full_content.append(enriched_text)
 
-            for att in msg.get('attachments', []):
+            for att in attachments:
                 media_urls.append({
-                    "url": att.get('url'),
-                    "type": att.get('content_type', 'image'),
-                    "name": att.get('filename')
+                    "url": att.get("url"),
+                    "type": att.get("content_type", "image"),
+                    "name": att.get("filename")
                 })
 
         return {
