@@ -156,14 +156,14 @@ async def export_user_data(user=Depends(require_user)):
         # Favorites
         fav_res = await session.execute(
             select(UserFavorite.guide_key, UserFavorite.created_at)
-            .where(UserFavorite.user_id == str(user_id))
+            .where(UserFavorite.user_id == user_id)
         )
         favorites = [{"guide_key": r[0], "added_at": str(r[1])} for r in fav_res.all()]
         
         # Reactions
         react_res = await session.execute(
             select(GuideReaction.guide_key, GuideReaction.reaction, GuideReaction.created_at)
-            .where(GuideReaction.user_id == str(user_id))
+            .where(GuideReaction.user_id == user_id)
         )
         reactions = [{"guide_key": r[0], "reaction": r[1], "created_at": str(r[2])} for r in react_res.all()]
         
@@ -200,12 +200,14 @@ async def delete_user_data(user=Depends(require_user)):
     
     from core.db import get_sessionmaker
     from sqlalchemy import delete
-    from models.db_models import UserFavorite, GuideReaction, GuildMember
+    from models.db_models import UserFavorite, GuideReaction, GuildMember, GuideComment, GuildJoinRequest
     
     async with get_sessionmaker()() as session:
-        await session.execute(delete(UserFavorite).where(UserFavorite.user_id == str(user_id)))
-        await session.execute(delete(GuideReaction).where(GuideReaction.user_id == str(user_id)))
+        await session.execute(delete(UserFavorite).where(UserFavorite.user_id == user_id))
+        await session.execute(delete(GuideReaction).where(GuideReaction.user_id == user_id))
         await session.execute(delete(GuildMember).where(GuildMember.user_id == user_id))
+        await session.execute(delete(GuideComment).where(GuideComment.user_id == user_id))
+        await session.execute(delete(GuildJoinRequest).where(GuildJoinRequest.user_id == user_id))
         await session.commit()
     
     # Revoke all JWT tokens for this user

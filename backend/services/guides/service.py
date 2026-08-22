@@ -218,12 +218,13 @@ class GuideService:
     async def get_by_tag(cls, tag: str) -> list[dict]:
         if not tag:
             return []
+        clean_tag = tag.strip().lower()
         async with get_sessionmaker()() as session:
             stmt = (
                 select(Guide)
                 .join(GuideTag, GuideTag.guide_key == Guide.key)
                 .options(selectinload(Guide.tags))
-                .where(GuideTag.tag == tag)
+                .where(GuideTag.tag == clean_tag)
                 .order_by(desc(Guide.updated_at))
             )
             result = await session.execute(stmt)
@@ -310,8 +311,9 @@ class GuideService:
                 return False
             user_id = int(user.get("id", 0) or 0)
             is_admin = bool(user.get("is_local_admin") or user.get("is_admin"))
-            if not is_admin and row.user_id != user_id:
-                return False
+            if not is_admin:
+                if user_id <= 0 or row.user_id != user_id:
+                    return False
             await session.delete(row)
             await session.commit()
             return True

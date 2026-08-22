@@ -4,8 +4,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from core.logging import get_logger
-from services.guides.guide import guide_service
-from services.categories.category import category_service
+from services.guides.service import guide_service, category_service
 from services.guilds.service import guild_service
 
 logger = get_logger("blackrose.bot")

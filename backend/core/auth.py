@@ -145,18 +145,9 @@ async def require_user(request: Request) -> dict:
     init_data = request.headers.get("X-Telegram-Init-Data", "")
     if init_data:
         user = verify_telegram_init_data(init_data)
-        if not user:
-            try:
-                params = dict(parse_qsl(init_data))
-                user_str = params.get("user")
-                if user_str:
-                    user = json.loads(user_str)
-                    logger.warning("Telegram signature verification failed. Falling back to unverified user payload to prevent lockout.")
-            except Exception as e:
-                logger.error(f"Fallback extraction of Telegram user failed: {e}")
         if user:
             return user
-        raise HTTPException(status_code=403, detail="Неверные данные Telegram")
+        raise HTTPException(status_code=403, detail="Недействительная подпись Telegram")
 
     raise HTTPException(status_code=403, detail="Требуется авторизация")
 
@@ -179,14 +170,6 @@ async def require_public_user(request: Request) -> dict:
         init_data = request.headers.get("X-Telegram-Init-Data", "")
         if init_data:
             user = verify_telegram_init_data(init_data)
-            if not user:
-                try:
-                    params = dict(parse_qsl(init_data))
-                    user_str = params.get("user")
-                    if user_str:
-                        user = json.loads(user_str)
-                except Exception:
-                    pass
             if user:
                 return user
     except Exception as e:

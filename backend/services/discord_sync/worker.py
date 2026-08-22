@@ -340,6 +340,8 @@ class StealthDiscordWorker:
                         }
                         await ws.send_json(identify_payload)
 
+                        self._last_sequence = None
+
                         # Start heartbeat task
                         heartbeat_task = asyncio.create_task(self._heartbeat_loop(ws, heartbeat_interval))
 
@@ -353,10 +355,13 @@ class StealthDiscordWorker:
                                     op = data.get("op")
                                     event_type = data.get("t")
                                     payload = data.get("d")
+                                    seq = data.get("s")
+                                    if seq is not None:
+                                        self._last_sequence = seq
 
                                     if op == 1:
                                         # Server requested immediate heartbeat
-                                        await ws.send_json({"op": 1, "d": None})
+                                        await ws.send_json({"op": 1, "d": self._last_sequence})
 
                                     elif op == 0 and event_type in ("MESSAGE_CREATE", "MESSAGE_UPDATE", "THREAD_CREATE", "THREAD_UPDATE"):
                                         # Inbound message event!
@@ -377,11 +382,10 @@ class StealthDiscordWorker:
                 retry_delay = min(retry_delay * 2, 60)
 
     async def _heartbeat_loop(self, ws: aiohttp.ClientWebSocketResponse, interval: float):
-        sequence = None
         while self.running:
             try:
                 await asyncio.sleep(interval)
-                await ws.send_json({"op": 1, "d": sequence})
+                await ws.send_json({"op": 1, "d": getattr(self, "_last_sequence", None)})
             except asyncio.CancelledError:
                 break
             except Exception as e:

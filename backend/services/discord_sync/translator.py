@@ -170,6 +170,13 @@ async def translate_en_to_ru(text: str) -> str:
         counter += 1
         return key
 
+    def mask_str(val: str) -> str:
+        nonlocal counter
+        key = f"___PH_{counter}___"
+        placeholders[key] = val
+        counter += 1
+        return key
+
     # Mask code blocks ```...```
     masked_text = re.sub(r'```[\s\S]*?```', mask_match, text)
     # Mask inline code `...`
@@ -177,7 +184,7 @@ async def translate_en_to_ru(text: str) -> str:
     # Mask icon / image placeholders {{...}}
     masked_text = re.sub(r'\{\{[^}]+\}\}', mask_match, masked_text)
     # Mask markdown URLs [label](url) -> protect url part
-    masked_text = re.sub(r'\]\((https?://[^\s)]+)\)', lambda m: f"]({mask_match(m)})", masked_text)
+    masked_text = re.sub(r'\]\((https?://[^\s)]+)\)', lambda m: f"]({mask_str(m.group(1))})", masked_text)
 
     # Protect Gaming Glossary Terms before sending to translation
     for term, ru_term in GAMING_GLOSSARY.items():

@@ -57,7 +57,11 @@ class RedisCacheService:
         if not r:
             return
         try:
-            await r.setex(key, expire, json.dumps(value))
+            payload = json.dumps(value)
+            if expire and expire > 0:
+                await r.setex(key, expire, payload)
+            else:
+                await r.set(key, payload)
         except Exception as e:
             logger.error(f"Redis SET error for {key}: {e}")
 

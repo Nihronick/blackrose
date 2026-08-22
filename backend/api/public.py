@@ -321,12 +321,7 @@ async def remove_my_favorite(key: str, user=Depends(require_user)):
 
 
 
-@router.get("/auth/web-check")
-async def web_check(request: Request):
-    user = await _try_get_user(request)
-    if not user:
-        return {"authorized": False, "is_admin": False}
-    return {"authorized": True, "is_admin": await _is_admin(user)}
+
 
 
 @router.post("/auth/refresh")
@@ -463,10 +458,10 @@ async def add_comment(request: Request, guide_key: str, body: CommentIn, user=De
     return row
 
 @router.delete("/guide/{guide_key}/comments/{comment_id}")
-async def delete_comment(guide_key: str, comment_id: int, user=Depends(require_public_user)):
+async def delete_comment(guide_key: str, comment_id: int, user=Depends(require_user)):
     deleted = await guide_service.delete_comment(guide_key, comment_id, user)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Comment not found")
+        raise HTTPException(status_code=403, detail="Недостаточно прав для удаления комментария")
     return {"ok": True}
 
 @router.post("/guide/{guide_key}/view")

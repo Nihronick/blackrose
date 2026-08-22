@@ -66,7 +66,9 @@ class MemberService:
     @classmethod
     async def is_admin(cls, user_id: int) -> bool:
         async with get_sessionmaker()() as session:
-            res = await session.execute(select(Member).where(Member.user_id == user_id, Member.role == "admin"))
+            res = await session.execute(
+                select(Member).where(Member.user_id == user_id, Member.role.in_(("admin", "project_admin")))
+            )
             return res.scalar_one_or_none() is not None
 
     ROLE_HIERARCHY = {
