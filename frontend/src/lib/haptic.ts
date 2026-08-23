@@ -1,5 +1,5 @@
 import { hapticLight, hapticMedium } from '../lib/capacitor'
-import { hapticImpact, hapticNotification } from './telegram'
+import { hapticImpact, hapticNotification, hapticSelection } from './telegram'
 
 export const haptic = {
   light: () => {
@@ -17,6 +17,10 @@ export const haptic = {
   select: () => {
     hapticLight().catch(() => {})
     hapticImpact('soft')
+  },
+  selection: () => {
+    hapticLight().catch(() => {})
+    hapticSelection()
   },
   heavy: () => {
     hapticMedium().catch(() => {})

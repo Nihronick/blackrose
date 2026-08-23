@@ -41,6 +41,17 @@ export function hapticNotification(type: 'success' | 'warning' | 'error') {
   }
 }
 
+export function hapticSelection() {
+  const tg = getTelegramWebApp()
+  if (tg?.HapticFeedback) {
+    try {
+      tg.HapticFeedback.selectionChanged()
+    } catch {
+      // Ignore fallback
+    }
+  }
+}
+
 /**
  * Initializes all modern Telegram Mini App 8.x features:
  * 1. Fullscreen / Expansion
