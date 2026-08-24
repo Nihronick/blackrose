@@ -1095,9 +1095,10 @@ def main():
         print(f"  Ошибка получения каналов (HTTP {s}): {str(channels)[:100]}")
         sys.exit(1)
 
-    # Точный список 14 официальных разделов Slayerpedia в порядке Discord:
+    # Точный список официальных разделов Slayerpedia в порядке Discord:
     SLAYERPEDIA_ORDER = [
         ("beginner-guide", "Гайд для начинающих"),
+        ("faq", "Часто Задаваемые Вопросы (FAQ)"),
         ("character", "Персонаж"),
         ("promotion-and-suit-recommendation", "Рекомендации Костюмов"),
         ("late-game-promotions", "Продвижение (Late Game)"),
@@ -1110,6 +1111,8 @@ def main():
         ("companion", "Компаньоны и Фамильяры"),
         ("adventure", "Приключения"),
         ("event-help", "Помощь по Ивентам"),
+        ("resources", "Калькуляторы и Таблицы"),
+        ("story-lore", "Сюжет и Лор"),
         ("shop", "Магазин"),
     ]
 
@@ -1236,43 +1239,80 @@ def main():
             else:
                 print(f"\n    [TEXT] {ch_name}")
                 msgs = fetch_all_messages(ch_id, limit=100)
-                guide_msgs = [m for m in msgs if len(m.get("content", "")) >= 80 or len(m.get("attachments", [])) > 0]
-                print(f"    Найдено {len(guide_msgs)} сообщений-гайдов (из {len(msgs)} всего)")
+                
+                # Если это канал рекомендаций костюмов/продвижений — склеиваем все сообщения в 1 полный лонгрид
+                if cat_key == "promotion-and-suit-recommendation" or "promotion-and-suit" in ch_slug:
+                    sorted_msgs = sorted(msgs, key=lambda x: int(x.get("id", "0")))
+                    full_text_parts = []
+                    all_photos = []
+                    all_videos = []
+                    for m in sorted_msgs:
+                        msg_text = format_message_with_inline_media(m, jwt)
+                        clean = sanitize_discord_markdown(msg_text, jwt)
+                        if clean.strip():
+                            full_text_parts.append(clean.strip())
+                        p, v = extract_media_from_messages([m], jwt)
+                        all_photos.extend(p)
+                        all_videos.extend(v)
 
-                for mi, msg in enumerate(guide_msgs):
-                    mid = msg["id"]
-                    msg_text = format_message_with_inline_media(msg, jwt)
-                    clean = sanitize_discord_markdown(msg_text, jwt)
-                    translated = translate_text(clean)
-
-                    # Заголовок — первая осмысленная текстовая строка
-                    text_lines = [
-                        line.strip("# ").strip() 
-                        for line in clean.split("\n") 
-                        if line.strip() and not line.strip().startswith(("![", "[Video:", "{{", "http://", "https://"))
-                    ]
-                    title = text_lines[0][:80] if text_lines else f"{cat_name} — Инфо #{mi+1}"
-
-                    photos, videos = extract_media_from_messages([msg], jwt)
-                    guide_key = f"discord_{mid}"
-
+                    full_raw_text = "\n\n---\n\n".join(full_text_parts)
+                    translated = translate_text(full_raw_text)
+                    guide_key = f"discord_merged_{ch_id}"
+                    
                     result = ingest_guide(
                         guide_key=guide_key,
                         cat_key=cat_key,
                         cat_title=cat_name,
-                        title=title,
+                        title="Рекомендации по Костюмам и Продвижению (Early / Mid / Late Game)",
                         text=translated,
-                        photos=photos,
-                        videos=videos,
-                        sort_order=mi
+                        photos=all_photos,
+                        videos=all_videos,
+                        sort_order=0
                     )
-
                     if "error" in result:
                         total_errors += 1
-                        print(f"      [{mi+1}/{len(guide_msgs)}] FAIL: {title[:40]}: {result['error'][:60]}")
+                        print(f"      [1/1] FAIL: Рекомендации по Костюмам: {result['error'][:60]}")
                     else:
                         total_imported += 1
-                        print(f"      [{mi+1}/{len(guide_msgs)}] OK: {title[:50]}")
+                        print(f"      [1/1] OK: Рекомендации по Костюмам ({len(all_photos)}p/{len(all_videos)}v)")
+                else:
+                    guide_msgs = [m for m in msgs if len(m.get("content", "")) >= 80 or len(m.get("attachments", [])) > 0]
+                    print(f"    Найдено {len(guide_msgs)} сообщений-гайдов (из {len(msgs)} всего)")
+
+                    for mi, msg in enumerate(guide_msgs):
+                        mid = msg["id"]
+                        msg_text = format_message_with_inline_media(msg, jwt)
+                        clean = sanitize_discord_markdown(msg_text, jwt)
+                        translated = translate_text(clean)
+
+                        # Заголовок — первая осмысленная текстовая строка
+                        text_lines = [
+                            line.strip("# ").strip() 
+                            for line in clean.split("\n") 
+                            if line.strip() and not line.strip().startswith(("![", "[Video:", "{{", "http://", "https://"))
+                        ]
+                        title = text_lines[0][:80] if text_lines else f"{cat_name} — Инфо #{mi+1}"
+
+                        photos, videos = extract_media_from_messages([msg], jwt)
+                        guide_key = f"discord_{mid}"
+
+                        result = ingest_guide(
+                            guide_key=guide_key,
+                            cat_key=cat_key,
+                            cat_title=cat_name,
+                            title=title,
+                            text=translated,
+                            photos=photos,
+                            videos=videos,
+                            sort_order=mi
+                        )
+
+                        if "error" in result:
+                            total_errors += 1
+                            print(f"      [{mi+1}/{len(guide_msgs)}] FAIL: {title[:40]}: {result['error'][:60]}")
+                        else:
+                            total_imported += 1
+                            print(f"      [{mi+1}/{len(guide_msgs)}] OK: {title[:50]}")
 
                     time.sleep(0.3)
 
