@@ -64,7 +64,19 @@ class TranslationService:
         if not text or len(text.strip()) < 4:
             return text
 
-        # Provider Cascade: NVIDIA NIM -> Gemini -> DeepSeek -> Groq -> OpenAI -> HF Serverless -> Smart Fallback
+        # Provider Cascade: OrcaRouter -> OpenRouter -> NVIDIA NIM -> Gemini -> DeepSeek -> Groq -> OpenAI -> HF Serverless -> Smart Fallback
+        orca_key = os.getenv("ORCAROUTER_API_KEY") or settings.ORCAROUTER_API_KEY
+        if orca_key:
+            res = await TranslationService._translate_orcarouter(text, orca_key)
+            if res:
+                return res
+
+        openrouter_key = os.getenv("OPENROUTER_API_KEY") or settings.OPENROUTER_API_KEY
+        if openrouter_key:
+            res = await TranslationService._translate_openrouter(text, openrouter_key)
+            if res:
+                return res
+
         nvidia_key = os.getenv("NVIDIA_API_KEY") or settings.NVIDIA_API_KEY
         if nvidia_key:
             res = await TranslationService._translate_nvidia(text, nvidia_key)
@@ -134,6 +146,56 @@ class TranslationService:
                                 return TranslationService._post_process(out)
         except Exception as e:
             logger.debug(f"Gemini translation failed: {e}")
+    @staticmethod
+    async def _translate_orcarouter(text: str, api_key: str) -> str | None:
+        try:
+            session = await http_client.get_session()
+            url = "https://api.orcarouter.com/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            for model_name in ["meta-llama/llama-3.3-70b-instruct:free", "deepseek/deepseek-chat:free", "qwen/qwen-2.5-72b-instruct:free"]:
+                payload = {
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": f"Текст для перевода:\n{text}"}
+                    ],
+                    "temperature": 0.1,
+                }
+                async with session.post(url, json=payload, headers=headers, timeout=30) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        res = data["choices"][0]["message"]["content"].strip()
+                        if res:
+                            return TranslationService._post_process(res)
+        except Exception as e:
+            logger.debug(f"OrcaRouter translation failed: {e}")
+        return None
+
+    @staticmethod
+    async def _translate_openrouter(text: str, api_key: str) -> str | None:
+        try:
+            session = await http_client.get_session()
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            for model_name in ["deepseek/deepseek-chat:free", "meta-llama/llama-3.3-70b-instruct:free", "google/gemini-2.0-flash-exp:free"]:
+                payload = {
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": f"Текст для перевода:\n{text}"}
+                    ],
+                    "temperature": 0.1,
+                }
+                async with session.post(url, json=payload, headers=headers, timeout=30) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        res = data["choices"][0]["message"]["content"].strip()
+                        if res:
+                            return TranslationService._post_process(res)
+        except Exception as e:
+            logger.debug(f"OpenRouter translation failed: {e}")
+        return None
+
     @staticmethod
     async def _translate_nvidia(text: str, api_key: str) -> str | None:
         try:

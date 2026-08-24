@@ -44,10 +44,12 @@ class Settings(BaseSettings):
     DEEPL_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     DEEPSEEK_API_KEY: str = ""
-    NVIDIA_API_KEY: str = "" # https://build.nvidia.com/ (Llama 3.3 70B, DeepSeek V3, Qwen 2.5 72B)
+    NVIDIA_API_KEY: str = "" # https://build.nvidia.com/ (Llama 3.3 70B, DeepSeek V3)
+    ORCAROUTER_API_KEY: str = "" # https://www.orcarouter.ai/ (Free models router)
+    OPENROUTER_API_KEY: str = "" # https://openrouter.ai/
     GROQ_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
-    AI_TRANSLATION_PROVIDER: str = "auto" # auto | nvidia | gemini | deepseek | groq | hf | google
+    AI_TRANSLATION_PROVIDER: str = "auto" # auto | orca | openrouter | nvidia | gemini | deepseek | groq | hf | google
 
     # Inngest Background Jobs
     INNGEST_SIGNING_KEY: str = ""

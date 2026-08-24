@@ -611,6 +611,50 @@ AI_SYSTEM_PROMPT = """Ты — профессиональный игровой �
 4. Выводи ТОЛЬКО готовый переведенный Markdown текст без вступительных или заключительных фраз."""
 
 
+def _translate_ai_orcarouter(text: str, api_key: str) -> str | None:
+    try:
+        url = "https://api.orcarouter.com/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        for model in ["meta-llama/llama-3.3-70b-instruct:free", "deepseek/deepseek-chat:free", "qwen/qwen-2.5-72b-instruct:free"]:
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": AI_SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Текст для перевода:\n{text}"}
+                ],
+                "temperature": 0.1,
+            }
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return _post_process_translation(data["choices"][0]["message"]["content"].strip())
+    except Exception:
+        pass
+    return None
+
+
+def _translate_ai_openrouter(text: str, api_key: str) -> str | None:
+    try:
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        for model in ["deepseek/deepseek-chat:free", "meta-llama/llama-3.3-70b-instruct:free", "google/gemini-2.0-flash-exp:free"]:
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": AI_SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Текст для перевода:\n{text}"}
+                ],
+                "temperature": 0.1,
+            }
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return _post_process_translation(data["choices"][0]["message"]["content"].strip())
+    except Exception:
+        pass
+    return None
+
+
 def _translate_ai_nvidia(text: str, api_key: str) -> str | None:
     try:
         url = "https://integrate.api.nvidia.com/v1/chat/completions"
@@ -724,6 +768,18 @@ def _post_process_translation(text: str) -> str:
 def _translate_single_chunk(text: str) -> str:
     """Перевод отдельного фрагмента текста с защитой тегов."""
     # 1. AI LLM Providers
+    orca_key = os.environ.get("ORCAROUTER_API_KEY", "")
+    if orca_key:
+        res = _translate_ai_orcarouter(text, orca_key)
+        if res:
+            return res
+
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+    if openrouter_key:
+        res = _translate_ai_openrouter(text, openrouter_key)
+        if res:
+            return res
+
     nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
     if nvidia_key:
         res = _translate_ai_nvidia(text, nvidia_key)
@@ -799,7 +855,7 @@ def translate_text(text: str) -> str:
         return text
 
     # Если есть AI ключ, переводим весь текст целиком для сохранения контекста
-    if os.environ.get("NVIDIA_API_KEY") or os.environ.get("GEMINI_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("GROQ_API_KEY"):
+    if os.environ.get("ORCAROUTER_API_KEY") or os.environ.get("OPENROUTER_API_KEY") or os.environ.get("NVIDIA_API_KEY") or os.environ.get("GEMINI_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("GROQ_API_KEY"):
         res = _translate_single_chunk(text)
         if res and res != text:
             return res
