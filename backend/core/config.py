@@ -38,11 +38,15 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = ""
 
-    # Services
+    # AI Translation & LLM Services
     HF_TOKEN: str = ""
     HF_DATASET_REPO: str = "" # e.g. "Nihronick/blackrose-media"
     DEEPL_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    DEEPSEEK_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    AI_TRANSLATION_PROVIDER: str = "auto" # auto | gemini | deepseek | groq | hf | google
 
     # Inngest Background Jobs
     INNGEST_SIGNING_KEY: str = ""

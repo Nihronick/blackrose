@@ -577,7 +577,164 @@ def _translate_single_chunk(text: str) -> str:
         r'\[\[[^\]]+\]\]',
         r'\[(?:Видео|Video)[^\]]*\]\([^)]+\)',
         r'!\[[^\]]*\]\([^)]+\)',
-        r'<details>[\s\S]*?</details>',
+AI_SYSTEM_PROMPT = """Ты — профессиональный игровой локализатор и эксперт по мобильной игре Slayer Legend.
+Твоя задача — качественно и естественно перевести руководство по игре с английского на русский язык.
+
+КРИТИЧЕСКИЕ ПРАВИЛА:
+1. СОХРАНЯЙ ВСЮ РАЗМЕТКУ И МЕДИА-ТЕГИ:
+   - Ссылки [Текст](url) — переводи только текст ссылки, URL оставляй без изменений!
+   - Медиа-теги ![...](url), видео [Video: ...](url) — сохраняй в точности.
+   - Иконки и эмодзи {{...}}, <:name:id>, <a:name:id>, юникод-эмодзи — НЕ удаляй, НЕ изменяй, НЕ переводи внутри скобок!
+   - Код `...`, блоки кода ```...```, заголовки #, ##, списки -, * — сохраняй структуру Markdown.
+   - Таблицы Markdown | col | col | — сохраняй структуру колонок и разделители.
+2. ИСПОЛЬЗУЙ ИГРОВОЙ СЛЕНГ И ТЕРМИНОЛОГИЮ SLAYER LEGEND:
+   - Rave -> Рейв
+   - Rage -> Ярость
+   - Spirits -> Духи
+   - Familiars -> Фамильяры
+   - Promotion -> Продвижение
+   - Latent / Latent Power -> Латентка / Скрытая сила
+   - CD / Cooldown -> КД (перезарядка)
+   - DPS -> ДПС (урон в секунду)
+   - Boss -> Босс
+   - Mobs -> Мобы
+   - Beast -> Зверь
+   - Stage -> Этап
+   - Breakthrough -> Прорыв
+   - WoG / Wrath of Gods -> Гнев богов (WoG)
+   - Flowing Blade -> Текущий клинок
+   - Warrior Burn -> Пылающий воин
+   - Strong Current -> Сильное течение
+   - Earth's Will -> Воля земли
+   - Auto -> Авто-режим / Авто
+3. Перевод должен быть естественным, чистым и понятным русскоязычным игрокам.
+4. Выводи ТОЛЬКО готовый переведенный Markdown текст без вступительных или заключительных фраз."""
+
+
+def _translate_ai_gemini(text: str, api_key: str) -> str | None:
+    try:
+        for model in ["gemini-2.5-flash", "gemini-1.5-flash"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": f"{AI_SYSTEM_PROMPT}\n\nТекст для перевода:\n{text}"}]}],
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}
+            }
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, context=_ssl_ctx, timeout=25) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                candidates = data.get("candidates", [])
+                if candidates and candidates[0].get("content", {}).get("parts"):
+                    res = candidates[0]["content"]["parts"][0].get("text", "").strip()
+                    if res:
+                        return _post_process_translation(res)
+    except Exception:
+        pass
+    return None
+
+
+def _translate_ai_deepseek(text: str, api_key: str) -> str | None:
+    try:
+        url = "https://api.deepseek.com/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": AI_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Текст для перевода:\n{text}"}
+            ],
+            "temperature": 0.1,
+        }
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=25) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return _post_process_translation(data["choices"][0]["message"]["content"].strip())
+    except Exception:
+        pass
+    return None
+
+
+def _translate_ai_groq(text: str, api_key: str) -> str | None:
+    try:
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": AI_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Текст для перевода:\n{text}"}
+            ],
+            "temperature": 0.1,
+        }
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=20) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return _post_process_translation(data["choices"][0]["message"]["content"].strip())
+    except Exception:
+        pass
+    return None
+
+
+def _translate_ai_hf(text: str, token: str) -> str | None:
+    try:
+        model = "Qwen/Qwen2.5-72B-Instruct"
+        url = f"https://api-inference.huggingface.co/models/{model}"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        prompt = f"<|im_start|>system\n{AI_SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\n{text}<|im_end|>\n<|im_start|>assistant\n"
+        req = urllib.request.Request(url, data=json.dumps({"inputs": prompt, "parameters": {"max_new_tokens": 2048}}).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            full = data[0].get("generated_text", "") if isinstance(data, list) else data.get("generated_text", "")
+            res = full.split("<|im_start|>assistant\n")[-1].strip()
+            if res:
+                return _post_process_translation(res)
+    except Exception:
+        pass
+    return None
+
+
+def _post_process_translation(text: str) -> str:
+    text = text.replace("![видео]", "![video]").replace("![изображение]", "![image]")
+    text = text.replace("\ufffd", "")
+    return text
+
+
+def _translate_single_chunk(text: str) -> str:
+    """Перевод отдельного фрагмента текста с защитой тегов."""
+    # 1. AI LLM Providers
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    if gemini_key:
+        res = _translate_ai_gemini(text, gemini_key)
+        if res:
+            return res
+
+    deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if deepseek_key:
+        res = _translate_ai_deepseek(text, deepseek_key)
+        if res:
+            return res
+
+    groq_key = os.environ.get("GROQ_API_KEY", "")
+    if groq_key:
+        res = _translate_ai_groq(text, groq_key)
+        if res:
+            return res
+
+    hf_token = os.environ.get("HF_TOKEN", "")
+    if hf_token:
+        res = _translate_ai_hf(text, hf_token)
+        if res:
+            return res
+
+    # 2. Безопасный фоллбэк с маскированием
+    code_blocks = {}
+    cidx = 0
+    patterns = [
+        r'```[\s\S]*?```',
+        r'`[^`\n]+`',
+        r'\{\{[^}]+\}\}',
+        r'<a?:[A-Za-z0-9_]+:\d+>',
+        r'\[Video:[^\]]+\]\([^)]+\)',
+        r'\[Видео:[^\]]+\]\([^)]+\)',
         r'https?://[^\s)\]]+',
         r'/api/media/[a-f0-9]+',
     ]
@@ -591,66 +748,32 @@ def _translate_single_chunk(text: str) -> str:
             masked = masked.replace(val, ph, 1)
             cidx += 1
 
-    # 2. ЗАЩИТА ГЛОССАРИЯ (строго по границам слов)
-    placeholders = {}
-    gidx = 0
-    for en in sorted(GAMING_GLOSSARY.keys(), key=len, reverse=True):
-        ru = GAMING_GLOSSARY[en]
-        pattern = re.compile(rf'\b{re.escape(en)}\b', re.IGNORECASE if len(en) > 2 else 0)
-        if pattern.search(masked):
-            ph = f"XQG{gidx}GQX"
-            masked = pattern.sub(ph, masked)
-            placeholders[ph] = ru
-            gidx += 1
-
-    if re.search(r'\bcd\b', masked, re.IGNORECASE):
-        ph = f"XQG{gidx}GQX"
-        masked = re.sub(r'\bcd\b', ph, masked, flags=re.IGNORECASE)
-        placeholders[ph] = "КД"
-        gidx += 1
-
     try:
         encoded = urllib.parse.quote(masked)
         url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q={encoded}"
-        req = urllib.request.Request(url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        })
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             translated = "".join(seg[0] for seg in result[0] if seg and seg[0])
-    except Exception as e:
-        print(f"      [WARN] Перевод фрагмента пропущен ({e}), сохраняем оригинал")
+    except Exception:
         translated = masked
 
-    # 3. НОРМАЛИЗАЦИЯ ПЛЕЙСХОЛДЕРОВ
-    translated = re.sub(r'XQ\s*B\s*(\d+)\s*B\s*QX', r'XQB\1BQX', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'XQ\s*G\s*(\d+)\s*G\s*QX', r'XQG\1GQX', translated, flags=re.IGNORECASE)
-
-    # 4. ВОССТАНОВЛЕНИЕ
-    for _ in range(3):
-        for ph, val in placeholders.items():
-            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
-        for ph, val in code_blocks.items():
-            translated = re.sub(re.escape(ph), lambda _m, v=val: v, translated, flags=re.IGNORECASE)
-
-    # 5. ОЧИСТКА ВСЕХ ВОЗМОЖНЫХ АРТЕФАКТОВ
-    translated = re.sub(r'XQ[BG]\d+[BG]QX', '', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'___(?:SAFEBLOCK|GLOSS|БЕЗОПАСНЫЙ|ГЛОСС)[_\s]*\d+[_\s]*___', '', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'XZY(?:BLOCK|GLOSS)\d+XZY', '', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bспиртные напитки\b', 'Духи', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bспиртных напитков\b', 'Духов', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bспиртными напитками\b', 'Духами', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bкрепкие напитки\b', 'сильные Духи', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bкомпакт-диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
-    translated = re.sub(r'\bкомпакт диск[а-я]*\b', 'КД', translated, flags=re.IGNORECASE)
-
-    return translated
+    for ph, val in code_blocks.items():
+        translated = translated.replace(ph, val)
+    translated = re.sub(r'XQB\d+BQX', '', translated)
+    return _post_process_translation(translated)
 
 
 def translate_text(text: str) -> str:
     """Перевод EN→RU с разбиением на параграфы без обрезок длины."""
     if not text or len(text.strip()) < 10:
         return text
+
+    # Если есть AI ключ, переводим весь текст целиком для сохранения контекста
+    if os.environ.get("GEMINI_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("GROQ_API_KEY"):
+        res = _translate_single_chunk(text)
+        if res and res != text:
+            return res
 
     paragraphs = text.split("\n\n")
     translated_chunks = []
