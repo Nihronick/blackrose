@@ -558,25 +558,6 @@ def sanitize_discord_markdown(text: str, admin_jwt: str = "") -> str:
     return text.strip()
 
 
-def _translate_single_chunk(text: str) -> str:
-    """Перевод одного блока (до 3000 символов) через Google GTX с надежной защитой плейсхолдеров и глоссария."""
-    if not text or len(text.strip()) < 5:
-        return text
-
-    # Очистка мусорных пометок авторов
-    text = re.sub(r'\(insert_[a-zA-Z0-9_\.]+\)', '', text)
-    text = re.sub(r'insert_[a-zA-Z0-9_\.]+', '', text)
-
-    # 1. ЗАЩИТА ВСЕХ URL, ПУТЕЙ, ИКОНОК И ТЕГОВ
-    code_blocks = {}
-    cidx = 0
-    patterns = [
-        r'```[\s\S]*?```',
-        r'`[^`]+`',
-        r'\{\{[^}]+\}\}',
-        r'\[\[[^\]]+\]\]',
-        r'\[(?:Видео|Video)[^\]]*\]\([^)]+\)',
-        r'!\[[^\]]*\]\([^)]+\)',
 AI_SYSTEM_PROMPT = """Ты — профессиональный игровой локализатор и эксперт по мобильной игре Slayer Legend.
 Твоя задача — качественно и естественно перевести руководство по игре с английского на русский язык.
 
