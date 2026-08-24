@@ -1122,9 +1122,13 @@ def main():
                     clean = sanitize_discord_markdown(msg_text, jwt)
                     translated = translate_text(clean)
 
-                    # Заголовок — первая строка
-                    first_line = clean.split("\n")[0].strip("# ").strip()
-                    title = first_line[:80] if first_line else f"Гайд {mid}"
+                    # Заголовок — первая осмысленная текстовая строка
+                    text_lines = [
+                        line.strip("# ").strip() 
+                        for line in clean.split("\n") 
+                        if line.strip() and not line.strip().startswith(("![", "[Video:", "{{", "http://", "https://"))
+                    ]
+                    title = text_lines[0][:80] if text_lines else f"{cat_name} — Инфо #{mi+1}"
 
                     photos, videos = extract_media_from_messages([msg], jwt)
                     guide_key = f"discord_{mid}"
