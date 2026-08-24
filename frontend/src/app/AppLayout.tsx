@@ -141,7 +141,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         {!isHome && location.pathname !== '/admin' ? (
           <Header title={headerTitle} onBack={handleBack} />
         ) : (
-          <header className="sticky top-0 z-40 flex h-16 items-center container-padding glass border-b border-border/10 shrink-0">
+          <header className="sticky top-0 z-40 flex items-center container-padding glass border-b border-border/10 shrink-0 safe-header pb-2">
             <div className="flex w-full items-center justify-between gap-4">
               <div
                 className="flex items-center gap-3 cursor-pointer"
@@ -280,7 +280,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
         {/* Main Content Area */}
         <main
-          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) ? 'pb-28 md:pb-8' : ''}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) ? 'pb-36 md:pb-8' : 'pb-16 md:pb-6'}`}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -298,7 +298,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
         {/* Floating Premium Bottom Navigation Tab Bar (Mobile Only) */}
         {['/', '/favorites', '/history', '/profile', '/guilds'].includes(location.pathname) && (
-          <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 pt-2.5 pb-3 rounded-[28px] shadow-2xl shrink-0 select-none">
+          <div className="md:hidden fixed bottom-[calc(1rem+var(--safe-bottom))] left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-[400px] nav-dock-glass px-4 pt-2.5 pb-[calc(0.75rem+var(--safe-bottom))] rounded-[28px] shadow-2xl shrink-0 select-none">
             <div className="flex w-full items-center justify-around">
               {[
                 { path: '/', label: 'Главная', icon: Home, route: { type: 'home' } as const },

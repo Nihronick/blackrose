@@ -163,7 +163,7 @@ export const GuidesView: FC<GuidesViewProps> = ({ category, onSelectGuide }) => 
                     )}
                   </div>
                   <div className="flex flex-1 flex-col min-w-0">
-                    <h3 className="truncate text-base font-black tracking-normal text-foreground/90 font-heading leading-tight">
+                    <h3 className="line-clamp-2 text-sm sm:text-base font-black tracking-normal text-foreground/90 font-heading leading-snug break-words">
                       {item.title}
                     </h3>
                     {item.text && (

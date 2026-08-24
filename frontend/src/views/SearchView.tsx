@@ -262,7 +262,7 @@ export const SearchView: FC = () => {
                       <FileText className="size-6" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <h3 className="text-[15px] font-black text-foreground font-heading truncate group-hover:text-primary transition-colors">
+                      <h3 className="text-[15px] font-black text-foreground font-heading line-clamp-2 leading-snug break-words group-hover:text-primary transition-colors">
                         {highlightMatch(guide.title, query)}
                       </h3>
                       <div className="mt-1.5 text-xs font-medium leading-relaxed text-muted-foreground/80 line-clamp-2">

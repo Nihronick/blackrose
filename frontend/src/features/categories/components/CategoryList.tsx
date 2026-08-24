@@ -121,7 +121,7 @@ export const CategoryList: FC<CategoryListProps> = ({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="truncate text-base sm:text-lg font-black font-heading tracking-normal text-foreground uppercase group-hover:text-rose-400 transition-colors">
+                  <h3 className="line-clamp-2 text-sm sm:text-base font-black font-heading tracking-normal text-foreground uppercase group-hover:text-rose-400 transition-colors leading-snug break-words">
                     {item.title}
                   </h3>
                   <div className="mt-1 flex items-center gap-2">

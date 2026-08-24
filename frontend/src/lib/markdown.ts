@@ -152,8 +152,8 @@ marked.use({
         }
 
         return (
-          '<div class="my-6 rounded-2xl overflow-hidden border border-rose-500/20 bg-black/90 aspect-video shadow-2xl">' +
-          `<video src="${normalizedHref}" controls preload="metadata" class="w-full h-full object-cover"></video>` +
+          '<div class="my-6 rounded-2xl overflow-hidden border border-rose-500/20 bg-black aspect-video shadow-2xl">' +
+          `<video src="${normalizedHref}" controls preload="metadata" playsinline class="w-full h-full object-contain"></video>` +
           '</div>'
         )
       }
@@ -186,8 +186,8 @@ marked.use({
       const isVid = /\.(mp4|webm|mov|avi)($|\?)/i.test(src)
       if (isVid) {
         return (
-          '<div class="my-6 rounded-2xl overflow-hidden border border-rose-500/20 bg-black/90 aspect-video shadow-2xl">' +
-          `<video src="${src}" controls preload="metadata" class="w-full h-full object-cover"></video>` +
+          '<div class="my-6 rounded-2xl overflow-hidden border border-rose-500/20 bg-black aspect-video shadow-2xl">' +
+          `<video src="${src}" controls preload="metadata" playsinline class="w-full h-full object-contain"></video>` +
           '</div>'
         )
       }

@@ -92,9 +92,18 @@ export const GuideContent: FC<GuideContentProps> = ({ html, onImageClick, onCybe
       }
     }
 
+    const handleImgError = (e: Event) => {
+      const target = e.target as HTMLElement
+      if (target && target.tagName === 'IMG') {
+        target.style.display = 'none'
+      }
+    }
+
     el.addEventListener('click', handleClick)
+    el.addEventListener('error', handleImgError, true)
     return () => {
       el.removeEventListener('click', handleClick)
+      el.removeEventListener('error', handleImgError, true)
     }
   }, [onImageClick, onCyberlinkClick])
 

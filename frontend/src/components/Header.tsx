@@ -16,7 +16,7 @@ export const Header: FC<HeaderProps> = ({ title, onBack }) => {
   const showBackButton = !!onBack && !isTMA
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between gap-3 border-b border-border/10 bg-background/80 container-padding backdrop-blur-xl transition-all">
+    <header className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-border/10 bg-background/85 container-padding backdrop-blur-xl transition-all safe-header pb-2">
       <div className="flex items-center gap-2 min-w-0 flex-1">
         {showBackButton && (
           <Button

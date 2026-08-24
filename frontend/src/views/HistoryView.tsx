@@ -67,7 +67,7 @@ export const HistoryView: FC<HistoryViewProps> = ({ history, onSelectGuide }) =>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="truncate text-base font-black tracking-normal text-foreground/90 font-heading">
+                <h3 className="line-clamp-2 text-sm sm:text-base font-black tracking-normal text-foreground/90 font-heading leading-snug break-words">
                   {item.title || item.key}
                 </h3>
                 <div className="mt-1 flex items-center gap-2">
