@@ -441,6 +441,19 @@ def format_message_content(m: Dict) -> Tuple[str, List[str], List[str]]:
     return full_text.strip(), photos, videos
 
 
+def extract_smart_title(raw_text: str, default_title: str) -> str:
+    """Извлечение информативного заголовка из текста гайда без артефактов цитат и алертов."""
+    for line in raw_text.split("\n"):
+        clean = line.strip()
+        clean = re.sub(r'^>\s*(\[![\w\s]+\])?\s*', '', clean).strip()
+        clean = clean.strip("# *-_`~").strip()
+        if not clean or clean.startswith(("![", "[Video:", "{{", "http://", "https://", "<a:", "<:")):
+            continue
+        if len(clean) >= 4:
+            return clean[:80]
+    return default_title
+
+
 def cluster_text_channel_messages(msgs: List[Dict]) -> List[Dict]:
     """
     Интеллектуальная кластеризация сообщений текстового канала:
@@ -533,7 +546,11 @@ def run_dynamic_sync():
         if c.get("type") in (0, 5, 15) and (
             c.get("parent_id") == slayerpedia_id or 
             (not slayerpedia_id and not any(skip in c.get("name", "").lower() for skip in ["mod", "chat", "voice", "bot", "ticket", "log", "admin"]))
-        ) and not any(skip in c.get("name", "").lower() for skip in ["feedback", "discussion", "off-topic", "memes", "bot-commands"])
+        ) and not any(skip in c.get("name", "").lower() for skip in [
+            "feedback", "discussion", "off-topic", "memes", "bot-commands", 
+            "change-log", "changelog", "slayer-playbook", "slayerpedia-index", 
+            "bannibal-experiment", "disclaimer"
+        ])
     ]
     
     # Сортировка по позиции в Discord
@@ -639,9 +656,8 @@ def run_dynamic_sync():
                 raw_text = cluster["text"]
                 translated_text = DynamicAITranslator.translate_text(raw_text)
                 
-                # Извлечение заголовка
-                lines = [l.strip("# *-_").strip() for l in raw_text.split("\n") if l.strip() and not l.strip().startswith(("![", "[Video:", "{{", "http"))]
-                guide_title = lines[0][:80] if lines else f"{cat_title} — Инфо #{ci+1}"
+                # Извлечение информативного заголовка
+                guide_title = extract_smart_title(raw_text, f"{cat_title} — Инфо #{ci+1}")
                 
                 guide_key = f"discord_{cluster['id']}"
                 res = BackendClient.ingest_guide(
