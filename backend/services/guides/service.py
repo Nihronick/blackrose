@@ -166,18 +166,19 @@ class GuideService:
             )
             await session.execute(stmt)
 
-            try:
-                safe_changed_by = changed_by if isinstance(changed_by, int) else None
-                async with session.begin_nested():
-                    history = GuideHistory(
-                        guide_key=key,
-                        action="created" if is_new else "updated",
-                        changed_by=safe_changed_by,
-                        snapshot=old_snapshot
-                    )
-                    session.add(history)
-            except Exception as err:
-                logger.warning(f"Failed to record GuideHistory: {err}")
+            if changed_by is not None:
+                try:
+                    safe_changed_by = changed_by if isinstance(changed_by, int) else None
+                    async with session.begin_nested():
+                        history = GuideHistory(
+                            guide_key=key,
+                            action="created" if is_new else "updated",
+                            changed_by=safe_changed_by,
+                            snapshot=old_snapshot
+                        )
+                        session.add(history)
+                except Exception as err:
+                    logger.warning(f"Failed to record GuideHistory: {err}")
 
             await session.commit()
 

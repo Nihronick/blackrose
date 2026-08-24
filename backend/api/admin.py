@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from sqlalchemy import text
 import inngest
 
 from core.auth import require_admin
@@ -25,18 +26,26 @@ async def admin_stats(user=Depends(require_admin)):
 @router.post("/maintenance/clean-db")
 async def clean_database_storage(user=Depends(require_admin)):
     """Очистка таблиц кэша и истории для освобождения дискового пространства PostgreSQL."""
-    from sqlalchemy import text
-    from core.db import get_sessionmaker
-    
-    async with get_sessionmaker()() as session:
+    from core.db import get_engine
+    engine = get_engine()
+    async with engine.begin() as conn:
         try:
-            await session.execute(text("TRUNCATE TABLE media_cache CASCADE;"))
-            await session.execute(text("TRUNCATE TABLE guide_history CASCADE;"))
-            await session.commit()
-            return {"ok": True, "message": "Database tables truncated and space reclaimed"}
-        except Exception as e:
-            logger.error(f"Maintenance clean failed: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            await conn.execute(text("TRUNCATE TABLE guide_histories, view_logs, user_history_items CASCADE;"))
+        except Exception as err:
+            logger.warning(f"Truncate error: {err}")
+
+    try:
+        raw_conn = await engine.raw_connection()
+        try:
+            asyncpg_conn = raw_conn.driver_connection
+            await asyncpg_conn.execute("VACUUM (ANALYZE);")
+        finally:
+            await raw_conn.close()
+    except Exception as e:
+        logger.warning(f"VACUUM execution warning: {e}")
+
+    await cache_service.invalidate_all()
+    return {"ok": True, "message": "Database tables truncated and space reclaimed"}
 
 @router.get("/categories")
 async def admin_categories(user=Depends(require_admin)):
@@ -409,3 +418,54 @@ async def admin_nuke_all(user=Depends(require_admin)):
         "categories_deleted": cats_deleted,
         "synced_cleared": synced_cleared,
     }
+
+
+@router.get("/maintenance/db-size")
+async def get_db_size(user=Depends(require_admin)):
+    """Get database and table sizes."""
+    from core.db import get_engine
+    engine = get_engine()
+    async with engine.connect() as conn:
+        db_size_res = await conn.execute(text("SELECT pg_size_pretty(pg_database_size(current_database())), pg_database_size(current_database())"))
+        row = db_size_res.one()
+        db_size_pretty, db_size_bytes = row[0], row[1]
+
+        table_sizes_res = await conn.execute(text("""
+            SELECT
+                relname AS table_name,
+                pg_size_pretty(pg_total_relation_size(c.oid)) AS total_size,
+                pg_total_relation_size(c.oid) AS size_bytes
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public' AND c.relkind = 'r'
+            ORDER BY pg_total_relation_size(c.oid) DESC;
+        """))
+        tables = [{"table": r[0], "size_pretty": r[1], "size_bytes": r[2]} for r in table_sizes_res.all()]
+
+        return {
+            "database_size": db_size_pretty,
+            "database_size_bytes": db_size_bytes,
+            "tables": tables
+        }
+
+
+@router.post("/maintenance/db-cleanup")
+async def cleanup_db(user=Depends(require_admin)):
+    """Truncate high-volume log/history tables and run VACUUM ANALYZE to reclaim disk space on Neon."""
+    from core.db import get_engine
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.execute(text("TRUNCATE TABLE guide_histories, view_logs, user_history_items, user_sync_conflicts CASCADE;"))
+
+    try:
+        raw_conn = await engine.raw_connection()
+        try:
+            asyncpg_conn = raw_conn.driver_connection
+            await asyncpg_conn.execute("VACUUM (ANALYZE);")
+        finally:
+            await raw_conn.close()
+    except Exception as e:
+        logger.warning(f"VACUUM execution warning: {e}")
+
+    await cache_service.invalidate_all()
+    return {"ok": True, "message": "Database cleaned and vacuumed successfully."}

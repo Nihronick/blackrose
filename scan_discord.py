@@ -783,7 +783,7 @@ def fetch_all_messages(channel_id: str, limit: int = 200) -> list[dict]:
             break
         before_id = data[-1]["id"]
 
-    all_msgs.sort(key=lambda x: x.get("id", ""))
+    all_msgs.sort(key=lambda x: int(x.get("id", "0")) if str(x.get("id", "")).isdigit() else 0)
     return all_msgs
 
 
@@ -804,8 +804,12 @@ def format_message_with_inline_media(m: dict, admin_jwt: str = "") -> str:
         elif any(fname.endswith(ext) for ext in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg')):
             media_lines.append(f"\n\n![Скриншот]({url})\n\n")
 
-    # 2. Embeds
+    # 2. Embeds (Images, Videos, and Rich Text/Fields)
+    embed_text_parts = []
     for emb in m.get("embeds", []):
+        if not isinstance(emb, dict):
+            continue
+        # Media in embeds
         if emb.get("video"):
             v_url = emb["video"].get("url")
             if v_url:
@@ -816,6 +820,38 @@ def format_message_with_inline_media(m: dict, admin_jwt: str = "") -> str:
             if i_url:
                 perm_i = persist_media_url(i_url, admin_jwt) if admin_jwt else i_url
                 media_lines.append(f"\n\n![Скриншот]({perm_i})\n\n")
+        elif emb.get("thumbnail"):
+            t_url = emb["thumbnail"].get("url")
+            if t_url:
+                perm_t = persist_media_url(t_url, admin_jwt) if admin_jwt else t_url
+                media_lines.append(f"\n\n![Иконка]({perm_t})\n\n")
+
+        # Rich text and fields in embeds
+        emb_parts = []
+        if emb.get("title"):
+            title = emb["title"].strip()
+            if emb.get("url"):
+                emb_parts.append(f"### [{title}]({emb['url']})")
+            else:
+                emb_parts.append(f"### {title}")
+        if emb.get("description"):
+            emb_parts.append(emb["description"].strip())
+        for field in emb.get("fields", []):
+            if isinstance(field, dict):
+                f_name = field.get("name", "").strip()
+                f_val = field.get("value", "").strip()
+                if f_name and f_val:
+                    emb_parts.append(f"**{f_name}**\n{f_val}")
+                elif f_val:
+                    emb_parts.append(f_val)
+        if emb.get("footer") and isinstance(emb["footer"], dict) and emb["footer"].get("text"):
+            emb_parts.append(f"> *{emb['footer']['text'].strip()}*")
+        if emb_parts:
+            embed_text_parts.append("\n\n".join(emb_parts))
+
+    combined_embed_text = "\n\n---\n\n".join(embed_text_parts)
+    if combined_embed_text:
+        content = f"{content}\n\n{combined_embed_text}".strip() if content else combined_embed_text
 
     media_str = "".join(media_lines)
     if content and media_str:

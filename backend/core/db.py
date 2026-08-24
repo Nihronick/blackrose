@@ -65,6 +65,11 @@ async def close_pool():
         await _engine.dispose()
         _engine = None
 
+def get_engine() -> AsyncEngine:
+    if _engine is None:
+        raise RuntimeError("Database not initialized.")
+    return _engine
+
 def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
     if _sessionmaker is None:
         raise RuntimeError("Database not initialized.")
