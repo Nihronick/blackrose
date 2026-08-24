@@ -44,9 +44,10 @@ class Settings(BaseSettings):
     DEEPL_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     DEEPSEEK_API_KEY: str = ""
+    NVIDIA_API_KEY: str = "" # https://build.nvidia.com/ (Llama 3.3 70B, DeepSeek V3, Qwen 2.5 72B)
     GROQ_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
-    AI_TRANSLATION_PROVIDER: str = "auto" # auto | gemini | deepseek | groq | hf | google
+    AI_TRANSLATION_PROVIDER: str = "auto" # auto | nvidia | gemini | deepseek | groq | hf | google
 
     # Inngest Background Jobs
     INNGEST_SIGNING_KEY: str = ""

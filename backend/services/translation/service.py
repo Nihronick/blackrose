@@ -64,7 +64,13 @@ class TranslationService:
         if not text or len(text.strip()) < 4:
             return text
 
-        # Provider Cascade: Gemini -> DeepSeek -> Groq -> OpenAI -> HF Serverless -> Smart Fallback
+        # Provider Cascade: NVIDIA NIM -> Gemini -> DeepSeek -> Groq -> OpenAI -> HF Serverless -> Smart Fallback
+        nvidia_key = os.getenv("NVIDIA_API_KEY") or settings.NVIDIA_API_KEY
+        if nvidia_key:
+            res = await TranslationService._translate_nvidia(text, nvidia_key)
+            if res:
+                return res
+
         gemini_key = os.getenv("GEMINI_API_KEY") or settings.GEMINI_API_KEY
         if gemini_key:
             res = await TranslationService._translate_gemini(text, gemini_key)
@@ -128,6 +134,30 @@ class TranslationService:
                                 return TranslationService._post_process(out)
         except Exception as e:
             logger.debug(f"Gemini translation failed: {e}")
+    @staticmethod
+    async def _translate_nvidia(text: str, api_key: str) -> str | None:
+        try:
+            session = await http_client.get_session()
+            url = "https://integrate.api.nvidia.com/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            for model_name in ["meta/llama-3.3-70b-instruct", "deepseek-ai/deepseek-v3", "qwen/qwen2.5-72b-instruct"]:
+                payload = {
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": f"Текст для перевода:\n{text}"}
+                    ],
+                    "temperature": 0.1,
+                    "max_tokens": 4096,
+                }
+                async with session.post(url, json=payload, headers=headers, timeout=30) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        res = data["choices"][0]["message"]["content"].strip()
+                        if res:
+                            return TranslationService._post_process(res)
+        except Exception as e:
+            logger.debug(f"NVIDIA NIM translation failed: {e}")
         return None
 
     @staticmethod
