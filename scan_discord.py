@@ -533,7 +533,7 @@ def run_dynamic_sync():
         if c.get("type") in (0, 5, 15) and (
             c.get("parent_id") == slayerpedia_id or 
             (not slayerpedia_id and not any(skip in c.get("name", "").lower() for skip in ["mod", "chat", "voice", "bot", "ticket", "log", "admin"]))
-        )
+        ) and not any(skip in c.get("name", "").lower() for skip in ["feedback", "discussion", "off-topic", "memes", "bot-commands"])
     ]
     
     # Сортировка по позиции в Discord
