@@ -385,6 +385,30 @@ class BackendClient:
         except Exception:
             pass
 
+    @classmethod
+    def clean_obsolete_categories(cls, valid_keys: set):
+        """Удаление устаревших/мусорных категорий с сайта."""
+        if not cls.jwt_token:
+            return
+        try:
+            url = f"{BACKEND_URL}/api/categories"
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {cls.jwt_token}"})
+            with urllib.request.urlopen(req, context=_ssl_ctx, timeout=10) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                cats = data.get("categories", [])
+                for c in cats:
+                    ckey = c.get("key")
+                    if ckey and ckey not in valid_keys:
+                        del_url = f"{BACKEND_URL}/api/admin/category/{ckey}"
+                        del_req = urllib.request.Request(del_url, headers={"Authorization": f"Bearer {cls.jwt_token}"}, method="DELETE")
+                        try:
+                            with urllib.request.urlopen(del_req, context=_ssl_ctx, timeout=10):
+                                print(f"  [x] Удален нерелевантный раздел: {ckey}")
+                        except Exception:
+                            pass
+        except Exception as e:
+            print(f"  [WARN] Failed to clean categories: {e}")
+
 
 # ═══════════════════════════════════════════════════════════════
 # 🧠  ДИНАМИЧЕСКИЙ СБОРЩИК И ФОРМАТТЕР КОНТЕНТА
@@ -585,6 +609,9 @@ def run_dynamic_sync():
             videos=[],
             sort_order=idx
         )
+
+    # Очистка неактуальных разделов
+    BackendClient.clean_obsolete_categories({c["key"] for c in categories_plan})
 
     # 3. Сканирование и ИИ-перевод всех гайдов
     print(f"\n[2/3] Сканирование контента и ИИ-перевод гайдов...")
