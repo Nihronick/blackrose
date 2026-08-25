@@ -111,20 +111,45 @@ class DynamicAITranslator:
             try:
                 url = "https://integrate.api.nvidia.com/v1/chat/completions"
                 headers = {"Authorization": f"Bearer {NVIDIA_API_KEY}", "Content-Type": "application/json"}
+                system_prompt = (
+                    "Ты точный переводчик игровых терминов и заголовков для энциклопедии Slayer Legend.\n"
+                    "ПРАВИЛА:\n"
+                    "1. Переводи конкретное слово или фразу ТОЧНО по игровому смыслу на русский язык.\n"
+                    "2. СТРОГО ЗАПРЕЩЕНО добавлять от себя слова 'Легенда Убийцы', 'Slayer Legend', 'Убийца', если их нет во входном тексте!\n"
+                    "3. Ранги: Iron -> Железо, Bronze -> Бронза, Silver -> Серебро, Gold -> Золото, Mithril -> Мифрил, "
+                    "Orichalcum -> Орихалк, Adamant -> Адамант, Ether -> Эфир, Arcanite -> Арканит, Black Mythril -> Черный Мифрил, "
+                    "Demon Metal -> Демонический Металл, Ragnablood -> Рагнаблад, Dragonos -> Драгонос, Warfrost -> Варфрост, "
+                    "Dark Nox -> Тёмный Нокс, Cyclos -> Циклос, Infinaut -> Инфинаут, Blue Abyss -> Синяя Бездна, "
+                    "Eldenwood -> Элденвуд, Blitz Gold -> Блиц Голд, Diadust -> Диадаст, Gigarock -> Гигарок, "
+                    "Eisenhart -> Айзенхарт, Aurorite -> Аврорит.\n"
+                    "4. Подземелья: Closed Mine -> Закрытая Шахта, Dimensional Rift -> Пространственный Разлом, "
+                    "Training Cave -> Пещера Тренировок, Shelter of Sleeping Flame -> Приют Спящего Пламени, "
+                    "Dragon Valley -> Долина Драконов, Forest of Circulation -> Лес Циркуляции.\n"
+                    "5. Разделы и механики: beginner-guide -> Гайд для новичков, character -> Персонаж, "
+                    "Class -> Классы, Promotion -> Продвижение, Constellation -> Созвездия, "
+                    "Character Stats -> Характеристики Персонажа, Latent Power -> Скрытая Сила (Латентка), "
+                    "Memory Tree -> Древо Памяти, Training Diary -> Дневник Тренировок, "
+                    "skills -> Навыки, spirit -> Духи, equipment -> Экипировка, companion -> Компаньоны и Фамильяры, "
+                    "adventure -> Приключения, event-help -> Помощь по Ивентам, shop -> Магазин, story-lore -> Сюжет и Лор.\n"
+                    "6. Выведи ТОЛЬКО чистый перевод названия (1-4 слова), без кавычек, без точек и пояснений."
+                )
                 payload = {
                     "model": "meta/llama-3.3-70b-instruct",
                     "messages": [
-                        {"role": "system", "content": "Переведи игровое название категории/гайда Slayer Legend на русский язык кратко (2-4 слова). Выведи только результат."},
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": clean}
                     ],
-                    "temperature": 0.1,
-                    "max_tokens": 64
+                    "temperature": 0.05,
+                    "max_tokens": 40
                 }
                 req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
                 with urllib.request.urlopen(req, context=_ssl_ctx, timeout=10) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     res = data["choices"][0]["message"]["content"].strip().strip('"\'')
-                    first_line = res.split("\n")[0].strip("# *-_").strip()
+                    first_line = res.split("\n")[0].strip("# *-_`~").strip()
+                    # Защита от галлюцинаций "Легенда убийцы" если в оригинале не было Slayer
+                    if "slayer" not in clean.lower() and first_line in ["Легенда Убийцы", "Легенда убийцы", "Легендарный убийца", "Убийца Легенды"]:
+                        return clean
                     if first_line and len(first_line) < 60:
                         return first_line
             except Exception:
