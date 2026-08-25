@@ -124,8 +124,9 @@ class DynamicAITranslator:
                 with urllib.request.urlopen(req, context=_ssl_ctx, timeout=10) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     res = data["choices"][0]["message"]["content"].strip().strip('"\'')
-                    if res and len(res) < 80:
-                        return res
+                    first_line = res.split("\n")[0].strip("# *-_").strip()
+                    if first_line and len(first_line) < 60:
+                        return first_line
             except Exception:
                 pass
 
