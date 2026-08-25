@@ -275,6 +275,21 @@ function replaceCyberlinks(
 }
 
 function normalizeDiscordMarkdown(text: string, iconResolver: (name: string) => string): string {
+  const channelMap: Record<string, string> = {
+    '1124553633883754637': 'Персонаж',
+    '1205031896900309052': 'Духи',
+    '1124549698586431558': 'Экипировка',
+    '1125057800838590534': 'Навыки',
+    '1189111665661313084': 'Этапы',
+    '1125731444711510047': 'Приключения',
+    '1092343850019868682': 'Характеристики Персонажа',
+    '1266502911324721335': 'Сборки для Боссов',
+    '1052865880146579469': 'Функции Навыков',
+    '1131131863117856920': 'Фарм Этапов',
+    '1121538334523654154': 'Гайд для начинающих',
+    '1266503499009753110': 'Продвижение',
+  }
+
   const iconAliases: Record<string, string> = {
     wrathofgods: 'wog',
     flowingblade: 'flowing_blade',
@@ -295,6 +310,10 @@ function normalizeDiscordMarkdown(text: string, iconResolver: (name: string) => 
 
   return text
     .replace(/^-#\s?/gm, '')
+    .replace(/<#(\d{17,19})>/g, (_m, id) => {
+      const name = channelMap[id]
+      return name ? `📌 **${name}**` : `📌 **Раздел**`
+    })
     .replace(/<a?:([A-Za-z0-9_]+):(\d{17,19})>/g, (_m, name, id) => {
       const cleanName = name.replace(/^(?:Leg_|Fam_|Skill_|Item_)/i, '')
       const lower = cleanName.toLowerCase()

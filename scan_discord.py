@@ -761,6 +761,10 @@ def run_dynamic_sync():
                     all_videos.extend(v)
 
                 full_thread_text = "\n\n---\n\n".join(text_parts)
+                if not full_thread_text.strip() and not all_photos and not all_videos:
+                    print(f"      [{ti+1}/{len(threads)}] ⏭️ SKIP (пустой): {translated_title[:40]}")
+                    continue
+
                 translated_text = DynamicAITranslator.translate_text(full_thread_text)
                 
                 guide_key = f"discord_{tid}"
