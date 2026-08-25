@@ -574,7 +574,7 @@ def run_dynamic_sync():
         ) and not any(skip in c.get("name", "").lower() for skip in [
             "feedback", "discussion", "off-topic", "memes", "bot-commands", 
             "change-log", "changelog", "slayer-playbook", "slayerpedia-index", 
-            "bannibal-experiment", "disclaimer"
+            "bannibal-experiment", "disclaimer", "video-archive", "video"
         ])
     ]
     
@@ -637,6 +637,9 @@ def run_dynamic_sync():
                 tid = th["id"]
                 tname = th.get("name", "Guide")
                 
+                # Перевод названия темы форума на русский язык
+                translated_title = DynamicAITranslator.translate_title(tname)
+                
                 # Сообщения треда
                 msgs = DiscordAPI.get_messages(tid, limit=50)
                 sorted_msgs = sorted(msgs, key=lambda x: int(x.get("id", "0")))
@@ -660,7 +663,7 @@ def run_dynamic_sync():
                     guide_key=guide_key,
                     cat_key=cat_key,
                     cat_title=cat_title,
-                    title=tname,
+                    title=translated_title,
                     text=translated_text,
                     photos=all_photos,
                     videos=all_videos,
@@ -668,11 +671,11 @@ def run_dynamic_sync():
                 )
                 if "error" in res:
                     total_errors += 1
-                    print(f"      [{ti+1}/{len(threads)}] ❌ FAIL: {tname[:40]}")
+                    print(f"      [{ti+1}/{len(threads)}] ❌ FAIL: {translated_title[:40]}")
                 else:
                     total_imported += 1
                     media_str = f" ({len(all_photos)}p/{len(all_videos)}v)" if all_photos or all_videos else ""
-                    print(f"      [{ti+1}/{len(threads)}] ✅ OK: {tname[:45]}{media_str}")
+                    print(f"      [{ti+1}/{len(threads)}] ✅ OK: {translated_title[:45]}{media_str}")
 
         # ── TEXT / ANNOUNCE CHANNEL (type=0, 5) ──
         else:
@@ -684,8 +687,9 @@ def run_dynamic_sync():
                 raw_text = cluster["text"]
                 translated_text = DynamicAITranslator.translate_text(raw_text)
                 
-                # Извлечение информативного заголовка
-                guide_title = extract_smart_title(raw_text, f"{cat_title} — Инфо #{ci+1}")
+                # Извлечение и перевод заголовка
+                raw_extracted = extract_smart_title(raw_text, f"{cat_title} — Часть #{ci+1}")
+                guide_title = DynamicAITranslator.translate_title(raw_extracted)
                 
                 guide_key = f"discord_{cluster['id']}"
                 res = BackendClient.ingest_guide(

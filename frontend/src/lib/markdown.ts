@@ -275,11 +275,46 @@ function replaceCyberlinks(
 }
 
 function normalizeDiscordMarkdown(text: string, iconResolver: (name: string) => string): string {
+  const iconAliases: Record<string, string> = {
+    wrathofgods: 'wog',
+    flowingblade: 'flowing_blade',
+    warriorburn: 'warrior_burn',
+    speedsword: 'speed_sword',
+    curvedblade: 'curved_blade',
+    burningsword: 'burning_sword',
+    earthswill: 'earth_will',
+    ironwill: 'iron_will',
+    flameslash: 'flame_slash',
+    redlightning: 'red_lightning',
+    lightningstroke: 'lightning_stroke',
+    powerstrike: 'power_strike',
+    hellfireslash: 'hellfire_slash',
+    eisenhardt: 'eisenhart',
+    gigarok: 'gigarock',
+  }
+
   return text
     .replace(/^-#\s?/gm, '')
     .replace(/<a?:([A-Za-z0-9_]+):(\d{17,19})>/g, (_m, name, id) => {
-      const byName = iconResolver(name) ? name : ''
-      if (byName) return `{{${byName}}}`
+      const cleanName = name.replace(/^(?:Leg_|Fam_|Skill_|Item_)/i, '')
+      const lower = cleanName.toLowerCase()
+      const alias = iconAliases[lower] || lower
+
+      const snake = cleanName
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+        .replace(/([a-z\d])([A-Z])/g, '$1_$2')
+        .toLowerCase()
+
+      const resolvedKey =
+        (iconResolver(alias) && alias) ||
+        (iconResolver(snake) && snake) ||
+        (iconResolver(cleanName) && cleanName) ||
+        (iconResolver(lower) && lower) ||
+        ''
+
+      if (resolvedKey) {
+        return `{{${resolvedKey}}}`
+      }
       return `{{https://cdn.discordapp.com/emojis/${id}.webp?size=48&quality=lossless}}`
     })
     .replace(/(^|[^\w]):([A-Za-z][A-Za-z0-9_]*):(?!\/\/)/g, '$1{{$2}}')
