@@ -243,6 +243,12 @@ class DynamicAITranslator:
         if not text or len(text.strip()) < 5:
             return text
 
+        # Если текст длинный (>3000 символов) — переводим по смысловым секциям
+        if "\n\n---\n\n" in text and len(text) > 3000:
+            sections = text.split("\n\n---\n\n")
+            translated_sections = [cls.translate_text(s.strip()) for s in sections if s.strip()]
+            return "\n\n---\n\n".join(translated_sections)
+
         # 1. NVIDIA NIM (Llama 3.3 70B / DeepSeek V3)
         if NVIDIA_API_KEY:
             for model_name in ["meta/llama-3.3-70b-instruct", "deepseek-ai/deepseek-v3"]:
@@ -259,10 +265,10 @@ class DynamicAITranslator:
                         "max_tokens": 4096
                     }
                     req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-                    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=35) as resp:
+                    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=45) as resp:
                         data = json.loads(resp.read().decode("utf-8"))
                         res = data["choices"][0]["message"]["content"].strip()
-                        if res:
+                        if res and len(res) > len(text) * 0.3:
                             return cls._post_process(res)
                 except Exception:
                     pass
@@ -277,21 +283,26 @@ class DynamicAITranslator:
                         "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}
                     }
                     req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
-                    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=25) as resp:
+                    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=30) as resp:
                         data = json.loads(resp.read().decode("utf-8"))
                         candidates = data.get("candidates", [])
                         if candidates and candidates[0].get("content", {}).get("parts"):
                             res = candidates[0]["content"]["parts"][0].get("text", "").strip()
-                            if res:
+                            if res and len(res) > len(text) * 0.3:
                                 return cls._post_process(res)
                 except Exception:
                     pass
 
-        # 3. Smart Lossless Fallback Engine (с полной маскировкой)
+        # 3. Smart Lossless Fallback Engine (порционный перевод без переполнения URL)
         return cls._translate_smart_fallback(text)
 
     @classmethod
     def _translate_smart_fallback(cls, text: str) -> str:
+        if len(text) > 1200:
+            paragraphs = text.split("\n\n")
+            translated_paras = [cls._translate_smart_fallback(p) for p in paragraphs if p.strip()]
+            return "\n\n".join(translated_paras)
+
         code_blocks = {}
         cidx = 0
         patterns = [
