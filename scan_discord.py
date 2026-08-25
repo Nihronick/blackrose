@@ -106,7 +106,87 @@ class DynamicAITranslator:
         if not clean:
             return text
         
-        # Если есть NVIDIA NIM — быстрый точный перевод заголовка
+        lower_clean = clean.lower()
+        
+        # 1. Точный словарь стандартных терминов и разделов
+        canonical_map = {
+            "beginner guide": "Гайд для начинающих",
+            "character": "Персонаж",
+            "promotion and suit recommendation": "Рекомендации Костюмов",
+            "early game promotions": "Продвижение (Ранняя игра)",
+            "mid game promotions": "Продвижение (Средняя игра)",
+            "late game promotions": "Продвижение (Поздняя игра)",
+            "stage": "Этапы",
+            "skills": "Навыки",
+            "spirit": "Духи",
+            "equipment": "Экипировка",
+            "companion": "Компаньоны и Фамильяры",
+            "adventure": "Приключения",
+            "event help": "Помощь по Ивентам",
+            "shop": "Магазин",
+            "story lore": "Сюжет и Лор",
+            "training diary": "Дневник Тренировок",
+            "soul weapon engraving": "Гравировка Оружия Душ",
+            "sealed shrine": "Запечатанное Святилище",
+            "advancement battles": "Битвы Продвижения",
+            "shelter of sleeping flame": "Приют Спящего Пламени",
+            "guild": "Гильдия",
+            "diadust": "Диадаст",
+            "orichalcum": "Орихалк",
+            "silver": "Серебро",
+            "spirit tier list": "Тир-лист Духов",
+            "what to enhance/awaken first": "Что Прокачивать и Пробуждать в Первую Очередь",
+            "spirit exchange system/ ‘meloning’": "Система Обмена Духов (Мелонинг)",
+            "spirit overview": "Обзор Духов",
+            "black orb": "Черная Сфера",
+            "accessories": "Аксессуары",
+            "additional mechanics": "Дополнительные Механики",
+            "weapon and accessory summon pity system": "Система Гаранта (Пити) Оружия и Аксессуаров",
+            "how to use golem + rave in rift.": "Как использовать Голема и Рейв в Разломе",
+            "rage + rave (early), late game rotation (late)": "Ярость + Рейв (Ранняя игра) и Ротация Лейта",
+            "tldr version of path for promo": "Краткий Путь Продвижения (TL;DR)",
+            "glossary of terms": "Словарь Терминов",
+            "stage boss builds": "Сборки для Боссов Этапов",
+            "stage farm builds": "Сборки для Фарма Этапов",
+            "stage boss info": "Информация о Боссах Этапов",
+            "stage farm info": "Информация о Фарме Этапов",
+            "familiar proficiency": "Мастерство Фамильяров",
+            "immortal skills": "Бессмертные Навыки",
+            "combining skills": "Комбинирование Навыков",
+            "skill functions": "Функции Навыков",
+            "skill refinement": "Улучшение Навыков",
+            "souls and soul weapons": "Души и Оружие Душ",
+            "light shard": "Светлый Осколок",
+            "skill stone": "Камень Навыков",
+            "promotion options": "Опции Продвижения",
+            "dimensional rift": "Пространственный Разлом",
+            "closed mine": "Закрытая Шахта",
+            "training cave": "Пещера Тренировок",
+            "dragon valley": "Долина Драконов",
+            "event minigame guides": "Гайды по Мини-играм Ивентов",
+            "dungeon event": "Ивент Подземелий",
+            "buff event": "Ивент Баффов",
+            "skill event": "Ивент Навыков",
+            "promotion's story": "История Продвижений",
+            "zeke's sub-story": "Подсюжет Зика",
+            "ellie's sub-story": "Подсюжет Элли",
+            "prologue": "Пролог",
+            "episode 1: signs": "Эпизод 1: Знаки",
+            "episode 2: hero": "Эпизод 2: Герой",
+            "episode 3: pursuit": "Эпизод 3: Преследование",
+            "episode 4: key": "Эпизод 4: Ключ",
+            "episode 5: harvest": "Эпизод 5: Жатва",
+            "episode 6: vanishing": "Эпизод 6: Исчезновение",
+        }
+        
+        if lower_clean in canonical_map:
+            return canonical_map[lower_clean]
+        
+        for k, v in canonical_map.items():
+            if lower_clean == k.replace("-", " "):
+                return v
+
+        # 2. Если есть NVIDIA NIM — быстрый точный перевод заголовка
         if NVIDIA_API_KEY:
             try:
                 url = "https://integrate.api.nvidia.com/v1/chat/completions"
