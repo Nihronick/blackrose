@@ -297,12 +297,9 @@ class DynamicAITranslator:
         return cls._translate_smart_fallback(text)
 
     @classmethod
-    def _translate_smart_fallback(cls, text: str) -> str:
-        if len(text) > 1200:
-            paragraphs = text.split("\n\n")
-            translated_paras = [cls._translate_smart_fallback(p) for p in paragraphs if p.strip()]
-            return "\n\n".join(translated_paras)
-
+    def _translate_single_short_chunk(cls, text: str) -> str:
+        if not text.strip():
+            return text
         code_blocks = {}
         cidx = 0
         patterns = [
@@ -338,6 +335,28 @@ class DynamicAITranslator:
             translated = translated.replace(ph, val)
         translated = re.sub(r'XQB\d+BQX', '', translated)
         return cls._post_process(translated)
+
+    @classmethod
+    def _translate_smart_fallback(cls, text: str) -> str:
+        if len(text) <= 1000:
+            return cls._translate_single_short_chunk(text)
+        
+        chunks = []
+        current = []
+        curr_len = 0
+        for line in text.split("\n"):
+            if curr_len + len(line) + 1 > 1000 and current:
+                chunks.append("\n".join(current))
+                current = [line]
+                curr_len = len(line)
+            else:
+                current.append(line)
+                curr_len += len(line) + 1
+        if current:
+            chunks.append("\n".join(current))
+        
+        translated_chunks = [cls._translate_single_short_chunk(c) for c in chunks if c.strip()]
+        return "\n".join(translated_chunks)
 
 
 # ═══════════════════════════════════════════════════════════════
