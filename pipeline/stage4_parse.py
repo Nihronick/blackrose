@@ -16,13 +16,17 @@ def _normalize_discord_markdown(text: str) -> str:
     # 1. Удаление подзаголовков Discord -#
     text = re.sub(r'^-#\s+', '### ', text, flags=re.MULTILINE)
 
-    # 2. Удаление невидимых unicode-символов (Zero-width space, BOM)
+    # 2. Очистка сырых упоминаний пользователей и ролей Discord
+    text = re.sub(r'<@!?\d+>', '@Slayer', text)
+    text = re.sub(r'<@&\d+>', '@Role', text)
+
+    # 3. Удаление невидимых unicode-символов (Zero-width space, BOM)
     text = text.replace('\u200b', '').replace('\ufeff', '').replace('\u200e', '').replace('\u200f', '')
 
-    # 3. Сворачивание 3+ пустых строк в максимум 2
+    # 4. Сворачивание 3+ пустых строк в максимум 2
     text = re.sub(r'\n{3,}', '\n\n', text)
 
-    # 4. Нормализация списков (гарантия отступа перед списком)
+    # 5. Нормализация списков (гарантия отступа перед списком)
     text = re.sub(r'([^\n])\n(-|\*|\d+\.)\s+', r'\1\n\n\2 ', text)
 
     return text.strip()
