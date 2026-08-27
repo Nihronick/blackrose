@@ -559,17 +559,42 @@ All `user_id` fields in [db_models.py](file:///c:/Users/moroz/Desktop/blackrose-
 
 ---
 
-### 7.3 Code Smell Assessment & Tactical Recommendations
+## 🔁 8. ETL Data Pipeline Subsystem (`pipeline/`)
 
-| # | Smell | Location | Recommendation | Priority |
-|---|---|---|---|---|
-| 1 | **Direct service instantiation** | `guide_service = GuideService()` at module level | Inject via FastAPI `Depends()` for test isolation | 🟡 Medium |
-| 2 | **XSS in timeline item** | `innerHTML = \`<strong>${title}</strong>\`` in [layui-components.ts:L171](file:///c:/Users/moroz/Desktop/blackrose-free/frontend/src/lib/layui-components.ts#L171) | Use `textContent` or sanitize with DOMPurify | 🔴 High |
-| 3 | **Debug exec endpoint (Verified Absent)** | Checked in `backend/main.py` — endpoint does not exist | No action needed (verified absent in code) | 🟢 Resolved |
-| 4 | **Webhook retry hardcoded** | 3 retries with fixed delays in `main.py` lifespan | Extract to utility with exponential backoff + jitter | 🟡 Medium |
-| 5 | **Storage GC single-threaded** | [gc_storage.py](file:///c:/Users/moroz/Desktop/blackrose-free/backend/workers/gc_storage.py) blocks on HF listing | Consider async batch processing | 🟢 Low |
+> **Added:** August 2026  
+> **Pattern:** Multi-Stage Data Pipeline with Bronze/Silver/Gold data lake layering and automated Quality Gate.
+
+```mermaid
+graph LR
+    subgraph S1 ["Stage 1 & 2: Ingestion"]
+        DAPI["Discord REST API v10"] -->|Pagination & Forum Crawl| S1_Ext["stage1_extract.py"]
+        S1_Ext -->|Raw Snapshot| S2_Raw["stage2_store_raw.py<br/>(Bronze Layer: data/raw/)"]
+    end
+
+    subgraph S2 ["Stage 3 & 4: Normalization"]
+        S2_Raw --> S3_Struct["stage3_structure.py<br/>(Clustering & Longitudinal Guides)"]
+        S3_Struct --> S4_Parse["stage4_parse.py<br/>(Markdown & Tag Sanitizer)"]
+    end
+
+    subgraph S3 ["Stage 5 & 6: Media & AI"]
+        S4_Parse --> S5_Media["stage5_media.py<br/>(Deduplication: data/media_cache.json)"]
+        S5_Media --> S6_Trans["stage6_translate.py<br/>(NVIDIA NIM Llama 3.3 70B & Glossary)"]
+    end
+
+    subgraph S4 ["Stage 7 & 8: Gate & Release"]
+        S6_Trans --> S7_QA{"stage7_validate.py<br/>(Quality Gate)"}
+        S7_QA -->|Pass 100%| S8_Dep["stage8_deploy.py"]
+        S8_Dep -->|Webhook Ingest| BE_Ingest["/api/webhook/ingest<br/>(PostgreSQL + Redis Invalidate)"]
+    end
+```
+
+### 8.1 Key Guarantees
+1. **Zero Data Loss**: Strict validation asserts $N_{photos\_in} == N_{photos\_out}$ and $N_{videos\_in} == N_{videos\_out}$.
+2. **Zero CDN Expiry Risk**: Discord temporary CDN links (`cdn.discordapp.com?ex=...`) are canonicalized, hashed with SHA-256, and mapped to permanent storage paths in `media_cache.json`.
+3. **Anti-Hallucination Translation**: Canonical gaming dictionary (`pipeline/glossary.py`) with 68+ strict game mechanics terms prevents LLM hallucinations.
+4. **Idempotency & Replayability**: Any failed stage can be re-run independently using saved artifacts on disk (`--from-stage N`).
 
 ---
 
 > [!TIP]
-> **Summary Assessment**: BlackRose demonstrates **production-grade engineering discipline**. The architecture is cleanly layered, services are strictly decoupled, all database queries are N+1-safe, state updates prevent unnecessary renders, authentication uses constant-time cryptographic comparisons, and input is sanitized via `nh3`. The translation service's 3-tier cascade and storage GC worker show mature operational thinking.
+> **Summary Assessment**: BlackRose demonstrates **production-grade engineering discipline**. The architecture is cleanly layered, services are strictly decoupled, all database queries are N+1-safe, state updates prevent unnecessary renders, authentication uses constant-time cryptographic comparisons, and input is sanitized via `nh3`. The 8-stage ETL pipeline and storage GC worker show mature operational thinking.

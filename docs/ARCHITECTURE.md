@@ -2,19 +2,20 @@
 
 Документ фиксирует фактическую архитектуру и эксплуатационные ограничения, чтобы избегать расхождения между "идеальной схемой" и реальным продом.
 
-> **Последнее обновление:** 14 августа 2026
+> **Последнее обновление:** 27 августа 2026
 
 ## 1. Основные компоненты
 
 | Слой | Технология | Роль |
 |---|---|---|
-| Frontend | React 18 + Vite 6 + TypeScript + Tailwind CSS v4 | UI, Telegram Mini App UX, запросы к API |
+| Frontend | React 18 + Vite 6 + TypeScript + Tailwind CSS v4 | UI, Telegram Mini App UX, запросы к API, PWA |
 | Mobile | Capacitor (Android + iOS) | Нативные обёртки для мобильных платформ |
 | Анимации | framer-motion (`AnimatePresence`) + View Transitions API | Плавные переходы между экранами и модалки |
 | Backend API | FastAPI | Публичные/админ маршруты, auth, orchestration |
+| **ETL Pipeline** | **Python (ETL 8-Stage Architecture in `pipeline/`)** | **Сбор Discord $\rightarrow$ Кэш $\rightarrow$ NVIDIA NIM 70B $\rightarrow$ Quality Gate $\rightarrow$ Prod Ingest** |
 | Jobs | Inngest + фоновые функции | Долгие/асинхронные операции импорта |
 | DB | Neon PostgreSQL (прод) / Postgres 15 (dev) | Гайды, категории, пользователи, гильдии, служебные данные |
-| Media | HF Datasets + imgproxy | Хранение и трансформация медиа |
+| Media | HF Datasets + imgproxy + `media_cache.json` | Перманентное хранение и трансформация медиа |
 | Bot/Worker | aiogram + aiohttp + worker processes | Telegram интеграция и фоновые задачи |
 | Sandbox | AIO Sandbox (Docker) | Изолированная среда для агентов: Browser, Shell, File, VSCode, Jupyter, MCP |
 
@@ -25,24 +26,36 @@
 2. Backend валидирует подпись (HMAC для TMA, credentials для admin) и выдает short-lived JWT.
 3. При `401` frontend выполняет refresh и ретраит запрос.
 
-### 2.2 Импорт Discord Guide
+### 2.2 8-Стадийный ETL Пайплайн базы знаний (Discord -> Web)
+1. **Extract**: `pipeline/stage1_extract.py` динамически опрашивает Discord REST API v10 (форумы, активные/архивные ветки, текстовые каналы).
+2. **Store Raw**: `pipeline/stage2_store_raw.py` сохраняет неизменяемый слепок в `data/raw/latest/` (Bronze Layer).
+3. **Structure & Parse**: `pipeline/stage3_structure.py` и `stage4_parse.py` объединяют посты одного автора в лонгриды, санитизируют теги и чистят разметку.
+4. **Media Deduplication**: `pipeline/stage5_media.py` сверяет URL по кэшу `data/media_cache.json` (SHA-256), предотвращая повторные скачивания.
+5. **AI Translation**: `pipeline/stage6_translate.py` выполняет посекционный перевод через **NVIDIA NIM (Llama 3.3 70B / DeepSeek V3)** с игровым глоссарием.
+6. **Quality Gate**: `pipeline/stage7_validate.py` валидирует 100% сохранность фото, видео и текста.
+7. **Atomic Deploy**: `pipeline/stage8_deploy.py` пакетом синхронизирует гайды с бэкендом через `/api/webhook/ingest`.
+
+### 2.3 Импорт Discord Guide (On-demand Lab)
 1. Frontend вызывает `/api/admin/lab/import`.
 2. Backend создает Inngest event и сразу возвращает `202 Accepted`.
 3. Inngest-функция выполняет синтез/нормализацию и сохраняет результат.
 4. Контент и медиа сохраняются через сервисный слой.
 
-### 2.3 Discord Sync (Stealth)
+### 2.4 Discord Sync (Stealth WebSocket)
 1. Admin сохраняет Discord user token через `/api/discord-sync/`.
 2. Backend запускает `stealth_discord_worker` при старте приложения.
 3. Worker парсит каналы Discord, синхронизирует данные с БД.
 
-### 2.4 Чтение контента
+### 2.5 Чтение контента
 1. Frontend запрашивает guides/comments через публичные роуты.
 2. Backend читает из PostgreSQL и возвращает типизированные DTO.
 3. Медиа рендерится через HF resolve/imgproxy URL.
 
-### 2.5 Навигация и переходы между страницами
+### 2.6 Навигация и переходы между страницами
 1. Все маршруты загружаются через `React.lazy()` и `Suspense` с Bento-скелетоном.
+2. Переходы используют нативный **View Transitions API** (`document.startViewTransition`) для плавного cross-fade.
+3. Модальные окна и элементы UI используют `framer-motion` (`AnimatePresence`).
+4. Scroll Restoration автоматически сбрасывает позицию при переходе.
 2. Переходы используют нативный **View Transitions API** (`document.startViewTransition`) для плавного cross-fade.
 3. Модальные окна и элементы UI используют `framer-motion` (`AnimatePresence`).
 4. Scroll Restoration автоматически сбрасывает позицию при переходе.
@@ -119,6 +132,25 @@
 | `backend/core/rate_limit.py` | slowapi limiter |
 | `backend/core/http.py` | aiohttp singleton client |
 | `backend/core/inngest_client.py` | Inngest клиент |
+
+### 3.6 ETL Data Pipeline (`pipeline/`)
+
+| Файл | Назначение |
+|---|---|
+| `pipeline/config.py` | Настройки пайплайна, пути к слоям данных, SSL |
+| `pipeline/glossary.py` | Игровой глоссарий Slayer Legend (68+ каноничных терминов) |
+| `pipeline/discord_client.py` | REST-клиент Discord API v10 (форумы, треды, сообщения) |
+| `pipeline/backend_client.py` | Клиент бэкенда (JWT, Ingest Webhook, медиа-импорт) |
+| `pipeline/translator.py` | Каскад перевода: NVIDIA NIM (Llama 3.3 70B) $\rightarrow$ Gemini $\rightarrow$ Smart Fallback |
+| `pipeline/stage1_extract.py` | Этап 1: Сбор данных из каналов и тредов Discord |
+| `pipeline/stage2_store_raw.py` | Этап 2: Сохранение сырого слепка (Bronze Layer) в `data/raw/` |
+| `pipeline/stage3_structure.py` | Этап 3: Кластеризация постов в лонгриды |
+| `pipeline/stage4_parse.py` | Этап 4: Нормализация Markdown, санитизация тегов |
+| `pipeline/stage5_media.py` | Этап 5: Дедупликация медиа по `data/media_cache.json` |
+| `pipeline/stage6_translate.py` | Этап 6: Локализация (Gold Layer) в `data/translated/` |
+| `pipeline/stage7_validate.py` | Этап 7: Quality Gate валидация (100% сохранность данных) |
+| `pipeline/stage8_deploy.py` | Этап 8: Атомарная публикация на Prod Backend |
+| `pipeline/run.py` | Главный CLI-оркестратор (`--from-stage`, `--dry-run`) |
 
 ## 4. Фронтенд-компоненты
 
