@@ -80,8 +80,8 @@ export const UsersTab: FC = () => {
     try {
       await apiUpdateUserRole(userId, newRole)
       setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, role: newRole } : u)))
-    } catch (e: any) {
-      alert('Ошибка при изменении роли: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка при изменении роли: ' + ((e as Error).message || e))
     } finally {
       setUpdatingId(null)
     }
@@ -95,8 +95,8 @@ export const UsersTab: FC = () => {
       setUsers((prev) =>
         prev.map((u) => (u.user_id === userId ? { ...u, is_active: nextStatus } : u))
       )
-    } catch (e: any) {
-      alert('Ошибка изменения статуса пользователя: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка изменения статуса пользователя: ' + ((e as Error).message || e))
     } finally {
       setUpdatingId(null)
     }

@@ -1,9 +1,13 @@
+import os
+import uuid
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from sqlalchemy import text
+from sqlalchemy import select, text
 import inngest
 
 from core.auth import require_admin
+from core.db import get_engine, get_sessionmaker
 from core.logging import get_logger
+from models.db_models import Category, DiscordSyncChannel, Guide, Guild
 from models.schemas import CategoryIn, GuideIn, ImportMediaIn, LabImportIn, ReorderIn, TagsIn
 from services.guides.service import guide_service, category_service
 from services.cache.redis_cache import cache_service
@@ -14,6 +18,7 @@ from services.common.media import media_service
 from services.common.utils import normalize_icon_syntax
 from services.common.icons import icon_catalog, icon_url
 from services.discord_lab.lab_synthesizer import discord_lab_service
+from services.discord_sync.service import discord_sync_service
 from core.inngest_client import inngest_client
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -26,7 +31,7 @@ async def admin_stats(user=Depends(require_admin)):
 @router.post("/maintenance/clean-db")
 async def clean_database_storage(user=Depends(require_admin)):
     """Очистка таблиц кэша и истории для освобождения дискового пространства PostgreSQL."""
-    from core.db import get_engine
+    
     engine = get_engine()
     async with engine.begin() as conn:
         try:
@@ -305,7 +310,7 @@ async def admin_lab_import(body: LabImportIn, user=Depends(require_admin)):
     Triggers a background import task via Inngest.
     Falls back to inline execution if Inngest is not configured.
     """
-    import os
+    
     has_inngest = bool(os.getenv("INNGEST_SIGNING_KEY"))
 
     category_key = body.category_key or "imported"
@@ -349,7 +354,7 @@ async def admin_lab_import(body: LabImportIn, user=Depends(require_admin)):
                 logger.error(f"Media import failed: {e}")
 
         if not guide_key:
-            import uuid
+            
             guide_key = f"imported-{str(uuid.uuid4())[:8]}"
 
         await guide_service.upsert(
@@ -372,9 +377,7 @@ async def admin_lab_import(body: LabImportIn, user=Depends(require_admin)):
 
 @router.get("/backup/export")
 async def admin_export_backup(user=Depends(require_admin)):
-    from core.db import get_sessionmaker
-    from sqlalchemy import select
-    from models.db_models import Category, Guide, DiscordSyncChannel, Guild
+    
 
     async with get_sessionmaker()() as session:
         cats_res = await session.execute(select(Category))
@@ -409,7 +412,7 @@ async def admin_export_backup(user=Depends(require_admin)):
 @router.delete("/nuke-all")
 async def admin_nuke_all(user=Depends(require_admin)):
     """Delete ALL categories (cascades to guides), synced guides, and sync channels."""
-    from services.discord_sync.service import discord_sync_service
+    
     cats_deleted = await category_service.delete_all()
     synced_cleared = await discord_sync_service.clear_synced_guides(delete_guides=False)
     await cache_service.invalidate_all()
@@ -423,7 +426,7 @@ async def admin_nuke_all(user=Depends(require_admin)):
 @router.get("/maintenance/db-size")
 async def get_db_size(user=Depends(require_admin)):
     """Get database and table sizes."""
-    from core.db import get_engine
+    
     engine = get_engine()
     async with engine.connect() as conn:
         db_size_res = await conn.execute(text("SELECT pg_size_pretty(pg_database_size(current_database())), pg_database_size(current_database())"))
@@ -452,7 +455,7 @@ async def get_db_size(user=Depends(require_admin)):
 @router.post("/maintenance/db-cleanup")
 async def cleanup_db(user=Depends(require_admin)):
     """Truncate high-volume log/history tables and run VACUUM ANALYZE to reclaim disk space on Neon."""
-    from core.db import get_engine
+    
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.execute(text("TRUNCATE TABLE guide_histories, view_logs, user_history_items, user_sync_conflicts CASCADE;"))

@@ -6,7 +6,9 @@ from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from services.cache.redis_cache import cache_service
-from loguru import logger
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 def cached(expire: int = 300):
     """

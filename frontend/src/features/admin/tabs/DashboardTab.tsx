@@ -84,8 +84,8 @@ export const DashboardTab: FC = () => {
       a.download = `blackrose_backup_${new Date().toISOString().slice(0, 10)}.json`
       a.click()
       URL.revokeObjectURL(url)
-    } catch (e: any) {
-      toast.error('Ошибка экспорта бэкапа: ' + (e.message || e))
+    } catch (e: unknown) {
+      toast.error('Ошибка экспорта бэкапа: ' + ((e as Error).message || e))
     }
   }
 
@@ -101,8 +101,8 @@ export const DashboardTab: FC = () => {
       )
       haptic.success()
       loadData()
-    } catch (err: any) {
-      toast.error('Ошибка реставрации бэкапа: ' + (err.message || err))
+    } catch (err: unknown) {
+      toast.error('Ошибка реставрации бэкапа: ' + ((err as Error).message || err))
     } finally {
       e.target.value = ''
     }

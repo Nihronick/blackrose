@@ -11,6 +11,8 @@ import jwt
 
 from core.config import settings
 from core.db import get_sessionmaker
+from urllib.parse import unquote, parse_qsl
+from services.common.members import member_service
 
 
 logger = logging.getLogger("blackrose.core.auth")
@@ -38,7 +40,6 @@ def verify_password(password: str, hashed: str) -> bool:
 
 def verify_telegram_init_data(init_data: str) -> dict | None:
     try:
-        from urllib.parse import unquote, parse_qsl
         clean_data = init_data
         if "%3D" in clean_data or "%26" in clean_data:
             clean_data = unquote(clean_data)
@@ -131,7 +132,7 @@ def jwt_decode(token: str) -> dict | None:
 async def require_user(request: Request) -> dict:
     """Authenticate user via Bearer JWT, internal Bot-Token, or X-Telegram-Init-Data."""
     bot_token_header = request.headers.get("X-Bot-Token", "")
-    if bot_token_header and bot_token_header == settings.BOT_TOKEN:
+    if bot_token_header and hmac.compare_digest(bot_token_header, settings.BOT_TOKEN):
         return {"id": 0, "first_name": "InternalBot", "is_local_admin": True}
 
     auth_header = request.headers.get("Authorization", "")
@@ -157,7 +158,7 @@ async def require_public_user(request: Request) -> dict:
     """Lenient authorization for public pages. Returns a guest user if auth is missing or invalid."""
     try:
         bot_token_header = request.headers.get("X-Bot-Token", "")
-        if bot_token_header and bot_token_header == settings.BOT_TOKEN:
+        if bot_token_header and hmac.compare_digest(bot_token_header, settings.BOT_TOKEN):
             return {"id": 0, "first_name": "InternalBot", "is_local_admin": True}
 
         auth_header = request.headers.get("Authorization", "")
@@ -185,16 +186,11 @@ async def require_admin(request: Request) -> dict:
     if user.get("role") in ("project_admin", "admin"):
         return user
 
-    username = str(user.get("username", "")).strip().lower()
-    if username and username in ("nihronick",):
-        return user
-
     user_id = int(user.get("id", 0) or 0)
     if user_id > 0:
-        if user_id in settings.admin_user_ids or user_id == 7215567457:
+        if user_id in settings.admin_user_ids:
             return user
 
-        from services.common.members import member_service
         is_admin = await member_service.is_admin(user_id)
         if is_admin:
             return user

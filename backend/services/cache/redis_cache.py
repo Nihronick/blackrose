@@ -97,7 +97,6 @@ class RedisCacheService:
         r = await self.get_client()
         if not r:
             return {"status": "disabled/missing"}
-        import time
         start = time.perf_counter()
         try:
             await r.ping()
@@ -112,7 +111,9 @@ class RedisCacheService:
             return
         try:
             await r.delete(f"{self.prefix_guide}{key}")
-            keys = await r.keys(f"cache:*/guide/{key}*")
+            keys = []
+            async for k in r.scan_iter(match=f"cache:*/guide/{key}*"):
+                keys.append(k)
             if keys:
                 await r.delete(*keys)
         except Exception:
@@ -124,15 +125,22 @@ class RedisCacheService:
             return
         try:
             # We use keys with prefix to avoid clearing other data if shared
-            keys = await r.keys(f"{self.prefix_cats}*")
+            keys = []
+            async for k in r.scan_iter(match=f"{self.prefix_cats}*"):
+                keys.append(k)
             if keys:
                 await r.delete(*keys)
-            keys = await r.keys(f"{self.prefix_guide}*")
+                
+            keys = []
+            async for k in r.scan_iter(match=f"{self.prefix_guide}*"):
+                keys.append(k)
             if keys:
                 await r.delete(*keys)
             
             # Clear API cached responses
-            api_keys = await r.keys("cache:*")
+            api_keys = []
+            async for k in r.scan_iter(match="cache:*"):
+                api_keys.append(k)
             if api_keys:
                 await r.delete(*api_keys)
         except Exception:

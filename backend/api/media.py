@@ -8,6 +8,7 @@ from core.auth import require_admin
 from core.db import get_sessionmaker
 from core.logging import get_logger
 from models.db_models import MediaCache
+from models.schemas import DirectMediaCacheIn
 from pydantic import BaseModel
 from fastapi import Depends
 
@@ -15,13 +16,6 @@ router = APIRouter(tags=["media"])
 logger = get_logger("blackrose.api.media")
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-
-
-class DirectMediaCacheIn(BaseModel):
-    canonical_url: str
-    data_base64: str
-    mime_type: str = "image/png"
-    media_type: str = "photo"
 
 
 @router.post("/admin/media/direct-cache")

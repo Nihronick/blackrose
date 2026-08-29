@@ -19,7 +19,7 @@ export const GuildJoinModal = ({ guild, onClose }: { guild: Guild; onClose: () =
       toast.success('Заявка успешно отправлена!')
       onClose()
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || 'Ошибка при отправке заявки')
     },
   })

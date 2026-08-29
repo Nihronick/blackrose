@@ -63,6 +63,12 @@ export const useAppInitialization = () => {
                 data.refresh_token
               )
               if (data.is_admin) setIsAdmin(true)
+              useAppStore.getState().setUser({
+                id: data.user_id,
+                first_name: data.first_name || 'Слеер',
+                username: data.username,
+                photo_url: data.photo_url,
+              })
 
               // Clean URL parameters from address bar
               const cleanUrl = new URL(window.location.href)
@@ -114,6 +120,12 @@ export const useAppInitialization = () => {
           getStoredUser(),
           O.map((user) => {
             if (user.is_admin) setIsAdmin(true)
+            useAppStore.getState().setUser({
+              id: typeof user.id === 'string' ? parseInt(user.id, 10) : user.id,
+              first_name: user.first_name,
+              username: user.username,
+              photo_url: user.photo_url,
+            })
           })
         )
       }
@@ -144,6 +156,13 @@ export const useAppInitialization = () => {
             if (data.is_admin) {
               setIsAdmin(true)
             }
+            useAppStore.getState().setUser({
+              id: data.user_id,
+              first_name: userObj.first_name,
+              username: userObj.username,
+              // We don't have photo_url directly from this endpoint response,
+              // but we populate the rest.
+            })
           }
         })
         .catch(() => {})

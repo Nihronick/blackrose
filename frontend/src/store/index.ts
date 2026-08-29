@@ -23,6 +23,9 @@ export interface AppState {
   setTheme: (theme: Theme) => void
   setLanguage: (language: AppLanguage) => void
   completeOnboarding: () => void
+
+  user: { id: number; username?: string; first_name?: string; photo_url?: string } | null
+  setUser: (user: AppState['user']) => void
 }
 
 const VALID_THEMES: Theme[] = ['light', 'dark', 'system']
@@ -55,8 +58,10 @@ export const useAppStore = create<AppState>((set) => ({
   language: getStoredLanguage(),
   searchOpen: false,
   hasOnboarded: localStorage.getItem('br_onboarded') === 'true',
+  user: null,
 
   setSearchOpen: (searchOpen) => set({ searchOpen }),
+  setUser: (user) => set({ user }),
   setAccessMsg: (accessMsg) => set({ accessMsg }),
   setIsAdmin: (isAdmin) => set({ isAdmin }),
   setShowQN: (showQN) => set({ showQN }),

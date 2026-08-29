@@ -1,0 +1,30 @@
+name: Scheduled Database Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * 0' # Every Sunday at 03:00 UTC
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  backup:
+    name: Backup Neon Database
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client Tools & Python
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client python3-pip
+          pip3 install --quiet huggingface_hub
+
+      - name: Run Backup Script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_DATASET_REPO: 'Nihronick/blackrose-backups'
+        run: |
+          chmod +x scripts/backup_neon.sh
+          ./scripts/backup_neon.sh

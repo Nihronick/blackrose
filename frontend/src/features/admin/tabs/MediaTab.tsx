@@ -40,8 +40,8 @@ export const MediaTab: FC = () => {
       toast.success(`Успешно загружено файлов: ${uploadedCount}`)
       haptic.success()
       load()
-    } catch (err: any) {
-      toast.error('Ошибка загрузки: ' + (err.message || err))
+    } catch (err: unknown) {
+      toast.error('Ошибка загрузки: ' + ((err as Error).message || err))
     } finally {
       setUploading(false)
       e.target.value = ''

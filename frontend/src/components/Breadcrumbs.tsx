@@ -35,7 +35,7 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => {
               </span>
             ) : (
               <button
-                onClick={() => push(item.route as any)}
+                onClick={() => push(item.route as Parameters<typeof push>[0])}
                 className="hover:text-foreground transition-colors cursor-pointer text-[11px] font-heading font-bold uppercase"
               >
                 {item.label}

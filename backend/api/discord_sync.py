@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from core.auth import require_admin
 from core.logging import get_logger
 from pydantic import BaseModel
-from models.schemas import DiscordSyncChannelIn, DiscordSyncTokenIn
+from models.schemas import DiscordSyncChannelIn, DiscordSyncTokenIn, DiscordLinkImportIn
 from services.discord_sync.service import discord_sync_service
 from services.discord_sync.worker import stealth_discord_worker
 
@@ -159,10 +159,6 @@ async def backfill_all_channels(user=Depends(require_admin)):
         "ok": True,
         "message": msg,
     }
-
-
-class DiscordLinkImportIn(BaseModel):
-    link: str
 
 
 @router.post("/import-link")

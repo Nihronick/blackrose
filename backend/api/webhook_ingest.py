@@ -1,26 +1,16 @@
+import hmac
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from core.config import settings
 from services.guides.service import guide_service
 from services.cache.redis_cache import cache_service
 from services.media.service import media_cache_service
 from pydantic import BaseModel
+from models.schemas import IngestGuidePayload
 
 router = APIRouter(prefix="/webhook", tags=["webhook"])
 
-class IngestGuidePayload(BaseModel):
-    guide_key: str
-    category_key: str
-    category_title: str | None = None
-    title: str
-    icon_url: str | None = None
-    text: str = ""
-    photo: list[str] = []
-    video: list[str] = []
-    document: list[str] = []
-    sort_order: int = 0
-
 async def verify_ingest_token(x_ingest_token: str = Header(..., alias="X-Ingest-Token")):
-    if x_ingest_token != settings.INGEST_TOKEN:
+    if not hmac.compare_digest(x_ingest_token, settings.INGEST_TOKEN):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid ingest token"

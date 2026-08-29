@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Button } from '@/components/ui/button'
 import { AlertCircle, RefreshCw, XCircle } from '@/lib/icons'
 import Honeybadger from '@honeybadger-io/js'

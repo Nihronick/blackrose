@@ -4,6 +4,7 @@ import uuid
 from urllib.parse import urlparse
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from core.config import settings
 from core.logging import get_logger
 from core.metrics import metrics_registry
@@ -47,7 +48,7 @@ async def backpressure_middleware(request: Request, call_next):
     try:
         await asyncio.wait_for(_concurrency_semaphore.acquire(), timeout=5.0)
     except asyncio.TimeoutError:
-        from fastapi.responses import JSONResponse
+        
         return JSONResponse(
             status_code=503,
             content={"detail": "Сервер временно перегружен. Повторите через несколько секунд."},

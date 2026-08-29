@@ -1,17 +1,18 @@
 import asyncio
 import hashlib
-from sqlalchemy import select, delete
+import re
+from sqlalchemy import select, delete, update
 from core.db import get_sessionmaker
 from core.logging import get_logger
 from models.db_models import Category, DiscordSyncChannel, DiscordSyncedGuide, Guide, SystemSetting
 from services.common.media import MediaService
 from services.common.telegram_notify import telegram_notify_service
 from services.discord_sync.translator import sanitize_discord_markdown, translate_en_to_ru, generate_tldr_block
+from services.cache.redis_cache import cache_service
 
 logger = get_logger("blackrose.services.discord_sync")
 
 def clean_guide_title(title: str, text: str, cat_key: str) -> str:
-    import re
     t = (title or "").strip()
     # 1. If title starts with markdown image, emoji, or is corrupted
     if (
@@ -328,9 +329,8 @@ class DiscordSyncService:
                     logger.warning(f"Error resolving inline media: {res_err}")
 
                 # 5. Extract and clean Title
-                import re as _re
                 source_for_title = final_text if auto_translate else clean_text
-                heading_match = _re.search(r'^#+\s+(.+)$', source_for_title, _re.MULTILINE)
+                heading_match = re.search(r'^#+\s+(.+)$', source_for_title, re.MULTILINE)
                 if custom_title:
                     raw_candidate = custom_title
                 elif heading_match:
@@ -425,7 +425,7 @@ class DiscordSyncService:
                     "discord_channel_id": synced.discord_channel_id,
                     "guide_key": synced.guide_key,
                     "author_tag": synced.author_tag,
-                    "created_at": synced.created_at.isoformat() if synced.created_at else None,
+                    "created_at": synced.last_synced_at.isoformat() if synced.last_synced_at else None,
                     "title": guide.title if guide else "Без названия",
                     "category_key": guide.category_key if guide else "uncategorized",
                     "views": guide.views if guide else 0,
@@ -475,9 +475,6 @@ class DiscordSyncService:
         Cleans titles, removes cat_init_* placeholders, and purges translation artifacts from all guides in DB.
         Uses direct atomic SQL queries to avoid ORM relationship issues.
         """
-        import re
-        from sqlalchemy import update
-        from models.db_models import Guide
         updated = 0
         deleted_placeholders = 0
         async with get_sessionmaker()() as session:
@@ -521,7 +518,6 @@ class DiscordSyncService:
 
             await session.commit()
 
-        from services.cache.redis_cache import cache_service
         await cache_service.invalidate_all()
 
         return {"updated_guides": updated, "deleted_placeholders": deleted_placeholders}

@@ -2,9 +2,9 @@ import { Button } from '@/components/ui/button'
 import { haptic } from '@/lib/haptic'
 import { ChevronUp } from '@/lib/icons'
 import { AnimatePresence, motion } from 'framer-motion'
-import { type FC, useEffect, useState } from 'react'
+import { type FC, type RefObject, useEffect, useState } from 'react'
 
-export const ScrollToTopFab: FC<{ targetRef?: React.RefObject<HTMLElement | null> }> = ({
+export const ScrollToTopFab: FC<{ targetRef?: RefObject<HTMLElement | null> }> = ({
   targetRef,
 }) => {
   const [visible, setVisible] = useState(false)

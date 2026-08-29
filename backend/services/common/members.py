@@ -2,6 +2,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from core.db import get_sessionmaker
 from models.db_models import Member
+from core.config import settings
 
 class MemberService:
     @classmethod
@@ -40,8 +41,8 @@ class MemberService:
         username_clean = (username or "").strip()
         first_name_clean = (first_name or "").strip()
 
-        if user_id == 7215567457 or username_clean.lower() == "nihronick":
-            await cls.upsert(user_id, username_clean or "Nihronick", first_name_clean or "Project Lead", role="project_admin")
+        if user_id in settings.admin_user_ids:
+            await cls.upsert(user_id, username_clean or "Admin", first_name_clean or "Admin", role="project_admin")
             return "project_admin"
 
         async with get_sessionmaker()() as session:

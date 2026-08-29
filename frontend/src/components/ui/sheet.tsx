@@ -2,7 +2,6 @@ import type { ComponentProps } from 'react'
 ;('use client')
 
 import { Dialog as SheetPrimitive } from '@base-ui/react/dialog'
-import type * as React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { XIcon } from '@/lib/icons'

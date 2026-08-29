@@ -8,6 +8,7 @@ import { useAppNavigation } from '@/lib/navigation'
 import { type SearchDoc, indexGuides, searchGuidesClient } from '@/lib/searchIndex'
 import type { Guide } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { motion } from 'framer-motion'
 import {
   type FC,
@@ -51,6 +52,7 @@ export const SearchView: FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [, startTransition] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
+  const parentRef = useRef<HTMLDivElement>(null)
 
   // Debounce logic
   useEffect(() => {
@@ -133,6 +135,13 @@ export const SearchView: FC = () => {
 
   const hasSearched = query.trim().length >= 2
   const showEmpty = hasSearched && !isLoading && !isFetching && allResults.length === 0
+
+  const rowVirtualizer = useVirtualizer({
+    count: allResults.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 140,
+    overscan: 5,
+  })
 
   return (
     <div className="flex flex-col min-h-full bg-background animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -217,7 +226,7 @@ export const SearchView: FC = () => {
       </header>
 
       {/* 2. Results Area */}
-      <main className="flex-1 p-4 container-padding overflow-y-auto">
+      <main ref={parentRef} className="flex-1 p-4 container-padding overflow-y-auto">
         {!hasSearched && (
           <EmptyState
             icon={<Search className="size-8 text-rose-400" />}
@@ -244,49 +253,73 @@ export const SearchView: FC = () => {
             <div className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1 px-1">
               Найдено совпадений: <span className="text-primary">{allResults.length}</span>
             </div>
-            {allResults.map((guide, i) => (
-              <motion.div
-                key={guide.key}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                onClick={() => {
-                  haptic.light()
-                  push({ type: 'guide', id: guide.key })
-                }}
-                className="group cursor-pointer"
-              >
-                <Card className="card-elevated rounded-3xl border border-border/10 overflow-hidden hover:border-primary/25 transition-all duration-300 hover:shadow-glow">
-                  <CardContent className="p-4 sm:p-5 flex gap-4">
-                    <div className="size-12 shrink-0 rounded-[18px] bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                      <FileText className="size-6" />
-                    </div>
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <h3 className="text-[15px] font-black text-foreground font-heading line-clamp-2 leading-snug break-words group-hover:text-primary transition-colors">
-                        {highlightMatch(guide.title, query)}
-                      </h3>
-                      <div className="mt-1.5 text-xs font-medium leading-relaxed text-muted-foreground/80 line-clamp-2">
-                        {guide.preview ? (
-                          highlightMatch(guide.preview, query)
-                        ) : (
-                          <span className="italic opacity-50">Контент гайда...</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 mt-3">
-                        <Badge
-                          variant="secondary"
-                          className="bg-muted/50 text-[10px] uppercase tracking-wider font-bold"
-                        >
-                          {categoriesData?.find((c) => c.key === guide.category_key)?.title ||
-                            guide.category_key ||
-                            'Гайд'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const guide = allResults[virtualRow.index]
+                if (!guide) return null
+                return (
+                  <div
+                    key={guide.key}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    className="pb-3"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={() => {
+                        haptic.light()
+                        push({ type: 'guide', id: guide.key })
+                      }}
+                      className="group cursor-pointer"
+                    >
+                      <Card className="card-elevated rounded-3xl border border-border/10 overflow-hidden hover:border-primary/25 transition-all duration-300 hover:shadow-glow">
+                        <CardContent className="p-4 sm:p-5 flex gap-4">
+                          <div className="size-12 shrink-0 rounded-[18px] bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                            <FileText className="size-6" />
+                          </div>
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <h3 className="text-[15px] font-black text-foreground font-heading line-clamp-2 leading-snug break-words group-hover:text-primary transition-colors">
+                              {highlightMatch(guide.title, query)}
+                            </h3>
+                            <div className="mt-1.5 text-xs font-medium leading-relaxed text-muted-foreground/80 line-clamp-2">
+                              {guide.preview ? (
+                                highlightMatch(guide.preview, query)
+                              ) : (
+                                <span className="italic opacity-50">Контент гайда...</span>
+                              )}
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <Badge
+                                variant="secondary"
+                                className="bg-muted/50 text-[10px] uppercase tracking-wider font-bold"
+                              >
+                                {categoriesData?.find((c) => c.key === guide.category_key)?.title ||
+                                  guide.category_key ||
+                                  'Гайд'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </main>

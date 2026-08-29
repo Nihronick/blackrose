@@ -2,19 +2,15 @@ import base64
 import hashlib
 import os
 import re
-import ssl
 import urllib.parse
-import urllib.request
 from sqlalchemy import select
 from core.db import get_sessionmaker
 from core.logging import get_logger
+from core.http import http_client
+from core.url_validator import validate_media_url
 from models.db_models import MediaCache
 
 logger = get_logger("blackrose.services.media")
-
-_ssl_ctx = ssl.create_default_context()
-_ssl_ctx.check_hostname = False
-_ssl_ctx.verify_mode = ssl.CERT_NONE
 
 MEDIA_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "media"))
 
@@ -59,13 +55,15 @@ class MediaCacheService:
 
         # 2. Скачивание с Discord CDN
         try:
+            validate_media_url(raw_url)
             logger.info(f"Downloading media from Discord CDN: {canonical_url}")
-            req = urllib.request.Request(raw_url, headers={
+            headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            })
-            with urllib.request.urlopen(req, context=_ssl_ctx, timeout=25) as resp:
-                content_type = resp.headers.get("Content-Type", "application/octet-stream")
-                data = resp.read()
+            }
+            resp = await http_client.get(raw_url, headers=headers, timeout=25)
+            resp.raise_for_status()
+            content_type = resp.headers.get("Content-Type", "application/octet-stream")
+            data = resp.content
         except Exception as e:
             logger.warning(f"Failed to download media {raw_url}: {e}")
             return raw_url

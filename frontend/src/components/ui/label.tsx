@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 import type { ComponentPropsWithoutRef } from 'react'
-import * as React from 'react'
+import { forwardRef } from 'react'
 
-const Label = React.forwardRef<HTMLLabelElement, ComponentPropsWithoutRef<'label'>>(
+const Label = forwardRef<HTMLLabelElement, ComponentPropsWithoutRef<'label'>>(
   ({ className, ...props }, ref) => (
     <label
       ref={ref}

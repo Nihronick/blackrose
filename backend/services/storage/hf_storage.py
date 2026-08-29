@@ -135,6 +135,38 @@ class HFStorageService:
             logger.error(f"HF delete failed: {e}")
             return False
 
+    async def save_file(self, filename: str, content: bytes, folder: str = "uploads") -> str:
+        """Saves a file from bytes with optional optimization."""
+        if not settings.HF_TOKEN or not self.repo_id:
+            raise RuntimeError("Media storage not configured")
+
+        opt_name, content, optimized = self._optimize_image(filename, content)
+        ext = os.path.splitext(opt_name)[1] or os.path.splitext(filename)[1]
+        target_filename = f"{uuid.uuid4()}{ext}"
+        full_path = f"{self.path_prefix}/{folder}/{target_filename}".replace("//", "/")
+
+        try:
+            for attempt in range(3):
+                try:
+                    self.api.upload_file(
+                        path_or_fileobj=content,
+                        path_in_repo=full_path,
+                        repo_id=self.repo_id,
+                        repo_type="dataset",
+                        commit_message=f"Admin: Upload {target_filename}"
+                    )
+                    return self._get_public_url(full_path)
+                except Exception as e:
+                    logger.warning(f"HF upload attempt {attempt+1} notice: {e}")
+                    if attempt < 2:
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                    else:
+                        raise RuntimeError(f"Storage error: {str(e).split('?')[0]}")
+            return ""
+        finally:
+            del content
+            gc.collect()
+
     async def upload_local_file(self, file_path: str, filename: str, folder: str = "guides") -> str:
         """Uploads a local file from disk with optional optimization."""
         if not settings.HF_TOKEN or not self.repo_id:

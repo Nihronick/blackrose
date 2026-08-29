@@ -114,8 +114,8 @@ export const DiscordLabTab: FC = () => {
       setWorkerToken('')
       fetchSyncState()
       alert('Токен отвязан от вашей учетной записи')
-    } catch (e: any) {
-      alert('Ошибка: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка: ' + ((e as Error).message || e))
     }
   }
 
@@ -125,8 +125,8 @@ export const DiscordLabTab: FC = () => {
       const res = await apiStartDiscordSync(workerToken.trim() || '')
       alert(res.message || 'Слушатель запущен')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка запуска: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка запуска: ' + ((e as Error).message || e))
     } finally {
       setWorkerLoading(false)
     }
@@ -197,8 +197,8 @@ export const DiscordLabTab: FC = () => {
       const res = await apiBackfillDiscordChannel(channelId)
       alert(res.message || 'Сканирование истории канала запущено')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка сканирования: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка сканирования: ' + ((e as Error).message || e))
     } finally {
       setBackfillingId(null)
     }
@@ -210,8 +210,8 @@ export const DiscordLabTab: FC = () => {
       const res = await apiBackfillAllDiscordChannels()
       alert(res.message || 'Сканирование всех каналов завершено')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка сканирования: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка сканирования: ' + ((e as Error).message || e))
     } finally {
       setIsBackfillingAll(false)
     }
@@ -228,8 +228,8 @@ export const DiscordLabTab: FC = () => {
       alert(res.message || 'Импорт по ссылке успешно выполнен!')
       setImportLinkUrl('')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка импорта: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка импорта: ' + ((e as Error).message || e))
     } finally {
       setIsImportingLink(false)
     }
@@ -249,8 +249,8 @@ export const DiscordLabTab: FC = () => {
       const res = await apiDeleteSyncedDiscordGuide(id, deleteGuide)
       alert(res.message || 'Запись удалена из очереди')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка удаления: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка удаления: ' + ((e as Error).message || e))
     } finally {
       setDeletingSyncedId(null)
     }
@@ -266,8 +266,8 @@ export const DiscordLabTab: FC = () => {
       const res = await apiClearSyncedDiscordGuides(deleteGuides)
       alert(res.message || 'Журнал очереди очищен')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка очистки: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка очистки: ' + ((e as Error).message || e))
     }
   }
 
@@ -526,8 +526,8 @@ export const DiscordLabTab: FC = () => {
       const res = await apiStartDiscordSync(workerToken.trim())
       alert(res.message || 'Слушатель запущен')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка запуска: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка запуска: ' + ((e as Error).message || e))
     } finally {
       setWorkerLoading(false)
     }
@@ -539,8 +539,8 @@ export const DiscordLabTab: FC = () => {
       const res = await apiStopDiscordSync()
       alert(res.message || 'Слушатель остановлен')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка: ' + ((e as Error).message || e))
     } finally {
       setWorkerLoading(false)
     }
@@ -558,8 +558,8 @@ export const DiscordLabTab: FC = () => {
       setNewChannelId('')
       setNewChannelName('')
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка добавления канала: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка добавления канала: ' + ((e as Error).message || e))
     }
   }
 
@@ -567,8 +567,8 @@ export const DiscordLabTab: FC = () => {
     try {
       await apiRemoveDiscordSyncChannel(channelId)
       fetchSyncState()
-    } catch (e: any) {
-      alert('Ошибка удаления: ' + (e.message || e))
+    } catch (e: unknown) {
+      alert('Ошибка удаления: ' + ((e as Error).message || e))
     }
   }
 

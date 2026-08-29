@@ -133,7 +133,7 @@ export const HomeDashboard: FC<HomeDashboardProps> = ({ onSelectGuide, onSelectC
               className="rose-glow-btn h-12 px-6 text-xs gap-2"
               onClick={() => {
                 haptic.light()
-                push({ type: 'build-planner' })
+                push({ type: 'build' })
               }}
             >
               <Compass className="size-4" />

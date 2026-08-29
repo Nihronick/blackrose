@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, Shield, X } from 'lucide-react'
-import type { FC } from 'react'
+import type { FC, FormEvent } from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -60,13 +60,14 @@ export const GuildSettingsModal: FC<GuildSettingsModalProps> = ({ guild, onClose
       queryClient.invalidateQueries({ queryKey: ['guild-roster', guild.id] })
       onClose()
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       haptic.error()
-      toast.error(err?.response?.data?.detail || 'Ошибка сохранения настроек гильдии')
+      const axiosError = err as Error & { response?: { data?: { detail?: string } } }
+      toast.error(axiosError.response?.data?.detail || 'Ошибка сохранения настроек гильдии')
     },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
       toast.error('Название гильдии не может быть пустым')

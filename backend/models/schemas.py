@@ -225,3 +225,46 @@ class DiscordSyncTokenIn(BaseModel):
             raise ValueError("Некорректный Discord токен")
         return v.strip()
 
+
+# --- Discord Link Import ---
+class DiscordLinkImportIn(BaseModel):
+    link: str
+
+
+# --- User Admin ---
+class UserRoleUpdateIn(BaseModel):
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        valid_roles = {"project_admin", "admin", "editor", "moderator", "member"}
+        if v not in valid_roles:
+            raise ValueError("Недопустимая роль")
+        return v
+
+
+class UserStatusUpdateIn(BaseModel):
+    is_active: bool
+
+
+# --- Media ---
+class DirectMediaCacheIn(BaseModel):
+    canonical_url: str
+    data_base64: str
+    mime_type: str = "image/png"
+    media_type: str = "photo"
+
+
+# --- Webhook Ingest ---
+class IngestGuidePayload(BaseModel):
+    guide_key: str
+    category_key: str
+    category_title: str | None = None
+    title: str
+    icon_url: str | None = None
+    text: str = ""
+    photo: list[str] = []
+    video: list[str] = []
+    document: list[str] = []
+    sort_order: int = 0

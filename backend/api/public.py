@@ -1,5 +1,8 @@
+import hmac
 import time
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, Response
+from sqlalchemy import select
 
 from core.auth import (
     require_public_user,
@@ -14,14 +17,14 @@ from core.auth import (
 from core.config import settings
 from core.logging import get_logger
 from core.rate_limit import limiter
-from core.db import get_health as get_db_health
+from core.db import get_health as get_db_health, get_sessionmaker
 from services.guides.service import guide_service, category_service
 from services.cache.redis_cache import cache_service
 from services.common.members import member_service
 from services.common.utils import format_guide_text
+from services.storage.hf_storage import storage_service
 from models.db_models import LocalAdmin
 from models.schemas import CommentIn, ReactionIn
-from core.db import get_sessionmaker
 from core.cache import cached
 
 router = APIRouter(tags=["public"])
@@ -29,7 +32,6 @@ logger = get_logger("blackrose.api.public")
 
 @router.get("/health")
 async def health():
-    from services.storage.hf_storage import storage_service
     db_health = await get_db_health()
     redis_health = await cache_service.ping()
     storage_health = await storage_service.ping()
@@ -219,10 +221,12 @@ async def telegram_web_login(request: Request):
 
 @router.post("/auth/emergency-login")
 async def emergency_login(request: Request):
-    import hmac
+    if not settings.ADMIN_EMERGENCY_KEY:
+        raise HTTPException(status_code=403, detail="Emergency login disabled")
+    
     body = await request.json()
     key = str(body.get("emergency_key", "")).strip()
-    target_key = settings.ADMIN_EMERGENCY_KEY or "BlackRose_ProjectAdmin_Emergency_Key_2026_Secure_Key"
+    target_key = settings.ADMIN_EMERGENCY_KEY
     if not hmac.compare_digest(key, target_key):
         raise HTTPException(status_code=403, detail="Неверный аварийный ключ доступа")
 
@@ -340,7 +344,7 @@ async def refresh_token(request: Request):
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     # JWT Rotation: Check if this refresh token is blacklisted
-    from services.cache.redis_cache import cache_service
+    
     token_jti = payload.get("iat", "")  # Use issued-at as unique token ID
     blacklist_key = f"jwt:blacklist:{user_id}:{token_jti}"
     is_blacklisted = await cache_service.get(blacklist_key)
@@ -389,24 +393,14 @@ async def admin_login(request: Request):
         raise HTTPException(status_code=400, detail="username/password required")
 
     async with get_sessionmaker()() as session:
-        from sqlalchemy import select
+        
 
         res = await session.execute(select(LocalAdmin).where(LocalAdmin.username == username))
         row = res.scalar_one_or_none()
         if not row:
-            if username == "admin" and (password in ("AdminPass123!", "BlackRose2026SecureAdminKey!")):
-                row = LocalAdmin(username="admin", password_hash=hash_password(password))
-                session.add(row)
-                await session.commit()
-                await session.refresh(row)
-            else:
-                raise HTTPException(status_code=401, detail="Invalid credentials")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
         elif not verify_password(password, row.password_hash):
-            if username == "admin" and (password in ("AdminPass123!", "BlackRose2026SecureAdminKey!")):
-                row.password_hash = hash_password(password)
-                await session.commit()
-            else:
-                raise HTTPException(status_code=401, detail="Invalid credentials")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
     access_token = jwt_encode(
         {"id": row.id, "first_name": username, "is_admin": True, "is_local_admin": True},
@@ -482,7 +476,7 @@ async def preview_guide(request: Request, user=Depends(require_public_user)):
 
 @router.get("/sitemap.xml")
 async def sitemap():
-    from fastapi.responses import Response
+    
     cats = await category_service.get_all()
     primary_url = "https://blackrosesl.me"
     if settings.FRONTEND_URL:
@@ -510,7 +504,7 @@ async def sitemap():
 @router.get("/og/guide/{guide_key}")
 async def og_guide_preview(guide_key: str):
     """Dynamic OpenGraph and Twitter Card metadata for social bots."""
-    from fastapi.responses import HTMLResponse
+    
     guide = await guide_service.get_by_key(guide_key)
     if not guide:
         raise HTTPException(status_code=404, detail="Гайд не найден")
@@ -559,13 +553,9 @@ async def _is_admin(user: dict) -> bool:
     if user.get("role") in ("project_admin", "admin"):
         return True
 
-    username = str(user.get("username", "")).strip().lower()
-    if username and username in ("nihronick",):
-        return True
-
     uid = int(user.get("id", 0) or 0)
     if uid > 0:
-        if uid in settings.admin_user_ids or uid == 7215567457:
+        if uid in settings.admin_user_ids:
             return True
         return await member_service.is_admin(uid)
 

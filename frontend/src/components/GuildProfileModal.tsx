@@ -27,7 +27,7 @@ export const GuildProfileModal = ({
       qc.invalidateQueries({ queryKey: ['guild-roster'] })
       onClose()
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || 'Ошибка обновления профиля')
     },
   })

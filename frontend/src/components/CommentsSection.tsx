@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,10 +15,10 @@ import {
 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import type { FC } from 'react'
-import type React from 'react'
+import type { CommentsResponse, Comment as ApiComment } from '@/lib/types'
 import { useEffect, useRef, useState } from 'react'
 
-interface Comment {
+interface LocalComment {
   id: string
   name: string
   text: string
@@ -44,23 +43,19 @@ interface CommentsSectionProps {
 }
 
 export const CommentsSection: FC<CommentsSectionProps> = ({ guideKey }) => {
-  const [comments, setComments] = useState<Comment[]>([])
+  const [comments, setComments] = useState<LocalComment[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [open, setOpen] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
 
   const load = async () => {
     try {
-      const res = await apiGetComments(guideKey)
-      const userId = (
-        window as unknown as {
-          Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number } } } }
-        }
-      ).Telegram?.WebApp?.initDataUnsafe?.user?.id
-      const mapped = (res.comments || []).map((c) => ({
+      const res = await apiGetComments(guideKey) as CommentsResponse
+      const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+      const mapped = (res.comments || []).map((c: ApiComment) => ({
         id: String(c.id),
         name: c.first_name || c.username || 'Аноним',
         text: c.text,
@@ -68,7 +63,7 @@ export const CommentsSection: FC<CommentsSectionProps> = ({ guideKey }) => {
         is_own: String(c.user_id) === String(userId),
         is_admin: false,
       }))
-      setComments(mapped as Comment[])
+      setComments(mapped as LocalComment[])
     } finally {
       setLoading(false)
     }

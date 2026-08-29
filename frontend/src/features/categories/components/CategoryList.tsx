@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,7 +8,7 @@ import { Bell, ChevronRight, Database, Folder, RefreshCw, ShieldAlert } from '@/
 import { normalizeUrl, pluralize } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { type FC, type SyntheticEvent, useRef } from 'react'
-import type { Category, Guide } from '../types'
+import type { Category, Guide } from '@/lib/types'
 
 interface CategoryListProps {
   categories: Category[]

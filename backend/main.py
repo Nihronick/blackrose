@@ -27,6 +27,14 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from core.rate_limit import limiter
 
+# Deferred imports moved to top
+from services.discord_sync.service import discord_sync_service
+from services.discord_sync.worker import stealth_discord_worker
+from services.telegram_bot.bot_runner import telegram_bot_runner
+from core.db import get_sessionmaker
+from sqlalchemy import select, delete
+from models.db_models import UserFavorite, GuideReaction, GuildMember, GuideComment, GuildJoinRequest
+
 
 logger = get_logger("blackrose.main")
 
@@ -46,8 +54,6 @@ async def lifespan(app: FastAPI):
     await seed_initial_admin()
 
     try:
-        from services.discord_sync.service import discord_sync_service
-        from services.discord_sync.worker import stealth_discord_worker
         saved_token = await discord_sync_service.get_setting("discord_user_token")
         if saved_token:
             logger.info("Auto-starting Discord Stealth Worker with saved token...")
@@ -57,7 +63,6 @@ async def lifespan(app: FastAPI):
 
     # Auto-start Telegram Bot Runner for /start & inline WebApp
     try:
-        from services.telegram_bot.bot_runner import telegram_bot_runner
         await telegram_bot_runner.start()
     except Exception as err:
         logger.warning(f"Failed to start Telegram Bot Runner: {err}")
@@ -67,7 +72,6 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down system...")
     try:
-        from services.telegram_bot.bot_runner import telegram_bot_runner
         await telegram_bot_runner.stop()
     except Exception:
         pass
@@ -143,10 +147,6 @@ async def export_user_data(user=Depends(require_user)):
     if user_id <= 0:
         raise HTTPException(status_code=400, detail="Invalid user")
     
-    from core.db import get_sessionmaker
-    from sqlalchemy import select
-    from models.db_models import UserFavorite, GuideReaction, GuildMember
-    
     async with get_sessionmaker()() as session:
         # Favorites
         fav_res = await session.execute(
@@ -192,10 +192,6 @@ async def delete_user_data(user=Depends(require_user)):
     user_id = int(user.get("id", 0))
     if user_id <= 0:
         raise HTTPException(status_code=400, detail="Invalid user")
-    
-    from core.db import get_sessionmaker
-    from sqlalchemy import delete
-    from models.db_models import UserFavorite, GuideReaction, GuildMember, GuideComment, GuildJoinRequest
     
     async with get_sessionmaker()() as session:
         await session.execute(delete(UserFavorite).where(UserFavorite.user_id == user_id))
@@ -285,7 +281,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={
             "detail": "Internal Server Error",
-            "error_debug": str(exc),
             "request_id": getattr(request.state, "request_id", "unknown")
         }
     )

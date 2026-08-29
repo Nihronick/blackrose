@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 import uuid
 import structlog
 from logging.handlers import RotatingFileHandler
@@ -62,7 +63,7 @@ def get_logger(name: str = "blackrose"):
 class RequestContextMiddleware(BaseHTTPMiddleware):
     """Adds request_id and context information to each log."""
     async def dispatch(self, request: Request, call_next):
-        import time
+        
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
         request.state.request_id = request_id
 

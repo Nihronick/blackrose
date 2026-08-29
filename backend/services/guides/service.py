@@ -19,6 +19,7 @@ from models.db_models import (
 )
 from core.logging import get_logger
 from services.common.utils import _strip_markdown
+from services.storage.git_sync import git_sync_service
 
 logger = get_logger("blackrose.services.guides")
 
@@ -184,7 +185,6 @@ class GuideService:
 
             # Trigger Git Sync (non-blocking)
             try:
-                from services.storage.git_sync import git_sync_service
                 asyncio.create_task(git_sync_service.sync_guide(
                     key=key,
                     title=data.get("title", "Guide"),

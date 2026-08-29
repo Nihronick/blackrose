@@ -2,6 +2,7 @@
 Клиент бэкенда BlackRose: авторизация, кэш медиа, ingestion, управление категориями.
 """
 import json
+import os
 from typing import Dict, List, Optional
 
 from .config import BACKEND_URL, ADMIN_USER, ADMIN_PASS, ssl_ctx, http_request
@@ -16,7 +17,7 @@ class BackendClient:
     def login(cls) -> str:
         """Авторизация администратора, получение JWT."""
         url = f"{BACKEND_URL}/api/auth/emergency-login"
-        body = json.dumps({"emergency_key": "BlackRose_ProjectAdmin_Emergency_Key_2026_Secure_Key"}).encode("utf-8")
+        body = json.dumps({"emergency_key": os.getenv("ADMIN_EMERGENCY_KEY", "")}).encode("utf-8")
         status, data = http_request(url, data=body,
                                     headers={"Content-Type": "application/json"},
                                     method="POST", timeout=15)
@@ -76,7 +77,7 @@ class BackendClient:
             "document": [],
             "sort_order": sort_order
         }).encode("utf-8")
-        headers = {"Content-Type": "application/json", "X-Ingest-Token": "dev_ingest_token"}
+        headers = {"Content-Type": "application/json", "X-Ingest-Token": os.getenv("INGEST_TOKEN", "")}
         status, data = http_request(url, data=body, headers=headers, method="POST", timeout=30)
         if isinstance(data, dict):
             return data

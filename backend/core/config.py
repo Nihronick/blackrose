@@ -15,14 +15,14 @@ class Settings(BaseSettings):
 
     # Bot & Auth
     BOT_TOKEN: str = ""
-    JWT_SECRET: str = "dev_secret_key_change_me"
+    JWT_SECRET: str
     INIT_DATA_MAX_AGE: int = 86400 # 24 hours
     ADMIN_USERS: str = "" # Comma separated user IDs
-    ADMIN_EMERGENCY_KEY: str = "BlackRose_ProjectAdmin_Emergency_Key_2026_Secure_Key"
+    ADMIN_EMERGENCY_KEY: str = ""
     WEBHOOK_URL: str = ""
     WEBHOOK_SECRET: str = ""
     WEBHOOK_PATH: str = "/bot/webhook"
-    INGEST_TOKEN: str = "dev_ingest_token"
+    INGEST_TOKEN: str = ""
 
     # Error Reporting
     HONEYBADGER_API_KEY: str = ""
@@ -75,7 +75,7 @@ class Settings(BaseSettings):
 
     # AIO Sandbox (agent environment)
     SANDBOX_URL: str = "http://sandbox:8080"
-    SANDBOX_API_KEY: str = "blackrose-dev-key"
+    SANDBOX_API_KEY: str = ""
     @property
     def admin_user_ids(self) -> set[int]:
         if not self.ADMIN_USERS:

@@ -5,25 +5,10 @@ from core.auth import require_admin
 from core.db import get_sessionmaker
 from core.logging import get_logger
 from models.db_models import Member
+from models.schemas import UserRoleUpdateIn, UserStatusUpdateIn
 
 router = APIRouter(prefix="/admin/users", tags=["admin_users"])
 logger = get_logger("blackrose.api.users_admin")
-
-
-class UserRoleUpdateIn(BaseModel):
-    role: str
-
-    @field_validator("role")
-    @classmethod
-    def validate_role(cls, v: str) -> str:
-        valid_roles = {"project_admin", "admin", "editor", "moderator", "member"}
-        if v not in valid_roles:
-            raise ValueError("Недопустимая роль")
-        return v
-
-
-class UserStatusUpdateIn(BaseModel):
-    is_active: bool
 
 
 @router.get("")

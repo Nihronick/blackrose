@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import time
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -9,6 +10,8 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from core.config import settings
+from models.db_models import Base
 
 logger = logging.getLogger("blackrose.core.db")
 
@@ -40,7 +43,7 @@ async def init_db():
     async with _init_lock:
         if _engine is not None:
             return
-        from core.config import settings
+        
         url = _normalize_db_url(settings.DATABASE_URL)
         try:
             _engine = create_async_engine(
@@ -51,7 +54,7 @@ async def init_db():
                 pool_pre_ping=True,
             )
             _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
-            from models.db_models import Base
+            
             async with _engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("Database schema and tables verified/created.")
@@ -79,7 +82,7 @@ async def get_health() -> dict:
     if _engine is None or _sessionmaker is None:
         return {"status": "uninitialized", "latency_ms": None}
 
-    import time
+    
     start = time.perf_counter()
     try:
         async with _engine.connect() as conn:

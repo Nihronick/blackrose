@@ -38,3 +38,13 @@ jobs:
 
       - name: Test with Vitest
         run: npm run test
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: Run E2E Tests
+        run: npx playwright test
+        working-directory: e2e
+        env:
+          CI: true

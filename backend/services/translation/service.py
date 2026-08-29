@@ -4,6 +4,7 @@ import re
 from core.config import settings
 from core.http import http_client
 from core.logging import get_logger
+from deep_translator import GoogleTranslator
 
 logger = get_logger("blackrose.services.translation")
 
@@ -335,7 +336,6 @@ class TranslationService:
                 cidx += 1
 
         try:
-            from deep_translator import GoogleTranslator
             res = GoogleTranslator(source='auto', target='ru').translate(masked)
         except Exception:
             res = masked

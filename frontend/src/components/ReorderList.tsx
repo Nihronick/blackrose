@@ -19,7 +19,7 @@ export function ReorderList<T extends { key: string }>({
   const [list, setList] = useState<T[]>(items)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
-  const dragNode = useRef<HTMLDivElement>(null)
+  const dragNode = useRef<HTMLDivElement | null>(null)
 
   // Sync when props change, but only when not dragging
   useEffect(() => {
@@ -30,7 +30,6 @@ export function ReorderList<T extends { key: string }>({
 
   const handleDragStart = (e: DragEvent<HTMLDivElement>, idx: number) => {
     setDragIdx(idx)
-    // @ts-ignore
     dragNode.current = e.currentTarget
     e.dataTransfer.effectAllowed = 'move'
 

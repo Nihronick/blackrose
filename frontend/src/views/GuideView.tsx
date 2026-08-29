@@ -14,6 +14,7 @@ import type { Guide as GuideType } from '@/lib/types'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { PtrIndicator } from '@/components/PtrIndicator'
+import { ReadingProgressBar } from '@/components/ReadingProgressBar'
 import { ScrollToTopFab } from '@/components/ScrollToTopFab'
 import { TableOfContents } from '@/components/TableOfContents'
 import { TagsList } from '@/components/TagBadge'
@@ -123,6 +124,7 @@ export const GuideView: FC<GuideViewProps> = ({
 
   return (
     <div className="flex h-full flex-col bg-background rose-mesh-bg">
+      <ReadingProgressBar targetRef={scrollRef} />
       <PtrIndicator pullY={pullY} refreshing={refreshing} />
       <div
         ref={scrollRef}
@@ -154,8 +156,8 @@ export const GuideView: FC<GuideViewProps> = ({
               <div className="flex shrink-0 gap-2">
                 <ShareButton guide={guide} />
                 <FavoriteButton
-                  isFavorite={isFavorite}
-                  onClick={() =>
+                  isFav={isFavorite}
+                  onToggle={() =>
                     onToggleFavorite({ key: guide.key, title: guide.title, icon: guide.icon || '' })
                   }
                 />

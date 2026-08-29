@@ -3,6 +3,8 @@ from core.db import get_sessionmaker
 from models.db_models import Guild, GuildMember, GuildJoinRequest, GuildStatus
 from core.logging import get_logger
 from datetime import datetime, timezone
+from services.notifications.service import notification_service
+from services.common.members import member_service
 
 logger = get_logger("blackrose.services.guilds")
 
@@ -199,7 +201,6 @@ class GuildService:
             await session.commit()
             
             # Send Telegram Notification
-            from services.notifications.service import notification_service
             await notification_service.notify_request_approved(req.user_id, guild.name)
             return {"ok": True}
 
@@ -218,7 +219,6 @@ class GuildService:
             await session.commit()
 
             # Send Telegram Notification
-            from services.notifications.service import notification_service
             await notification_service.notify_request_rejected(req.user_id, guild_name)
             return {"ok": True}
 
@@ -256,7 +256,6 @@ class GuildService:
                 }
                 rank_name = rank_names.get(rank_num, f"Rank {rank_num}")
 
-                from services.notifications.service import notification_service
                 await notification_service.notify_rank_updated(
                     user_id=member.user_id,
                     guild_name=guild_name,
@@ -358,7 +357,6 @@ class GuildService:
             return base + custom
 
     async def can_manage_guild(self, user_id: int, guild_id: int) -> bool:
-        from services.common.members import member_service
         if await member_service.is_admin(user_id):
             return True
             
