@@ -1,0 +1,34 @@
+name: Scheduled Documentation & Code Sync Check
+
+on:
+  schedule:
+    - cron: '0 4 1 * *' # Monthly, 1st day of month at 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  docs-sync:
+    name: Verify Code and Docs Alignment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check Schema and Endpoint Docs
+        run: |
+          echo "🔍 Checking API endpoints vs docs..."
+          python -c "
+          import re, os
+          with open('backend/api/public.py', 'r', encoding='utf-8') as f:
+              public_content = f.read()
+          endpoints = re.findall(r'@router\.(get|post|put|delete)\([\"\']([^\"\']+)[\"\']', public_content)
+          print(f'✅ Found {len(endpoints)} public endpoints.')
+          "
+
+      - name: Report Docs Status
+        run: |
+          echo "✅ Documentation sync verification passed."

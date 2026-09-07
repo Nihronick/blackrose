@@ -1,0 +1,33 @@
+{
+  "includeCoAuthoredBy": true,
+  "env": {
+    "INSIDE_CLAUDE_CODE": "1",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const p = process.env.CLAUDE_TOOL_INPUT_FILE_PATH || ''; if (p.includes('.env') && !p.includes('.env.example')) { console.error(JSON.stringify({ block: true, message: 'Editing production .env secrets directly is forbidden by safety hook.' })); process.exit(2); }\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const p = process.env.CLAUDE_TOOL_INPUT_FILE_PATH || ''; const { execSync } = require('child_process'); if (p.endsWith('.ts') || p.endsWith('.tsx')) { try { execSync('npx @biomejs/biome format --write ' + JSON.stringify(p), { stdio: 'ignore', cwd: './frontend' }); } catch(e){} } else if (p.endsWith('.py')) { try { execSync('ruff format ' + JSON.stringify(p), { stdio: 'ignore' }); } catch(e){} }\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

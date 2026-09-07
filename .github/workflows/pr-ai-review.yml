@@ -1,0 +1,88 @@
+name: PR AI Code Review & Quality Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr-review:
+    name: BlackRose Standards Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node & Python
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Static Checks & Linting
+        id: checks
+        run: |
+          echo "=== Checking TypeScript anti-patterns ==="
+          TS_NOCHECK=$(grep -rn "// @ts-nocheck" frontend/src || true)
+          TS_ANY=$(grep -rn ": any" frontend/src || true)
+          REACT_NS=$(grep -rn "React\." frontend/src || true)
+          
+          REPORT="### 🌹 BlackRose AI Automated PR Review\n\n"
+          STATUS="PASS"
+
+          if [ -n "$TS_NOCHECK" ]; then
+            REPORT+="- ❌ **Forbidden @ts-nocheck found:**\n\`\`\`\n$TS_NOCHECK\n\`\`\`\n"
+            STATUS="FAIL"
+          else
+            REPORT+="- ✅ No \`@ts-nocheck\` found\n"
+          fi
+
+          if [ -n "$REACT_NS" ]; then
+            REPORT+="- ⚠️ **Found \`React.*\` namespace usage (prefer named imports):**\n\`\`\`\n$REACT_NS\n\`\`\`\n"
+          else
+            REPORT+="- ✅ Named React imports used\n"
+          fi
+
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post Comment on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const report = `${{ steps.checks.outputs.report }}`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(c => c.body.includes('BlackRose AI Automated PR Review'));
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report,
+              });
+            }
